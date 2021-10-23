@@ -3,6 +3,9 @@
 StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
   # Initialize vector for all GO terms of interest
   GOs <- c()
+  # Initialize vector in which to store warnings
+  wrnings <- c()
+  
   # Check if user inputted a word/phrase or a GO ID. If the user inputted a 
   # word/phrase, find the name(s) which contains that word/phrase and set the GO
   # vector equal to the corresponding GO IDs.
@@ -45,10 +48,11 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, 
     Gene = gene_vec,
     GO_ID = found_GOs
   )
-  names(geneGOs) <- c("Gene", "GO_ID")
+  geneGOs <- geneGOs[!duplicated(geneGOs), ]
+  
   # Extract all possible combinations of populations from populations of interest
-  if(is.vector(all_pops)){
-    pops <- combn(all_pops,2) 
+  if((is.vector(all_pops)) & (length(all_pops) > 1)){
+    all_pops <- combn(all_pops,2) 
   }
   
   # Create vectors in which to store values for later dataframe
@@ -60,35 +64,48 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, 
     # Check if statistic of interest makes comparisons between TWO populations
     if((stat_vec[s] == "Fst") | (stat_vec[s] == "Dxy")){
       # Check if pops is a matrix
-      if(is.matrix(pops)){
+      if(is.matrix(all_pops)){
         # If so, iterate through each combination and output stat value for that
         # combination
-        for(pair in 1:ncol(pops)){
+        for(pair in 1:ncol(all_pops)){
           
           # If pops is a matrix, read the strings, find the column corresponding 
           # to the stat of interest for the populations in the vector, and set 
           # "index" equal to the column housing this statistic
-          val <- which(grepl(pops[1, pair], names(stat_table))
-                       & grepl(pops[2, pair], names(stat_table))
+          val <- which(grepl(all_pops[1, pair], names(stat_table))
+                       & grepl(all_pops[2, pair], names(stat_table))
                        & grepl(stat_vec[s], names(stat_table)))
           # If statistic for populations-of-interest is not present, return error
           if(length(val) == 0){
-            print(paste(c("Note: Statistic",stat_vec[s],
-                          "is not present for the populations",pops[1, pair],"and",
-                          pops[2, pair]),collapse = " "))
+            wrnings <- append(wrnings, paste(c("Note: Statistic",stat_vec[s],
+                                               "is not present for the populations",
+                                               all_pops[1, pair],"and",
+                                               all_pops[2, pair]),collapse = " "))
           }else{
             # Create a row to add to the indices dataframe
-            temp_str <- paste(c(pops[1, pair],"-",pops[2, pair]), collapse = "")
+            temp_str <- paste(c(all_pops[1, pair],"-",all_pops[2, pair]), 
+                              collapse = "")
             Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
             Population_prelim <- append(Population_prelim,temp_str)
             Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
           }
           # If pops is NOT a matrix, return an error
         }
-      }else if(!is.matrix(pops)){
-        print(paste(c("Warning: Only one population, ", pops, 
-                      " supplied for the two-population statistic ", stat_vec[s], 
-                      ". 'pops' likely has only one entry."), collapse = ""))
+      }else if(!is.matrix(all_pops)){
+        null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+        names(null.df) <- c("Gene",
+                            "Scaffold",
+                            "Start_Position",
+                            "End_Position",
+                            "GO_IDs",
+                            "Statistic_Type",
+                            "Population",
+                            "Statistic_Value")
+        return(list(paste(c("Warning: Only one population, ", all_pops, 
+                            " supplied for the two-population statistic ", 
+                            stat_vec[s], "."),
+                          collapse = ""), null.df))
+        
         # Check if statistic of interest makes comparisons between ONE population
       }
     }else if((stat_vec[s] == "TajimasD") | (stat_vec[s] == "Pi")){
@@ -101,9 +118,9 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, 
         # If statistic for populations-of-interest is not present, return a 
         # warning 
         if(length(val) == 0){
-          print(paste(c("Note: Statistic",stat_vec[s],
-                        "is not present for the population",all_pops[p]),
-                      collapse = " "))
+          wrnings <- append(wrnings, paste(c("Note: Statistic",stat_vec[s],
+                                             "is not present for the population",all_pops[p]),
+                                           collapse = " "))
         }else{
           # Create a row to add to the indices dataframe
           Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
@@ -111,15 +128,12 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, 
           Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
         }
       }
-    }else{
-      return(paste(c("ERROR: Invalid statistic name: ", stat_vec[s]), 
-                   collapse = ""))
     }
   }
   
   # For each GO Term in the vector of GO Terms-of-interest, find...
   # 1. All gene names which occur in the positions table AND in the statistics
-  # table
+  #    table
   # 2. The scaffolds of those genes
   # 3. The starting positions of those genes
   # 4. The ending positions of those genes
@@ -183,7 +197,7 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, 
                           Population,
                           Statistic_Value
   )
-  return(output_df)
+  return(list(wrnings, output_df))
 }
 
 # Takes table from StatByChrTable as input and outputs a unique plot for each
@@ -678,7 +692,7 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, in_table,
     # p-value, and Ensembl family information to a dataframe
     output.df <- data.frame(
       tolower(ROIs$Gene_name)[1:n.rows],
-      ROIs$ï..Gene_stable_ID[1:n.rows],
+      ROIs$Ã¯..Gene_stable_ID[1:n.rows],
       GOTerms,
       rep(comp, n.rows)[1:n.rows],
       ROIs$logFC[1:n.rows],
@@ -716,7 +730,7 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, in_table,
           morph2.rows$logFC[morph2.rows$Gene_name == m1.genes[g]]
         delta_FC <- append(delta_FC, diff)
         genes <- append(genes, m1.genes[g])
-        G_IDs <- append(G_IDs, morph1.rows$ï..Gene_stable_ID[
+        G_IDs <- append(G_IDs, morph1.rows$Ã¯..Gene_stable_ID[
           morph1.rows$Gene_name == m1.genes[g]])
         EF_IDs <- append(EF_IDs, morph1.rows$Ensembl_Family_Description[
           morph1.rows$Gene_name == m1.genes[g]])
@@ -786,7 +800,7 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                   condition_control$Gene_name
     ),
     all_IDs = c(position_table$V10, stat_table$Stable_Gene_ID, 
-                condition_control$ï..Gene_stable_ID
+                condition_control$Ã¯..Gene_stable_ID
     )
   )
   # Since some genes are found in one or more of the input dfs, remove all 
@@ -1021,54 +1035,54 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         
         # Check if current gene is found in transcription data. If so, output 
         # associated information. If not, output NAs
-        if(input_vec[i] %in% condition_control$ï..Gene_stable_ID){
+        if(input_vec[i] %in% condition_control$Ã¯..Gene_stable_ID){
           if(length(condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
             (grepl("Choy",condition_control$Class))]) != 0){
             output.df[i,28] = condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Choy",condition_control$Class))]
             output.df[i,32] = condition_control$PValue[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Choy",condition_control$Class))]
           }else{
             output.df[i,28] = NA
             output.df[i,32] = NA
           }
           if(length(condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
             (grepl("Pachon",condition_control$Class))]) != 0){
             output.df[i,29] = condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Pachon",condition_control$Class))]
             output.df[i,33] = condition_control$PValue[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Pachon",condition_control$Class))]
           }else{
             output.df[i,29] = NA
             output.df[i,33] = NA
           }
           if(length(condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
             (grepl("Molino",condition_control$Class))]) != 0){
             output.df[i,30] = condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Molino",condition_control$Class))]
             output.df[i,34] = condition_control$PValue[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Molino",condition_control$Class))]
           }else{
             output.df[i,30] = NA
             output.df[i,34] = NA
           }
           if(length(condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
             (grepl("Tinaja",condition_control$Class))]) != 0){
             output.df[i,31] = condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Tinaja",condition_control$Class))]
             output.df[i,35] = condition_control$PValue[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
                 (grepl("Tinaja",condition_control$Class))]
           }else{
             output.df[i,31] = NA
@@ -1316,54 +1330,54 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       
       # Check if current gene is found in transcription data. If so, output 
       # associated information. If not, output NAs
-      if(input %in% condition_control$ï..Gene_stable_ID){
+      if(input %in% condition_control$Ã¯..Gene_stable_ID){
         if(length(condition_control$logFC[
-          (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+          (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
           (grepl("Choy",condition_control$Class))]) != 0){
           output.df[1,28] = condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]
           output.df[1,32] = condition_control$PValue[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]
         }else{
           output.df[1,28] = NA
           output.df[1,32] = NA
         }
         if(length(condition_control$logFC[
-          (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+          (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
           (grepl("Pachon",condition_control$Class))]) != 0){
           output.df[1,29] = condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]
           output.df[1,33] = condition_control$PValue[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]
         }else{
           output.df[1,29] = NA
           output.df[1,33] = NA
         }
         if(length(condition_control$logFC[
-          (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+          (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
           (grepl("Molino",condition_control$Class))]) != 0){
           output.df[1,30] = condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]
           output.df[1,34] = condition_control$PValue[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]
         }else{
           output.df[1,30] = NA
           output.df[1,34] = NA
         }
         if(length(condition_control$logFC[
-          (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+          (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
           (grepl("Tinaja",condition_control$Class))]) != 0){
           output.df[1,31] = condition_control$logFC[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]
           output.df[1,35] = condition_control$PValue[
-            (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+            (condition_control$Ã¯..Gene_stable_ID == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]
         }else{
           output.df[1,31] = NA
@@ -1614,56 +1628,3 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
   return(output.df)
 }
 
-
-# Test examples
-setwd("~/Fall 2021/Capstone")
-dat <- read.table("Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
-position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
-
-condition_control <- read.csv("ShinyInputData/Morph-Control_TranscData.csv")
-morph1.morph2 <- read.csv("ShinyInputData/Toy_RioChoyPachon.csv")
-
-GeneToGO <- read.csv("ShinyInputData/AMexGOTerms.csv", fill = T)
-GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
-# Convert gene names in GeneToGO to lowercase to make compatible with other tables
-GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
-
-GoIDToNames <- read.table("ShinyInputData/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-UpperLower <- read.table("ShinyInputData/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
-
-stat_table <- read.csv("ShinyInputData/AMexicanus_Genes_and_Stats.csv")
-stat_table <- stat_table[,(names(stat_table) != "X")]
-
-# Find bottom 30 values for Tajima's D across all populations
-test1 <- StatDistTable(in_type = "Gene Count", UL = "bottom", stat = "TajimasD",
-                   thresh = 30,stat_table,
-                   pops = c("Tinaja","Rascon","Pachon","Molino","RioChoy"))
-# Find all genes with Fst values above .95
-test2 <- StatDistTable(in_type = "Statistic Value", UL = "top", stat = "Fst",
-                   thresh = 0.95,stat_table,
-                   pops = c("Tinaja","Rascon","Pachon","Molino","RioChoy"))
-
-
-test3 <- StatByChrTable(GOTerm = "GO:0035639", GeneToGO, GoIDToNames, UpperLower,
-                        stat_vec <- c("Fst","Pi"), position_table, stat_table, 
-                        all_pops = c("Tinaja","Molino","Pachon","RioChoy","Rascon"))
-
-################################# 10-07 New Functions ###########################
-
-############################## Transcription Function ##########################
-# NEW:Find 30% of genes with greatest downregulation in Pachon relative to Rio Choy
-test4 <- TranscTable("Pachon","Rio Choy", "Between morph", "Downregulated", 30)
-# NEW:Find 20% of genes with greatest upregulation in response to sleep deprivation
-# in Rio Choy
-test5 <- TranscTable("Rio Choy","Control", "Sleep deprivation", "Upregulated", 20)
-
-############################ Gene-Centered Function ############################
-# NEW: Find transcription and pop-gen data on a comma-separated group of genes
-test6 <- GeneCentered("gna14, cyp26a1", stat_table, GeneToGO, condition_control,
-                      position_table)
-# NEW: Find transcription and pop-gen data on a comma-separated group of IDs
-test7 <- GeneCentered("ENSAMXG00000014853, ENSAMXG00000006096", stat_table, GeneToGO, condition_control,
-                      position_table)
-# NEW: Find transcription and pop-gen data on genes associated with a phrase
-test8 <- GeneCentered("melatonin receptor", stat_table, GeneToGO, condition_control,
-                      position_table)
