@@ -1,4 +1,3 @@
-
 #
 # This is a Shiny web application. You can run the application by clicking
 # the 'Run App' button above.
@@ -30,11 +29,14 @@ if (interactive()) {
         # with the greatest or smallest values for the stat of interest
         conditionalPanel(
             condition = "input.type == 'Gene Count'",
-            sliderInput("thrsh", "How many genes would you like to see?",
+            sliderInput("gene_count", "How many genes would you like to see?",
                         min = 1, max = 1000, value = 10),
             radioButtons("TB", 
                          label = "Output genes with largest or smallest values of the desired statistic?",
-                         choices = c("Largest" = "top", "Smallest" ="Smallest")),
+                         choices = c("Largest" = "top", "Smallest" ="bottom")),
+            actionButton("GCDistTable_enter","Find Genes"),
+            tableOutput("GCdist_tab"),
+            textOutput("GCdist_wrnings"),
         ),
         # Only show this panel if the user wants to find genes with stat values
         # above or below a specific threshhold
@@ -45,18 +47,20 @@ if (interactive()) {
             radioButtons("TB", 
                          label = "Output genes whose value is above or below the threshhold?",
                          choices = c("Above" = "top", "Below" ="bottom")),
-        ),
-        actionButton("enter","Find Genes"),
-        verbatimTextOutput("wrnings"),
-        tableOutput("dist_tab")
+            actionButton("SVDistTable_enter","Find Genes"),
+            actionButton("SVDistPlot_enter", "Visualize"),
+            plotOutput("SVdist_plot"),
+            tableOutput("SVdist_tab"),
+            textOutput("SVdist_wrnings"),
+        )
     )
     
     
     # Server Logic
     server <- function(input, output) {
         setwd("~/Fall 2021/Capstone")
-        stat_table <- read.csv("ShinyInputData/AMexicanus_Genes_and_Stats.csv")
-        stat_table <- stat_table[,(names(stat_table) != "X")]
+        s_table <- read.csv("ShinyInputData/AMexicanus_Genes_and_Stats.csv")
+        s_table <- s_table[,(names(s_table) != "X")]
         dat <- read.table("Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
         position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
         GeneToGO <- read.csv("ShinyInputData/AMexGOTerms.csv", fill = T)
@@ -71,7 +75,7 @@ if (interactive()) {
             indices <- c()
             pop_strings <- c()
             # Create vector into which warnings will be stored for later output
-            wrnings <- c()
+            wrnings <- c("Notes:\n")
             
             # Check if statistic of interest makes comparisons between TWO populations
             if((stat == "Fst") | (stat == "Dxy")){
@@ -91,9 +95,9 @@ if (interactive()) {
                                  & grepl(stat, names(stat_table)))
                     # If statistic for populations-of-interest is not present, return error
                     if(length(val) == 0){
-                        wrnings <- append(wrnings, (paste(c("Note: Statistic",stat,
+                        wrnings <- append(wrnings, (paste(c("Statistic",stat,
                                       "is not present for the populations",two_pops[1, pair],"and",
-                                      two_pops[2, pair]),collapse = " ")))
+                                      two_pops[2, pair], "\n"),collapse = " ")))
                     }else{
                         # Create a row to add to the indices dataframe
                         temp_str <- paste(c(two_pops[1, pair],"-",two_pops[2, pair]), collapse = "")
@@ -115,9 +119,9 @@ if (interactive()) {
                     # If statistic for populations-of-interest is not present, return a 
                     # warning 
                     if(length(val) == 0){
-                        wrnings <- append(wrnings, (paste(c("Note: Statistic",stat,
-                                      "is not present for the population",pops[p]),
-                                    collapse = " ")))
+                        wrnings <- append(wrnings, (paste(c("Statistic",stat,
+                                      "is not present for the population",
+                                      pops[p],"\n"),collapse = " ")))
                     }else{
                         pop_strings <- append(pop_strings,pops[p])
                         indices <- append(indices,val)
@@ -264,7 +268,7 @@ if (interactive()) {
             # If no population pairs were found, output and error
             if(length(indices) == 0){
                 null.df <- data.frame(matrix(nrow = 1, ncol = 6))
-                names(null.df) <- c("Rank","Population(s)","Fst","Scaffold",
+                names(null.df) <- c("Rank","Population(s)",stat,"Scaffold",
                                      "Gene Name","GO Term(s)")
                 return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                              collapse = " "), null.df))
@@ -380,43 +384,121 @@ if (interactive()) {
             }
             return(list(wrnings, final_df))
         }
-        
-        observeEvent(
-            "input$enter", {
-                output$wrnings <- renderPrint(
-                    if((length(input$type) != 0) & (length(input$TB) != 0) & 
-                       (length(input$statist) != 0) & (length(input$thrsh) != 0)
-                       & (nrow(stat_table) != 0) & (length(input$pops) != 0)){
-                        if(length(StatDistTable(input$type, input$TB, input$statist, input$thrsh, 
-                                                stat_table, input$pops)[[1]]) == 0){
-                            noquote("No warnings or errors.")
-                        }else{
-                            StatDistTable(input$type, input$TB, input$statist, input$thrsh, 
-                                          stat_table, input$pops)[[1]]
-                        }
-                    }else if(length(input$type) == 0){
-                        "input$type is empty"
-                    }else if(length(input$TB) == 0){
-                        "input$TB is empty"
-                    }else if(length(input$statist) == 0){
-                        "input$statist is empty"
-                    }else if(length(input$thrsh) == 0){
-                        "input$thrsh is empty"
-                    }else if(nrow(stat_table) == 0){
-                        "stat_table is empty"
-                    }else if(length(input$pops) == 0){
-                        "input$pops is empty"
-                    }
-                    
-                )
-                output$dist_tab <- renderTable(
-                    StatDistTable(input$type, input$TB, input$statist, input$thrsh, 
-                                  stat_table, input$pops)[[2]]
-                )
-            }
+        StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
+            library("WVPlots")
+            # EDIT: Check if threshold is within appropriate range for statistic-of-interest. If
+            # not, return an error.
             
-        )
+            # Check if statistic of interest makes comparisons between TWO populations
+            if((stat == "Fst") | (stat == "Dxy")){
+                # Check if pops is a vector
+                if(is.vector(pops)){
+                    # If pops is a vector, read the strings, find the column corresponding 
+                    # to the stat of interest for the populations in the vector, and set 
+                    # "indx" equal to the column housing this statistic
+                    indx <- which(grepl(pops[1], names(stat_table))
+                                  & grepl(pops[2], names(stat_table))
+                                  & grepl(stat, names(stat_table)))
+                    # If statistic for populations-of-interest is not present, return error
+                    if(length(indx) == 0){
+                        return(paste(c("ERROR: Statistic",stat,
+                                       "is not present for the populations",pops[1],"and",
+                                       pops[2]),collapse = " "))
+                    }
+                    # If pops is NOT a vector, return an error
+                }else if(!is.vector(pops)){
+                    return("ERROR: Only one population supplied for a two-population statistic
+             \n Either 'pops' is not a vector or 'pops' has only one entry.\n")
+                    # Check if statistic of interest makes comparisons between ONE population
+                }
+            }else if((stat == "TajimasD") | (stat == "Pi")){
+                # Ensure that only one population was entered
+                if(is.character(pops) & length(pops) == 1){
+                    # If pops is a string, set indx equal to the column housing the stat of
+                    # interest for this population
+                    indx <- which(grepl(pops, names(stat_table))
+                                  & grepl(stat, names(stat_table)))
+                    # If statistic for populations-of-interest is not present, return error
+                    if(length(indx) == 0){
+                        return(paste(c("ERROR: Statistic",stat,
+                                       "is not present for the population",pops),
+                                     collapse = " "))
+                    }
+                    # If more than one population was entered, return an error
+                }else if(!is.character(pops) | length(pops) != 1){
+                    return("ERROR: Detected inappropriate number of populations for a 
+              one-population statistic\n Either 'pops' is not a string or 'pops' 
+             was not supplied.\n")
+                }
+            }else{
+                return("ERROR: Invald statistic name")
+            }
+            # Remove all rows where stat-of-interest is NA
+            filt_table <- stat_table[!is.na(stat_table[,indx]),]
+            # Create dataframe with gene names, appropriate stat values, and GO terms
+            # EDIT: Include GO terms
+            df <- data.frame(
+                Genes = filt_table$Gene_Name,
+                Stats = filt_table[,indx]
+            )
+            # Rename df satistics column with specific statistic name
+            names(df)[2] <- stat
+            # Pick a tail based on whether "top" or "bottom" was specified
+            if(UL == "top"){
+                t = "right"
+            }else if(UL == "bottom"){
+                t = "left"
+            }
+            # Create density plot. Title must be different depending on whether you have 1 
+            # or two populations
+            if(is.vector(pops)){
+                ShadedDensity(frame = df, 
+                              xvar = stat,
+                              threshold = thresh,
+                              title = paste(c(stat, " values for ", pops[1], " and ", pops[2]), collapse = ""),
+                              tail = t)
+            }else{
+                ShadedDensity(frame = df, 
+                              xvar = stat,
+                              threshold = thresh,
+                              title = paste(c(stat, " values for ", pops), collapse = ""),
+                              tail = t)
+            }
+        }
         
+        SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
+            StatDistTable(input$type,
+                              input$TB, 
+                              input$statist, 
+                              thresh = input$thrsh, 
+                              stat_table = s_table, 
+                              input$pops)
+        }
+        )
+        output$SVdist_tab <- renderTable(SVDT()[[2]])
+        output$SVdist_wrnings <- renderText(SVDT()[[1]])
+        
+        SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
+            StatDistPlot(stat = input$statist,
+                         UL = input$TB,
+                         thresh = input$thrsh,
+                         stat_table = s_table,
+                         pops = input$pops)
+        }
+        )
+        output$SVdist_plot <- renderPlot(SVDP())
+        
+        GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
+            StatDistTable(input$type,
+                          input$TB, 
+                          input$statist, 
+                          thresh = input$gene_count, 
+                          stat_table = s_table, 
+                          input$pops)
+        }
+        )
+        output$GCdist_tab <- renderTable(GCDT()[[2]])
+        output$GCdist_wrnings <- renderText(GCDT()[[1]])
     }
 }
 
