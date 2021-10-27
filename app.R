@@ -7,8 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 ################################ Load in data ################################ 
-dat <- read.table("data/Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
-position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
+position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
 morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
