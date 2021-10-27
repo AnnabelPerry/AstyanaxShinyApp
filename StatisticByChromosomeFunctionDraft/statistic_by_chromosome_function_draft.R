@@ -26,6 +26,13 @@ ui <- fluidPage(
     btnReset = icon("remove"),
     width = "450px"
   ),
+  selectInput(
+    inputId = "SBCP_select",
+    label = "Visualize Scaffold...",
+    choices = "",
+    selected = NULL,
+    multiple = FALSE
+  ),
   tableOutput("test2"),
   textOutput("test1")
 )
@@ -258,6 +265,8 @@ server <- function(input, output) {
     # Initialize a list in which to store all plots
     plist <- vector(mode = "list", length = num_scaff*num_stats)
     
+    # Create vector of names
+    names_vec <- c()
     # Start at the 0th entry in the list
     p = 0
     # For each scaffold-statistic combo, create a new plot
@@ -267,6 +276,9 @@ server <- function(input, output) {
         # Each time you reach a new scaffold-statistic combination, move to a new 
         # position in the plot list 
         p = p + 1
+        # Create a new name from this combination
+        names_vec <- append(names_vec, paste(c(stat_vec[s],unique_scaffs[c]), 
+                                             collapse = ":"))
         # Find all rows in the table whose basic statistic and scaffold match the
         # current statistic and scaffold
         plot_dat <- data.frame(
@@ -289,7 +301,8 @@ server <- function(input, output) {
         #Store the plot in a vector
       }
     }
-    names(plist) <- unique_scaffs
+    # Add names to plot list
+    names(plist) <- names_vec
     return(plist)
   }
   
@@ -315,8 +328,11 @@ server <- function(input, output) {
   }
   )
   SBCP <- eventReactive(input$GO_search, valueExpr = {
-    StatByChrGraph(Full_Table = SBCT()[[2]],
-                   stat_vec = input$statist)
+    StatByChrTable_input <- SBCT()[[2]]
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      inputId = "SBCP_select",
+                      label = "Visualize Scaffold...",
+                      choices = levels(as.factor(StatByChrTable_input$Scaffold)))
   }
   )
   output$test2 <- renderTable(SBCT()[[2]])
