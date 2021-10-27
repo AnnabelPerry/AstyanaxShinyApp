@@ -6,7 +6,11 @@
 #
 #    http://shiny.rstudio.com/
 #
+<<<<<<< HEAD:app.R
 ################################ Load in data ################################
+=======
+################################ Load in data ################################ 
+>>>>>>> 28d07b765fa157f5a04c4a9479463e6edd946de1:AmexWebsiteDraft/app.R
 dat <- read.table("data/Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
 position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
 
