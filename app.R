@@ -3,10 +3,10 @@
 # the 'Run App' button above.
 #
 # Find out more about building applications with Shiny here:
-#
+#mtnr1al
 #    http://shiny.rstudio.com/
 #
-################################ Load in data ################################ 
+################################ Load in data ################################
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
@@ -33,7 +33,7 @@ library(plotly)
                sidebarLayout(
                  sidebarPanel(
                    searchInput(
-                     inputId = "Gene_search", 
+                     inputId = "Gene_search",
                      label = "Gene name, gene stable ID, or phrase",
                      placeholder = "mtnr1al, ENSAMXG00000010894, melatonin receptor, etc...",
                      btnSearch = icon("search"),
@@ -60,7 +60,7 @@ library(plotly)
                      label = "to...",
                      choices = c("")
                    ),
-                   
+
                    # If morph2 IS set to control, populate a drop-down of available conditions
                    conditionalPanel(
                      condition = "input.morph2 == 'Control'",
@@ -70,20 +70,20 @@ library(plotly)
                        choices = c("Sleep deprivation","Other")
                      )
                    ),
-                   radioButtons("direction", 
+                   radioButtons("direction",
                                 label = textOutput("dir_label"),
                                 choices = c("Upregulated", "Downregulated")
                    ),
-                   sliderInput(inputId = "percent_change", 
+                   sliderInput(inputId = "percent_change",
                                label = textOutput("per_label"),
                                min = 0, max = 100, value = 50),
                    actionButton("Transc_enter","Find Genes")
                    ),
-                 
+
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
                                     tableOutput("test")
-                   )  
+                   )
                  )
                  )
                )
@@ -91,24 +91,24 @@ library(plotly)
         tabPanel("Population Genetics", fluid = TRUE,
                  sidebarLayout(
                    sidebarPanel(
-                     radioButtons("type", 
+                     radioButtons("type",
                                   label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
                                   choices = c("Number of Genes" = "Gene Count", "Statistic Value")
                      ),
-                     radioButtons("statist", 
+                     radioButtons("statist",
                                   label = "Statistic of Interest",
                                   choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-                     checkboxGroupInput("pops", 
+                     checkboxGroupInput("pops",
                                         label = "Population(s) of Interest",
                                         choices = c("Molino", "Pachon", "Rascon", "Rio Choy", "Tinaja")),
-                     
-                     # Only show this panel if the user wants to find the number of genes 
+
+                     # Only show this panel if the user wants to find the number of genes
                      # with the greatest or smallest values for the stat of interest
                      conditionalPanel(
                        condition = "input.type == 'Gene Count'",
                        sliderInput("gene_count", "How many genes would you like to see?",
                                    min = 1, max = 1000, value = 10),
-                       radioButtons("TB", 
+                       radioButtons("TB",
                                     label = "Output genes with largest or smallest values of the desired statistic?",
                                     choices = c("Largest" = "top", "Smallest" ="bottom")),
                        actionButton("GCDistTable_enter","Find Genes"),
@@ -117,9 +117,9 @@ library(plotly)
                      # above or below a specific threshhold
                      conditionalPanel(
                        condition = "input.type == 'Statistic Value'",
-                       sliderInput("thrsh", "Threshhold statistical value: ",min = -3, 
+                       sliderInput("thrsh", "Threshhold statistical value: ",min = -3,
                                    max = 3, value = 0, step = 0.05),
-                       radioButtons("TB", 
+                       radioButtons("TB",
                                     label = "Output genes whose value is above or below the threshhold?",
                                     choices = c("Above" = "top", "Below" ="bottom")),
                        actionButton("SVDistTable_enter","Find Genes"),
@@ -145,46 +145,46 @@ library(plotly)
         )
     )
   )
-  
+
   server = function(input, output) {
     observe({
       all_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
                        "Rio Choy")
       # Update widget to only enable comparisons between current morph and
       # morph which is NOT morph1
-      updateSelectInput(session = getDefaultReactiveDomain(), 
+      updateSelectInput(session = getDefaultReactiveDomain(),
                         "morph2",
                         choices = all_choices[all_choices != input$morph1],
                         selected = tail(all_choices, 1)
       )
     })
-    
+
     GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                              position_table){
       library("stringr")
       comma <- ", "
-      # Obtain complete dataframe of all possible genes and corresponding IDs across 
+      # Obtain complete dataframe of all possible genes and corresponding IDs across
       # the statistic and transcription data
       all.genes_IDs <- data.frame(
-        all_genes = c(position_table$V16, stat_table$Gene_Name, 
+        all_genes = c(position_table$V16, stat_table$Gene_Name,
                       condition_control$Gene_name
         ),
-        all_IDs = c(position_table$V10, stat_table$Stable_Gene_ID, 
-                    condition_control$ï..Gene_stable_ID
+        all_IDs = c(position_table$V10, stat_table$Stable_Gene_ID,
+                    condition_control$Gene_stable_ID
         )
       )
-      # Since some genes are found in one or more of the input dfs, remove all 
+      # Since some genes are found in one or more of the input dfs, remove all
       # duplicate rows
       all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
       all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
-      
-      # If input is a comma-separated string, parse string and separate elements, 
+
+      # If input is a comma-separated string, parse string and separate elements,
       # then determine whether vector contains gene names or gene IDs
       if(grepl(comma, input)){
         input_vec <- str_split(input, pattern = comma)[[1]]
         # Dataframe in which to store inputs and associated values
         output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
-        
+
         # Next, iterate through each element of vector
         for(i in 1:length(input_vec)){
           # If element is present in all_genes, consider vector a vector of gene
@@ -192,8 +192,8 @@ library(plotly)
           if(input_vec[i] %in% all.genes_IDs$all_genes){
             output.df[i,1] = input_vec[i]
             output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
-            
-            # If the current gene is present in the position table, output position 
+
+            # If the current gene is present in the position table, output position
             # table info. If not, output all NA
             if(input_vec[i] %in% position_table$V16){
               output.df[i,3] = position_table$V1[position_table$V16 == input_vec[i]]
@@ -204,16 +204,16 @@ library(plotly)
               output.df[i,4] = NA
               output.df[i,5] = NA
             }
-            
-            # Check if gene is present in GO term table. If so, output GO terms. If 
+
+            # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
             if(input_vec[i] %in% GeneToGO$Gene.names){
               output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input_vec[i]]
             }else{
               output.df[i,7] = NA
             }
-            
-            # Check if gene is present in stat table. If so, output info. If not, 
+
+            # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Gene_Name){
               output.df[i,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
@@ -260,8 +260,8 @@ library(plotly)
               output.df[i,26] = NA
               output.df[i,27] = NA
             }
-            
-            # Check if current gene is found in transcription data. If so, output 
+
+            # Check if current gene is found in transcription data. If so, output
             # associated information. If not, output NAs
             if(input_vec[i] %in% condition_control$Gene_name){
               if(length(condition_control$logFC[
@@ -326,16 +326,16 @@ library(plotly)
               output.df[i,34] = NA
               output.df[i,35] = NA
             }
-            
+
             geneName = T
             geneID = F
-            # If element is present in all_IDs, consider vector a vector of IDs and 
+            # If element is present in all_IDs, consider vector a vector of IDs and
             # output all associated elements to output dataframe
           }else if(input_vec[i] %in% all.genes_IDs$all_IDs){
             output.df[i,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input_vec[i]]
             output.df[i,2] = input_vec[i]
-            
-            # If the current gene is present in the position table, output position 
+
+            # If the current gene is present in the position table, output position
             # table info. If not, output all NA
             if(output.df[i,2] %in% position_table$V16){
               output.df[i,3] = position_table$V1[position_table$V16 == output.df[i,2]]
@@ -346,16 +346,16 @@ library(plotly)
               output.df[i,4] = NA
               output.df[i,5] = NA
             }
-            
-            # Check if gene is present in GO term table. If so, output GO terms. If 
+
+            # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
             if(output.df[i,2] %in% GeneToGO$Gene.names){
               output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == output.df[i,2]]
             }else{
               output.df[i,7] = NA
             }
-            
-            # Check if gene is present in stat table. If so, output info. If not, 
+
+            # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Stable_Gene_ID){
               output.df[i,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input_vec[i]]
@@ -402,8 +402,8 @@ library(plotly)
               output.df[i,26] = NA
               output.df[i,27] = NA
             }
-            
-            # Check if current gene is found in transcription data. If so, output 
+
+            # Check if current gene is found in transcription data. If so, output
             # associated information. If not, output NAs
             if(input_vec[i] %in% condition_control$ï..Gene_stable_ID){
               if(length(condition_control$logFC[
@@ -470,10 +470,10 @@ library(plotly)
             }
             geneName = T
             geneID = F
-            # If element is present in neither, output an error  
-          }else if(!(input_vec[i] %in% all.genes_IDs$all_genes) & 
+            # If element is present in neither, output an error
+          }else if(!(input_vec[i] %in% all.genes_IDs$all_genes) &
                    !(input_vec[i] %in% all.genes_IDs$all_IDs)){
-            return(paste(c("ERROR: No transcription or statistical data present for 
+            return(paste(c("ERROR: No transcription or statistical data present for
                        the input", input_vec[i], "."), collapse = " "))
           }
         }
@@ -486,8 +486,8 @@ library(plotly)
           output.df <- data.frame(matrix(ncol = 35, nrow = 1))
           output.df[1,1] = input
           output.df[1,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input]
-          
-          # If the current gene is present in the position table, output position 
+
+          # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input %in% position_table$V16){
             output.df[1,3] = position_table$V1[position_table$V16 == input]
@@ -498,16 +498,16 @@ library(plotly)
             output.df[1,4] = NA
             output.df[1,5] = NA
           }
-          
-          # Check if gene is present in GO term table. If so, output GO terms. If 
+
+          # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input %in% GeneToGO$Gene.names){
             output.df[1,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input]
           }else{
             output.df[1,7] = NA
           }
-          
-          # Check if gene is present in stat table. If so, output info. If not, 
+
+          # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Gene_Name){
             output.df[1,6] = stat_table$Gene_Description[stat_table$Gene_Name == input]
@@ -554,8 +554,8 @@ library(plotly)
             output.df[1,26] = NA
             output.df[1,27] = NA
           }
-          
-          # Check if current gene is found in transcription data. If so, output 
+
+          # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input %in% condition_control$Gene_name){
             if(length(condition_control$logFC[
@@ -620,7 +620,7 @@ library(plotly)
             output.df[1,34] = NA
             output.df[1,35] = NA
           }
-          
+
           geneName = T
           geneID = F
         }else if(input %in% all.genes_IDs$all_IDs){
@@ -629,8 +629,8 @@ library(plotly)
           output.df <- data.frame(matrix(ncol = 35, nrow = 1))
           output.df[1,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input]
           output.df[1,2] = input
-          
-          # If the current gene is present in the position table, output position 
+
+          # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(output.df[1,2] %in% position_table$V16){
             output.df[1,3] = position_table$V1[position_table$V16 == output.df[1,2]]
@@ -641,16 +641,16 @@ library(plotly)
             output.df[1,4] = NA
             output.df[1,5] = NA
           }
-          
-          # Check if gene is present in GO term table. If so, output GO terms. If 
+
+          # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(output.df[1,2] %in% GeneToGO$Gene.names){
             output.df[1,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == output.df[1,2]]
           }else{
             output.df[1,7] = NA
           }
-          
-          # Check if gene is present in stat table. If so, output info. If not, 
+
+          # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Stable_Gene_ID){
             output.df[1,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input]
@@ -697,8 +697,8 @@ library(plotly)
             output.df[1,26] = NA
             output.df[1,27] = NA
           }
-          
-          # Check if current gene is found in transcription data. If so, output 
+
+          # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input %in% condition_control$ï..Gene_stable_ID){
             if(length(condition_control$logFC[
@@ -765,21 +765,21 @@ library(plotly)
           }
           geneID = T
           geneName = F
-        }else if(!(input %in% all.genes_IDs$all_genes) & 
+        }else if(!(input %in% all.genes_IDs$all_genes) &
                  !(input %in% all.genes_IDs$all_IDs)){
           geneName = F
           geneID = F
         }
-      } 
-      
-      
+      }
+
+
       # If the input string contains NO commas but is not WHOLLY comprised of IDs or
       # names, consider the string a phrase
       if((!geneID) & (!geneName)){
         # Find all gene names whose description, GO terms, or gene name contains the
         # phrase-of-interest
-        
-        # Must first check if phrase is found in any column-of-interest prior to 
+
+        # Must first check if phrase is found in any column-of-interest prior to
         # appending phrase to column of interest
         input_vec <- c()
         if((sum(grepl(input, stat_table$Gene_Description)) != 0) |
@@ -800,14 +800,14 @@ library(plotly)
           )
         }
         if(sum(grepl(input, all.genes_IDs$all_genes)) != 0){
-          input_vec <- append(input_vec, 
-                              all.genes_IDs$all_genes[grepl(input, 
+          input_vec <- append(input_vec,
+                              all.genes_IDs$all_genes[grepl(input,
                                                             all.genes_IDs$all_genes)])
         }
-        
+
         # Remove duplicate genes from input vector
         input_vec <- input_vec[!duplicated(input_vec)]
-        
+
         # If no gene descriptions contain the phrase, return an error
         if(length(input_vec) == 0){
           return(paste(c("ERROR: No genes-of-interest can be described by the phrase",
@@ -815,13 +815,13 @@ library(plotly)
         }
         # Initialize df in which to store output based on number of genes
         output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
-        
+
         # For each stable ID, collect all values associated with the stable ID
         for(i in 1:length(input_vec)){
           output.df[i,1] = input_vec[i]
           output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
-          
-          # If the current gene is present in the position table, output position 
+
+          # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input_vec[i] %in% position_table$V16){
             output.df[i,3] = position_table$V1[position_table$V16 == input_vec[i]]
@@ -832,16 +832,16 @@ library(plotly)
             output.df[i,4] = NA
             output.df[i,5] = NA
           }
-          
-          # Check if gene is present in GO term table. If so, output GO terms. If 
+
+          # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input_vec[i] %in% GeneToGO$Gene.names){
             output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input_vec[i]]
           }else{
             output.df[i,7] = NA
           }
-          
-          # Check if gene is present in stat table. If so, output info. If not, 
+
+          # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input_vec[i] %in% stat_table$Gene_Name){
             output.df[i,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
@@ -888,8 +888,8 @@ library(plotly)
             output.df[i,26] = NA
             output.df[i,27] = NA
           }
-          
-          # Check if current gene is found in transcription data. If so, output 
+
+          # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input_vec[i] %in% condition_control$Gene_name){
             if(length(condition_control$logFC[
@@ -956,7 +956,7 @@ library(plotly)
           }
         }
       }
-      
+
       # Output all values obtained for gene(s) of interest
       names(output.df) <- c(
         "Gene Name",
@@ -997,7 +997,7 @@ library(plotly)
       )
       return(output.df)
     }
-    TranscTable <- function(morph1, morph2, condition, direction, percent, 
+    TranscTable <- function(morph1, morph2, condition, direction, percent,
                             GOTable){
       # If condition is NOT "Between morph"...
       if(condition != "Between morph"){
@@ -1007,13 +1007,13 @@ library(plotly)
         comp <- paste(c(morph1, "Control"), collapse = "-")
         # If upregulated genes were requested...
         if(direction == "Upregulated"){
-          # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST 
+          # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST
           # logFC scores AND p-value < 0.05
-          
-          # Find all rows-of-interest (ROIs) for morph-of-interest where genes are 
-          # upregulated, condition matches the input specification, and p-value is 
+
+          # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
+          # upregulated, condition matches the input specification, and p-value is
           # less than 0.05
-          ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC > 0) & 
+          ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC > 0) &
                               (in_table$Condition == condition) & (in_table$PValue < 0.05)), ]
           # Sort candidate rows with highest logFC values on top
           ROIs <- ROIs[order(ROIs[,3], decreasing = T),]
@@ -1021,13 +1021,13 @@ library(plotly)
           n.rows <- as.integer((percent/100)*nrow(ROIs))
           # If downregulated genes were requested...
         }else if(direction == "Downregulated"){
-          # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST 
+          # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST
           # logFC scores AND p-value < 0.05
-          
-          # Find all rows-of-interest (ROIs) for morph-of-interest where genes are 
-          # downregulated, condition matches the input specification, and p-value is 
+
+          # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
+          # downregulated, condition matches the input specification, and p-value is
           # less than 0.05
-          ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC < 0) & 
+          ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC < 0) &
                               (in_table$Condition == condition) & (in_table$PValue < 0.05)), ]
           # Sort candidate rows with LOWEST logFC values on top
           ROIs <- ROIs[order(ROIs[,3], decreasing = F),]
@@ -1043,7 +1043,7 @@ library(plotly)
             GOTerms[i] = NA
           }
         }
-        # Output gene names, gene stable IDs, GO terms, morph-of-comparison, logFC, 
+        # Output gene names, gene stable IDs, GO terms, morph-of-comparison, logFC,
         # p-value, and Ensembl family information to a dataframe
         output.df <- data.frame(
           tolower(ROIs$Gene_name)[1:n.rows],
@@ -1063,12 +1063,12 @@ library(plotly)
           "p-value",
           "Ensembl Family Description"
         )
-        
+
         # If condition is "Between morph"...
       }else if(condition == "Between morph"){
         # Use transcription data for between-morph comparisons
         in_table <- morph1.morph2
-        
+
         # Find rows corresponding to morphs of interest
         morph1.rows <- in_table[in_table$Class == morph1,]
         morph2.rows <- in_table[in_table$Class == morph2,]
@@ -1081,7 +1081,7 @@ library(plotly)
         EF_IDs <- c()
         for(g in 1:length(m1.genes)){
           if(m1.genes[g] %in% morph2.rows$Gene_name){
-            diff <- morph1.rows$logFC[morph1.rows$Gene_name == m1.genes[g]] - 
+            diff <- morph1.rows$logFC[morph1.rows$Gene_name == m1.genes[g]] -
               morph2.rows$logFC[morph2.rows$Gene_name == m1.genes[g]]
             delta_FC <- append(delta_FC, diff)
             genes <- append(genes, m1.genes[g])
@@ -1099,7 +1099,7 @@ library(plotly)
         ROIs <- data.frame(genes,G_IDs,delta_FC,EF_IDs)
         # If genes upregulated in morph1 were requested...
         if(direction == "Upregulated"){
-          # Find genes with greatest POSITIVE change in expression between 
+          # Find genes with greatest POSITIVE change in expression between
           # morphs
           ROIs <- ROIs[order(delta_FC, decreasing = T),]
           n.rows <- as.integer((percent/100)*nrow(ROIs))
@@ -1149,19 +1149,19 @@ library(plotly)
       pop_strings <- c()
       # Create vector into which warnings will be stored for later output
       wrnings <- c("Notes:\n")
-      
+
       # Check if statistic of interest makes comparisons between TWO populations
       if((stat == "Fst") | (stat == "Dxy")){
-        # Tell the program that a two-population statistic was entered so the 
-        # program outputs the specified number of genes for EACH population  
+        # Tell the program that a two-population statistic was entered so the
+        # program outputs the specified number of genes for EACH population
         stat_type = "Two Pop"
         # Find all population pairs
         two_pops <- combn(pops,2)
         # If so, iterate through each combination of pops and output the indices
         # and string version of the population pair
         for(pair in 1:ncol(two_pops)){
-          # If pops is a matrix, read the strings, find the column corresponding 
-          # to the stat of interest for the populations in the vector, and set 
+          # If pops is a matrix, read the strings, find the column corresponding
+          # to the stat of interest for the populations in the vector, and set
           # "index" equal to the column housing this statistic
           val <- which(grepl(two_pops[1, pair], names(stat_table))
                        & grepl(two_pops[2, pair], names(stat_table))
@@ -1180,7 +1180,7 @@ library(plotly)
           # If pops is NOT a matrix, return an error
         }
       }else if((stat == "TajimasD") | (stat == "Pi")){
-        # Tell the program that a one-population statistic was entered so the 
+        # Tell the program that a one-population statistic was entered so the
         # program outputs the specified number of genes across ALL populations
         stat_type = "One Pop"
         # Iterate through each individual population
@@ -1189,8 +1189,8 @@ library(plotly)
           # interest for this population
           val <- which(grepl(pops[p], names(stat_table))
                        & grepl(stat, names(stat_table)))
-          # If statistic for populations-of-interest is not present, return a 
-          # warning 
+          # If statistic for populations-of-interest is not present, return a
+          # warning
           if(length(val) == 0){
             wrnings <- append(wrnings, (paste(c("Statistic",stat,
                                                 "is not present for the population",
@@ -1203,13 +1203,13 @@ library(plotly)
       }else{
         return("ERROR: Invalid statistic name")
       }
-      
+
       # Initialize vectors of gene names, populations, and statistic values
       genes <- c()
       DF_pops <- c()
       stat_vals <- c()
-      
-      
+
+
       # Check if statistic value or gene count was entered
       # If value was entered...
       if(in_type == "Statistic Value"){
@@ -1222,7 +1222,7 @@ library(plotly)
             # For each index, collect all genes, scaffolds, populations, and values
             # whose stat values fall above the entered value
             genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])
-            DF_pops <- append(DF_pops,rep(pop_strings[i], 
+            DF_pops <- append(DF_pops,rep(pop_strings[i],
                                           length(stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])))
             stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] >= thresh,indices[i]])
           }
@@ -1234,7 +1234,7 @@ library(plotly)
             # For each index, collect all genes, populations, and statistic values
             # whose values fall in lowest tail
             genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])
-            DF_pops <- append(DF_pops,rep(pop_strings[i], 
+            DF_pops <- append(DF_pops,rep(pop_strings[i],
                                           length(stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])))
             stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] <= thresh,indices[i]])
           }
@@ -1254,13 +1254,13 @@ library(plotly)
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
               # Collect positions of top N genes for the current index
               top_genes <- order(stat_table[,indices[i]], decreasing = T)[1:thresh]
-              # Collect the genes with the highest values, as well as the associated 
+              # Collect the genes with the highest values, as well as the associated
               # populations and values
               genes <- append(genes,stat_table$Gene_Name[top_genes])
               DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
               stat_vals <- append(stat_vals,stat_table[top_genes,indices[i]])
             }
-            # If statistic is a one-population statistic, output collect the N genes 
+            # If statistic is a one-population statistic, output collect the N genes
             # with the HIGHEST stat value, regardless of pop
           }else if(stat_type == "One Pop"){
             # Collect stat values for ALL indices into a 3 vectors: row
@@ -1301,13 +1301,13 @@ library(plotly)
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
               # Collect positions of bottom N genes for the current index
               bottom_genes <- order(stat_table[,indices[i]], decreasing = F)[1:thresh]
-              # Collect the genes with the highest values, as well as the associated 
+              # Collect the genes with the highest values, as well as the associated
               # populations and values
               genes <- append(genes,stat_table$Gene_Name[bottom_genes])
               DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
               stat_vals <- append(stat_vals,stat_table[bottom_genes,indices[i]])
             }
-            # If statistic is a one-population statistic, output collect the N genes 
+            # If statistic is a one-population statistic, output collect the N genes
             # with the HIGHEST stat value, regardless of pop
           }else if(stat_type == "One Pop"){
             # Collect stat values for ALL indices into a 3 vectors: row
@@ -1346,13 +1346,13 @@ library(plotly)
         return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                           collapse = " "), null.df))
       }
-      
+
       # Initialize a vector of GO terms and a vector of scaffolds
       scaffs <- character(length = length(genes))
       DF_GOs <- character(length = length(genes))
-      
+
       # For each gene in the gene vector, output the associated scaffolds to the
-      # vector of scaffolds and output the associated GO terms to the vector of GO 
+      # vector of scaffolds and output the associated GO terms to the vector of GO
       # terms
       for(g in 1:length(genes)){
         # If gene is present in positions table and GO table, obtain scaffold and GO
@@ -1377,7 +1377,7 @@ library(plotly)
           DF_GOs[g] = "Not applicable"
         }
       }
-      # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and 
+      # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and
       # stat values
       prelim_df <- data.frame(
         DF_pops,
@@ -1388,8 +1388,8 @@ library(plotly)
       )
       # Sort into a final dataframe
       final_df <- data.frame()
-      
-      
+
+
       # Sort df based on statistic values
       # If "top" was checked, sort dataframe in DESCENDING order from top to bottom
       # but retain population groups
@@ -1440,7 +1440,7 @@ library(plotly)
                                  .before = T)
         }
       }
-      
+
       # Rename df stat type and stat value columns with specific statistic's name
       names(final_df) <- c(
         "Rank",
@@ -1450,7 +1450,7 @@ library(plotly)
         "Gene Name",
         "GO Term(s)"
       )
-      
+
       # Output df and warnings
       if(is.na(final_df[1,2])){
         final_df <- final_df[-1,]
@@ -1461,13 +1461,13 @@ library(plotly)
       library("WVPlots")
       # EDIT: Check if threshold is within appropriate range for statistic-of-interest. If
       # not, return an error.
-      
+
       # Check if statistic of interest makes comparisons between TWO populations
       if((stat == "Fst") | (stat == "Dxy")){
         # Check if pops is a vector
         if(is.vector(pops)){
-          # If pops is a vector, read the strings, find the column corresponding 
-          # to the stat of interest for the populations in the vector, and set 
+          # If pops is a vector, read the strings, find the column corresponding
+          # to the stat of interest for the populations in the vector, and set
           # "indx" equal to the column housing this statistic
           indx <- which(grepl(pops[1], names(stat_table))
                         & grepl(pops[2], names(stat_table))
@@ -1499,8 +1499,8 @@ library(plotly)
           }
           # If more than one population was entered, return an error
         }else if(!is.character(pops) | length(pops) != 1){
-          return("ERROR: Detected inappropriate number of populations for a 
-              one-population statistic\n Either 'pops' is not a string or 'pops' 
+          return("ERROR: Detected inappropriate number of populations for a
+              one-population statistic\n Either 'pops' is not a string or 'pops'
              was not supplied.\n")
         }
       }else{
@@ -1522,30 +1522,30 @@ library(plotly)
       }else if(UL == "bottom"){
         t = "left"
       }
-      # Create density plot. Title must be different depending on whether you have 1 
+      # Create density plot. Title must be different depending on whether you have 1
       # or two populations
       if(is.vector(pops)){
-        ShadedDensity(frame = df, 
+        ShadedDensity(frame = df,
                       xvar = stat,
                       threshold = thresh,
                       title = paste(c(stat, " values for ", pops[1], " and ", pops[2]), collapse = ""),
                       tail = t)
       }else{
-        ShadedDensity(frame = df, 
+        ShadedDensity(frame = df,
                       xvar = stat,
                       threshold = thresh,
                       title = paste(c(stat, " values for ", pops), collapse = ""),
                       tail = t)
       }
     }
-    
+
     GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
       if(input$Gene_search == ""){
         data.frame()
       }else{
-        GeneCentered(input$Gene_search, 
-                     stat_table, 
-                     GeneToGO, 
+        GeneCentered(input$Gene_search,
+                     stat_table,
+                     GeneToGO,
                      condition_control,
                      position_table)
       }
@@ -1564,9 +1564,9 @@ library(plotly)
         GeneCentOutput()
       }
     })
-    
+
     output$dir_label <- renderText({
-      paste(c("Search for genes which are UP or DOWNregulated in ", 
+      paste(c("Search for genes which are UP or DOWNregulated in ",
               input$morph1, " relative to ", input$morph2, "?"), collapse = "")
     })
     output$per_label <- renderText({
@@ -1582,29 +1582,29 @@ library(plotly)
       }else{
         condit <- "Between morph"
       }
-      TranscTable(morph1 = input$morph1, 
-                  morph2 = input$morph2, 
-                  condition = condit, 
-                  direction = input$direction, 
-                  percent = input$percent_change, 
+      TranscTable(morph1 = input$morph1,
+                  morph2 = input$morph2,
+                  condition = condit,
+                  direction = input$direction,
+                  percent = input$percent_change,
                   GOTable = GeneToGO)
     })
     output$test <- renderTable({
       testing()
     })
-    
+
     SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
       StatDistTable(input$type,
-                    input$TB, 
-                    input$statist, 
-                    thresh = input$thrsh, 
-                    stat_table, 
+                    input$TB,
+                    input$statist,
+                    thresh = input$thrsh,
+                    stat_table,
                     input$pops)
     }
     )
     output$SVdist_tab <- renderTable(SVDT()[[2]])
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
-    
+
     SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
       StatDistPlot(stat = input$statist,
                    UL = input$TB,
@@ -1614,13 +1614,13 @@ library(plotly)
     }
     )
     output$SVdist_plot <- renderPlot(SVDP())
-    
+
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
       StatDistTable(input$type,
-                    input$TB, 
-                    input$statist, 
-                    thresh = input$gene_count, 
-                    stat_table, 
+                    input$TB,
+                    input$statist,
+                    thresh = input$gene_count,
+                    stat_table,
                     input$pops)
     }
     )
@@ -1629,5 +1629,5 @@ library(plotly)
   }
 
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
