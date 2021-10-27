@@ -28,7 +28,7 @@ library(plotly)
 
 
   ui = fluidPage(
-    theme = "dark_mode.css",
+    theme = "style.css",
     tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
     tags$style(type="text/css",
                ".shiny-output-error { visibility: hidden; }",
