@@ -7,20 +7,20 @@
 #    http://shiny.rstudio.com/
 #
 ################################ Load in data ################################ 
-dat <- read.table("../data/Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
+dat <- read.table("data/Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
 position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
 
-condition_control <- read.csv("../data/Morph_Control_TranscData.csv")
-morph1.morph2 <- read.csv("../data/Toy_RioChoyPachon.csv")
+condition_control <- read.csv("data/Morph_Control_TranscData.csv")
+morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
 
-GeneToGO <- read.csv("../data/AMexGOTerms.csv", fill = T)
+GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
 GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
 
-GoIDToNames <- read.table("../data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-UpperLower <- read.table("../data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
+GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
+UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
-stat_table <- read.csv("../data/AMexicanus_Genes_and_Stats.csv")
+stat_table <- read.csv("data/AMexicanus_Genes_and_Stats.csv")
 stat_table <- stat_table[,(names(stat_table) != "X")]
 
 library(shinyWidgets)
