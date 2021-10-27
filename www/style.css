@@ -1,0 +1,189 @@
+/* CSS Document */
+
+body{
+
+text-align:center;
+
+background:url(images/back.jpg) top center repeat-y;
+
+background-color:#000000;
+
+font-family:Arial;
+
+color:#FFFFFF;
+
+line-height:1.5em;
+
+font-size:14px;
+
+}
+
+a:link, a:visited{
+
+color:#A8D3E7;
+
+}
+
+a:hover {
+
+color:#3ebcef;
+
+}
+
+#wrapper{
+
+margin:auto;
+
+width: 778px;
+
+text-align:left;
+
+padding-left:1px;
+
+}
+
+
+/* ......................................Top Nav........................................................... */
+
+
+#nav {
+
+margin-bottom:0;
+	
+padding:0;
+	
+
+}
+
+
+ul#menu{
+
+margin:0;
+	
+padding:0;
+	
+list-style-type:none;
+	
+position:relative;
+	
+display:block;
+
+height:40px;
+	
+font-size:13px;
+	
+font-weight:bold;
+	
+background-color:#333333;
+
+}
+
+
+
+#menu li{
+
+display:block;
+	
+float:left;
+	
+margin:0;
+	
+padding:0;
+	
+}
+	
+	
+
+#menu li a{
+
+display:block;
+	
+float:left;
+	
+color:#FFFFFF;
+	
+text-decoration:none;
+	
+font-weight:bold;
+	
+padding:11px 20px 0 20px;
+	
+height:29px;
+	
+margin:0;
+	
+border-right:1px solid #474646;
+	
+}
+	
+	
+
+#menu li a:hover{
+
+background-color:#e3007a;	
+	
+}
+	
+
+
+/* ......................................Content........................................................... */
+
+
+.line{
+
+border-top: 1px dashed #666666;
+
+}
+
+h1 {
+
+color:#CCCCCC;
+
+background:url(images/headline_back.jpg) top left no-repeat;
+
+padding-top:5px;
+
+height: 53px;
+
+font-size:30px;
+
+letter-spacing:5px;
+
+margin:40px 0 20px 0;
+
+}
+
+h2 {
+
+color:#e3007a;
+
+padding-top:25px;
+
+font-size: 20px;
+
+letter-spacing:3px;
+
+
+}
+
+
+#content{
+
+width:778px;
+
+text-align:left;
+
+}
+
+
+.clear{
+
+clear:both;
+
+}
+
+.footer {
+
+height:50px;
+
+}
