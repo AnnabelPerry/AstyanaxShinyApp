@@ -56,13 +56,12 @@ server <- function(input, output) {
                           selected = tail(all_choices, 1)
         )
     })
-    setwd("~/Fall 2021/Capstone")
     
-    condition_control <- read.csv("ShinyInputData/Morph_Control_TranscData.csv")
+    condition_control <- read.csv("data/Morph_Control_TranscData.csv")
     colnames(condition_control)[1] <- gsub('^...','',colnames(condition_control)[1])
-    morph1.morph2 <- read.csv("ShinyInputData/Toy_RioChoyPachon.csv")
+    morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
     
-    GeneToGO <- read.csv("ShinyInputData/AMexGOTerms.csv", fill = T)
+    GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
     GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
     GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
     
