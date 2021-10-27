@@ -11,27 +11,27 @@ library(shiny)
 library(shinyWidgets)
 
 if (interactive()) {
-    
+
     # User Interface
     ui <- fluidPage(
-        radioButtons("type", 
+        radioButtons("type",
                      label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
                      choices = c("Number of Genes" = "Gene Count", "Statistic Value")
         ),
-        radioButtons("statist", 
+        radioButtons("statist",
                      label = "Statistic of Interest",
                      choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-        checkboxGroupInput("pops", 
+        checkboxGroupInput("pops",
                      label = "Population(s) of Interest",
                      choices = c("Molino", "Pachon", "Rascon", "Rio Choy", "Tinaja")),
-        
-        # Only show this panel if the user wants to find the number of genes 
+
+        # Only show this panel if the user wants to find the number of genes
         # with the greatest or smallest values for the stat of interest
         conditionalPanel(
             condition = "input.type == 'Gene Count'",
             sliderInput("gene_count", "How many genes would you like to see?",
                         min = 1, max = 1000, value = 10),
-            radioButtons("TB", 
+            radioButtons("TB",
                          label = "Output genes with largest or smallest values of the desired statistic?",
                          choices = c("Largest" = "top", "Smallest" ="bottom")),
             actionButton("GCDistTable_enter","Find Genes"),
@@ -42,9 +42,9 @@ if (interactive()) {
         # above or below a specific threshhold
         conditionalPanel(
             condition = "input.type == 'Statistic Value'",
-            sliderInput("thrsh", "Threshhold statistical value: ",min = -3, 
+            sliderInput("thrsh", "Threshhold statistical value: ",min = -3,
                         max = 3, value = 0, step = 0.05),
-            radioButtons("TB", 
+            radioButtons("TB",
                          label = "Output genes whose value is above or below the threshhold?",
                          choices = c("Above" = "top", "Below" ="bottom")),
             actionButton("SVDistTable_enter","Find Genes"),
@@ -54,20 +54,19 @@ if (interactive()) {
             textOutput("SVdist_wrnings"),
         )
     )
-    
-    
+
+
     # Server Logic
     server <- function(input, output) {
-        setwd("~/Fall 2021/Capstone")
-        s_table <- read.csv("ShinyInputData/AMexicanus_Genes_and_Stats.csv")
+        s_table <- read.csv("data/AMexicanus_Genes_and_Stats.csv")
         s_table <- s_table[,(names(s_table) != "X")]
-        dat <- read.table("Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
+        dat <- read.table("data/Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
         position_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
-        GeneToGO <- read.csv("ShinyInputData/AMexGOTerms.csv", fill = T)
+        GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
         GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
         GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
-        
-        
+
+
         StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
             library(tibble)
             # Create a two vectors of the indices corresponding to each population or pop
@@ -76,19 +75,19 @@ if (interactive()) {
             pop_strings <- c()
             # Create vector into which warnings will be stored for later output
             wrnings <- c("Notes:\n")
-            
+
             # Check if statistic of interest makes comparisons between TWO populations
             if((stat == "Fst") | (stat == "Dxy")){
-                # Tell the program that a two-population statistic was entered so the 
-                # program outputs the specified number of genes for EACH population  
+                # Tell the program that a two-population statistic was entered so the
+                # program outputs the specified number of genes for EACH population
                 stat_type = "Two Pop"
                 # Find all population pairs
                 two_pops <- combn(pops,2)
                 # If so, iterate through each combination of pops and output the indices
                 # and string version of the population pair
                 for(pair in 1:ncol(two_pops)){
-                    # If pops is a matrix, read the strings, find the column corresponding 
-                    # to the stat of interest for the populations in the vector, and set 
+                    # If pops is a matrix, read the strings, find the column corresponding
+                    # to the stat of interest for the populations in the vector, and set
                     # "index" equal to the column housing this statistic
                     val <- which(grepl(two_pops[1, pair], names(stat_table))
                                  & grepl(two_pops[2, pair], names(stat_table))
@@ -107,7 +106,7 @@ if (interactive()) {
                     # If pops is NOT a matrix, return an error
                 }
             }else if((stat == "TajimasD") | (stat == "Pi")){
-                # Tell the program that a one-population statistic was entered so the 
+                # Tell the program that a one-population statistic was entered so the
                 # program outputs the specified number of genes across ALL populations
                 stat_type = "One Pop"
                 # Iterate through each individual population
@@ -116,8 +115,8 @@ if (interactive()) {
                     # interest for this population
                     val <- which(grepl(pops[p], names(stat_table))
                                  & grepl(stat, names(stat_table)))
-                    # If statistic for populations-of-interest is not present, return a 
-                    # warning 
+                    # If statistic for populations-of-interest is not present, return a
+                    # warning
                     if(length(val) == 0){
                         wrnings <- append(wrnings, (paste(c("Statistic",stat,
                                       "is not present for the population",
@@ -130,13 +129,13 @@ if (interactive()) {
             }else{
                 return("ERROR: Invalid statistic name")
             }
-            
+
             # Initialize vectors of gene names, populations, and statistic values
             genes <- c()
             DF_pops <- c()
             stat_vals <- c()
-            
-            
+
+
             # Check if statistic value or gene count was entered
             # If value was entered...
             if(in_type == "Statistic Value"){
@@ -149,7 +148,7 @@ if (interactive()) {
                         # For each index, collect all genes, scaffolds, populations, and values
                         # whose stat values fall above the entered value
                         genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])
-                        DF_pops <- append(DF_pops,rep(pop_strings[i], 
+                        DF_pops <- append(DF_pops,rep(pop_strings[i],
                                                       length(stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])))
                         stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] >= thresh,indices[i]])
                     }
@@ -161,7 +160,7 @@ if (interactive()) {
                         # For each index, collect all genes, populations, and statistic values
                         # whose values fall in lowest tail
                         genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])
-                        DF_pops <- append(DF_pops,rep(pop_strings[i], 
+                        DF_pops <- append(DF_pops,rep(pop_strings[i],
                                                       length(stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])))
                         stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] <= thresh,indices[i]])
                     }
@@ -181,13 +180,13 @@ if (interactive()) {
                             stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
                             # Collect positions of top N genes for the current index
                             top_genes <- order(stat_table[,indices[i]], decreasing = T)[1:thresh]
-                            # Collect the genes with the highest values, as well as the associated 
+                            # Collect the genes with the highest values, as well as the associated
                             # populations and values
                             genes <- append(genes,stat_table$Gene_Name[top_genes])
                             DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
                             stat_vals <- append(stat_vals,stat_table[top_genes,indices[i]])
                         }
-                        # If statistic is a one-population statistic, output collect the N genes 
+                        # If statistic is a one-population statistic, output collect the N genes
                         # with the HIGHEST stat value, regardless of pop
                     }else if(stat_type == "One Pop"){
                         # Collect stat values for ALL indices into a 3 vectors: row
@@ -228,13 +227,13 @@ if (interactive()) {
                             stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
                             # Collect positions of bottom N genes for the current index
                             bottom_genes <- order(stat_table[,indices[i]], decreasing = F)[1:thresh]
-                            # Collect the genes with the highest values, as well as the associated 
+                            # Collect the genes with the highest values, as well as the associated
                             # populations and values
                             genes <- append(genes,stat_table$Gene_Name[bottom_genes])
                             DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
                             stat_vals <- append(stat_vals,stat_table[bottom_genes,indices[i]])
                         }
-                        # If statistic is a one-population statistic, output collect the N genes 
+                        # If statistic is a one-population statistic, output collect the N genes
                         # with the HIGHEST stat value, regardless of pop
                     }else if(stat_type == "One Pop"){
                         # Collect stat values for ALL indices into a 3 vectors: row
@@ -273,13 +272,13 @@ if (interactive()) {
                 return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                              collapse = " "), null.df))
             }
-            
+
             # Initialize a vector of GO terms and a vector of scaffolds
             scaffs <- character(length = length(genes))
             DF_GOs <- character(length = length(genes))
-            
+
             # For each gene in the gene vector, output the associated scaffolds to the
-            # vector of scaffolds and output the associated GO terms to the vector of GO 
+            # vector of scaffolds and output the associated GO terms to the vector of GO
             # terms
             for(g in 1:length(genes)){
                 # If gene is present in positions table and GO table, obtain scaffold and GO
@@ -304,7 +303,7 @@ if (interactive()) {
                     DF_GOs[g] = "Not applicable"
                 }
             }
-            # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and 
+            # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and
             # stat values
             prelim_df <- data.frame(
                 DF_pops,
@@ -315,8 +314,8 @@ if (interactive()) {
             )
             # Sort into a final dataframe
             final_df <- data.frame()
-            
-            
+
+
             # Sort df based on statistic values
             # If "top" was checked, sort dataframe in DESCENDING order from top to bottom
             # but retain population groups
@@ -367,7 +366,7 @@ if (interactive()) {
                                            .before = T)
                 }
             }
-            
+
             # Rename df stat type and stat value columns with specific statistic's name
             names(final_df) <- c(
                 "Rank",
@@ -377,7 +376,7 @@ if (interactive()) {
                 "Gene Name",
                 "GO Term(s)"
             )
-            
+
             # Output df and warnings
             if(is.na(final_df[1,2])){
                 final_df <- final_df[-1,]
@@ -388,13 +387,13 @@ if (interactive()) {
             library("WVPlots")
             # EDIT: Check if threshold is within appropriate range for statistic-of-interest. If
             # not, return an error.
-            
+
             # Check if statistic of interest makes comparisons between TWO populations
             if((stat == "Fst") | (stat == "Dxy")){
                 # Check if pops is a vector
                 if(is.vector(pops)){
-                    # If pops is a vector, read the strings, find the column corresponding 
-                    # to the stat of interest for the populations in the vector, and set 
+                    # If pops is a vector, read the strings, find the column corresponding
+                    # to the stat of interest for the populations in the vector, and set
                     # "indx" equal to the column housing this statistic
                     indx <- which(grepl(pops[1], names(stat_table))
                                   & grepl(pops[2], names(stat_table))
@@ -426,8 +425,8 @@ if (interactive()) {
                     }
                     # If more than one population was entered, return an error
                 }else if(!is.character(pops) | length(pops) != 1){
-                    return("ERROR: Detected inappropriate number of populations for a 
-              one-population statistic\n Either 'pops' is not a string or 'pops' 
+                    return("ERROR: Detected inappropriate number of populations for a
+              one-population statistic\n Either 'pops' is not a string or 'pops'
              was not supplied.\n")
                 }
             }else{
@@ -449,35 +448,35 @@ if (interactive()) {
             }else if(UL == "bottom"){
                 t = "left"
             }
-            # Create density plot. Title must be different depending on whether you have 1 
+            # Create density plot. Title must be different depending on whether you have 1
             # or two populations
             if(is.vector(pops)){
-                ShadedDensity(frame = df, 
+                ShadedDensity(frame = df,
                               xvar = stat,
                               threshold = thresh,
                               title = paste(c(stat, " values for ", pops[1], " and ", pops[2]), collapse = ""),
                               tail = t)
             }else{
-                ShadedDensity(frame = df, 
+                ShadedDensity(frame = df,
                               xvar = stat,
                               threshold = thresh,
                               title = paste(c(stat, " values for ", pops), collapse = ""),
                               tail = t)
             }
         }
-        
+
         SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
             StatDistTable(input$type,
-                              input$TB, 
-                              input$statist, 
-                              thresh = input$thrsh, 
-                              stat_table = s_table, 
+                              input$TB,
+                              input$statist,
+                              thresh = input$thrsh,
+                              stat_table = s_table,
                               input$pops)
         }
         )
         output$SVdist_tab <- renderTable(SVDT()[[2]])
         output$SVdist_wrnings <- renderText(SVDT()[[1]])
-        
+
         SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
             StatDistPlot(stat = input$statist,
                          UL = input$TB,
@@ -487,13 +486,13 @@ if (interactive()) {
         }
         )
         output$SVdist_plot <- renderPlot(SVDP())
-        
+
         GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
             StatDistTable(input$type,
-                          input$TB, 
-                          input$statist, 
-                          thresh = input$gene_count, 
-                          stat_table = s_table, 
+                          input$TB,
+                          input$statist,
+                          thresh = input$gene_count,
+                          stat_table = s_table,
                           input$pops)
         }
         )
@@ -502,5 +501,5 @@ if (interactive()) {
     }
 }
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
