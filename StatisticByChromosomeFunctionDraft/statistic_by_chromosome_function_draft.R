@@ -9,6 +9,7 @@
 
 library(shiny)
 library(shinyWidgets)
+library(ggplot2)
 
 ui <- fluidPage(
   checkboxGroupInput("statist", 
@@ -31,19 +32,17 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
-  setwd("~/Fall 2021/Capstone")
-  dat <- read.table("Astyanax_mexicanus.Astyanax_mexicanus-2.0.104.gtf", fill = TRUE, skip = 5)
-  pos_table <- dat[dat$V3 == "gene",c(1,4,5,10,16)]
+  pos_table <- read.csv("../data/AmexPositionTable.csv", fill = TRUE)
   
-  GeneToGO <- read.csv("ShinyInputData/AMexGOTerms.csv", fill = T)
+  GeneToGO <- read.csv("../data/AMexGOTerms.csv", fill = T)
   GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
   # Convert gene names in GeneToGO to lowercase to make compatible with other tables
   GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
   
-  GoID_Names <- read.table("ShinyInputData/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-  Up_Low <- read.table("ShinyInputData/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
+  GoID_Names <- read.table("../data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
+  Up_Low <- read.table("../data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
   
-  s_table <- read.csv("ShinyInputData/AMexicanus_Genes_and_Stats.csv")
+  s_table <- read.csv("../data/AMexicanus_Genes_and_Stats.csv")
   s_table <- s_table[,(names(s_table) != "X")]
   
   StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
@@ -246,8 +245,6 @@ server <- function(input, output) {
     return(list(wrnings, output_df))
   }
   StatByChrGraph <- function(Full_Table, stat_vec){
-    library(ggplot2)
-    library(gridExtra)
     
     # Count the number of unique scaffolds in the table
     unique_scaffs <- levels(as.factor(Full_Table$Scaffold))
@@ -324,6 +321,7 @@ server <- function(input, output) {
   )
   output$test2 <- renderTable(SBCT()[[2]])
   output$test1 <- renderText(SBCT()[[1]])
+  
 }
 
 # Run the application 
