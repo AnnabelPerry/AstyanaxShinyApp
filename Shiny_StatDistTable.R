@@ -14,6 +14,11 @@ if (interactive()) {
 
     # User Interface
     ui <- fluidPage(
+        theme = "sandstone.css",
+        tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
+        tags$style(type="text/css",
+                   ".shiny-output-error { visibility: hidden; }",
+                   ".shiny-output-error:before { visibility: hidden; }"),
         radioButtons("type",
                      label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
                      choices = c("Number of Genes" = "Gene Count", "Statistic Value")
