@@ -28,6 +28,16 @@ library(plotly)
 
 
   ui = fluidPage(
+    theme = "dark_mode.css",
+    tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
+    tags$style(type="text/css",
+               ".shiny-output-error { visibility: hidden; }",
+               ".shiny-output-error:before { visibility: hidden; }"),
+
+
+
+
+
     tabsetPanel(
       tabPanel("Gene Search", fluid = TRUE,
                sidebarLayout(
