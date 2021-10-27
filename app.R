@@ -25,18 +25,14 @@ stat_table <- stat_table[,(names(stat_table) != "X")]
 library(shinyWidgets)
 library(shiny)
 library(plotly)
-
+library(WVPlots)
 
   ui = fluidPage(
-    theme = "style.css",
+    theme = "dark_mode.css",
     tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
     tags$style(type="text/css",
                ".shiny-output-error { visibility: hidden; }",
                ".shiny-output-error:before { visibility: hidden; }"),
-
-
-
-
 
     tabsetPanel(
       tabPanel("Gene Search", fluid = TRUE,
@@ -1468,7 +1464,6 @@ library(plotly)
       return(list(wrnings, final_df))
     }
     StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
-      library("WVPlots")
       # EDIT: Check if threshold is within appropriate range for statistic-of-interest. If
       # not, return an error.
 
