@@ -10,11 +10,10 @@
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
+
 morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
-GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
-GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
 
 GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
@@ -22,10 +21,25 @@ UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", he
 stat_table <- read.csv("data/AMexicanus_Genes_and_Stats.csv")
 stat_table <- stat_table[,(names(stat_table) != "X")]
 
+# Obtain complete dataframe of all possible genes and corresponding IDs across
+# the statistic and transcription data
+all.genes_IDs <- data.frame(
+  all_genes = c(position_table$Gene_Name, stat_table$Gene_Name,
+                condition_control$Gene_name
+  ),
+  all_IDs = c(position_table$Gene_ID, stat_table$Stable_Gene_ID,
+              condition_control$Gene_stable_ID
+  )
+)
+all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
+all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
+
 library(shinyWidgets)
 library(shiny)
 library(plotly)
 library(WVPlots)
+library(stringr)
+library(tibble)
 
   ui = fluidPage(
     theme = "dark_mode.css",
@@ -167,22 +181,7 @@ library(WVPlots)
 
     GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                              position_table){
-      library("stringr")
       comma <- ", "
-      # Obtain complete dataframe of all possible genes and corresponding IDs across
-      # the statistic and transcription data
-      all.genes_IDs <- data.frame(
-        all_genes = c(position_table$V16, stat_table$Gene_Name,
-                      condition_control$Gene_name
-        ),
-        all_IDs = c(position_table$V10, stat_table$Stable_Gene_ID,
-                    condition_control$Gene_stable_ID
-        )
-      )
-      # Since some genes are found in one or more of the input dfs, remove all
-      # duplicate rows
-      all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
-      all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
 
       # If input is a comma-separated string, parse string and separate elements,
       # then determine whether vector contains gene names or gene IDs
@@ -201,14 +200,12 @@ library(WVPlots)
 
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
-            if(input_vec[i] %in% position_table$V16){
-              output.df[i,3] = position_table$V1[position_table$V16 == input_vec[i]]
-              output.df[i,4] = position_table$V4[position_table$V16 == input_vec[i]]
-              output.df[i,5] = position_table$V5[position_table$V16 == input_vec[i]]
+            if(input_vec[i] %in% position_table$Gene_Name){
+              output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == input_vec[i]]
+              output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == input_vec[i]]
+              output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == input_vec[i]]
             }else{
-              output.df[i,3] = NA
-              output.df[i,4] = NA
-              output.df[i,5] = NA
+              output.df[i,3:5] = NA
             }
 
             # Check if gene is present in GO term table. If so, output GO terms. If
@@ -245,26 +242,7 @@ library(WVPlots)
               output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
             }else{
               output.df[i,6] = NA
-              output.df[i,8] = NA
-              output.df[i,9] = NA
-              output.df[i,10] = NA
-              output.df[i,11] = NA
-              output.df[i,12] = NA
-              output.df[i,13] = NA
-              output.df[i,14] = NA
-              output.df[i,15] = NA
-              output.df[i,16] = NA
-              output.df[i,17] = NA
-              output.df[i,18] = NA
-              output.df[i,19] = NA
-              output.df[i,20] = NA
-              output.df[i,21] = NA
-              output.df[i,22] = NA
-              output.df[i,23] = NA
-              output.df[i,24] = NA
-              output.df[i,25] = NA
-              output.df[i,26] = NA
-              output.df[i,27] = NA
+              output.df[i,8:27] = NA
             }
 
             # Check if current gene is found in transcription data. If so, output
@@ -323,14 +301,7 @@ library(WVPlots)
                 output.df[i,35] = NA
               }
             }else{
-              output.df[i,28] = NA
-              output.df[i,29] = NA
-              output.df[i,30] = NA
-              output.df[i,31] = NA
-              output.df[i,32] = NA
-              output.df[i,33] = NA
-              output.df[i,34] = NA
-              output.df[i,35] = NA
+              output.df[i,28:35] = NA
             }
 
             geneName = T
@@ -343,14 +314,12 @@ library(WVPlots)
 
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
-            if(output.df[i,2] %in% position_table$V16){
-              output.df[i,3] = position_table$V1[position_table$V16 == output.df[i,2]]
-              output.df[i,4] = position_table$V4[position_table$V16 == output.df[i,2]]
-              output.df[i,5] = position_table$V5[position_table$V16 == output.df[i,2]]
+            if(output.df[i,2] %in% position_table$Gene_Name){
+              output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == output.df[i,2]]
+              output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == output.df[i,2]]
+              output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == output.df[i,2]]
             }else{
-              output.df[i,3] = NA
-              output.df[i,4] = NA
-              output.df[i,5] = NA
+              output.df[i,3:5] = NA
             }
 
             # Check if gene is present in GO term table. If so, output GO terms. If
@@ -387,92 +356,66 @@ library(WVPlots)
               output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
             }else{
               output.df[i,6] = NA
-              output.df[i,8] = NA
-              output.df[i,9] = NA
-              output.df[i,10] = NA
-              output.df[i,11] = NA
-              output.df[i,12] = NA
-              output.df[i,13] = NA
-              output.df[i,14] = NA
-              output.df[i,15] = NA
-              output.df[i,16] = NA
-              output.df[i,17] = NA
-              output.df[i,18] = NA
-              output.df[i,19] = NA
-              output.df[i,20] = NA
-              output.df[i,21] = NA
-              output.df[i,22] = NA
-              output.df[i,23] = NA
-              output.df[i,24] = NA
-              output.df[i,25] = NA
-              output.df[i,26] = NA
-              output.df[i,27] = NA
+              output.df[i,8:27] = NA
             }
 
             # Check if current gene is found in transcription data. If so, output
             # associated information. If not, output NAs
-            if(input_vec[i] %in% condition_control$ï..Gene_stable_ID){
+            if(input_vec[i] %in% condition_control$Gene_stable_ID){
               if(length(condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Choy",condition_control$Class))]) != 0){
                 output.df[i,28] = condition_control$logFC[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Choy",condition_control$Class))]
                 output.df[i,32] = condition_control$PValue[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Choy",condition_control$Class))]
               }else{
                 output.df[i,28] = NA
                 output.df[i,32] = NA
               }
               if(length(condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Pachon",condition_control$Class))]) != 0){
                 output.df[i,29] = condition_control$logFC[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Pachon",condition_control$Class))]
                 output.df[i,33] = condition_control$PValue[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Pachon",condition_control$Class))]
               }else{
                 output.df[i,29] = NA
                 output.df[i,33] = NA
               }
               if(length(condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Molino",condition_control$Class))]) != 0){
                 output.df[i,30] = condition_control$logFC[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Molino",condition_control$Class))]
                 output.df[i,34] = condition_control$PValue[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Molino",condition_control$Class))]
               }else{
                 output.df[i,30] = NA
                 output.df[i,34] = NA
               }
               if(length(condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Tinaja",condition_control$Class))]) != 0){
                 output.df[i,31] = condition_control$logFC[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Tinaja",condition_control$Class))]
                 output.df[i,35] = condition_control$PValue[
-                  (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                  (condition_control$Gene_stable_ID == input_vec[i]) &
                     (grepl("Tinaja",condition_control$Class))]
               }else{
                 output.df[i,31] = NA
                 output.df[i,35] = NA
               }
             }else{
-              output.df[i,28] = NA
-              output.df[i,29] = NA
-              output.df[i,30] = NA
-              output.df[i,31] = NA
-              output.df[i,32] = NA
-              output.df[i,33] = NA
-              output.df[i,34] = NA
-              output.df[i,35] = NA
+              output.df[i,28:35] = NA
             }
             geneName = T
             geneID = F
@@ -480,7 +423,7 @@ library(WVPlots)
           }else if(!(input_vec[i] %in% all.genes_IDs$all_genes) &
                    !(input_vec[i] %in% all.genes_IDs$all_IDs)){
             return(paste(c("ERROR: No transcription or statistical data present for
-                       the input", input_vec[i], "."), collapse = " "))
+                       the gene", input_vec[i], "."), collapse = " "))
           }
         }
         # If input is NOT a comma-separated string, check whether input is a ID, name,
@@ -495,14 +438,12 @@ library(WVPlots)
 
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
-          if(input %in% position_table$V16){
-            output.df[1,3] = position_table$V1[position_table$V16 == input]
-            output.df[1,4] = position_table$V4[position_table$V16 == input]
-            output.df[1,5] = position_table$V5[position_table$V16 == input]
+          if(input %in% position_table$Gene_Name){
+            output.df[1,3] = position_table$Scaffold[position_table$Gene_Name == input]
+            output.df[1,4] = position_table$Start_Locus[position_table$Gene_Name == input]
+            output.df[1,5] = position_table$End_Locus[position_table$Gene_Name == input]
           }else{
-            output.df[1,3] = NA
-            output.df[1,4] = NA
-            output.df[1,5] = NA
+            output.df[1,3:5] = NA
           }
 
           # Check if gene is present in GO term table. If so, output GO terms. If
@@ -539,26 +480,7 @@ library(WVPlots)
             output.df[1,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input]
           }else{
             output.df[1,6] = NA
-            output.df[1,8] = NA
-            output.df[1,9] = NA
-            output.df[1,10] = NA
-            output.df[1,11] = NA
-            output.df[1,12] = NA
-            output.df[1,13] = NA
-            output.df[1,14] = NA
-            output.df[1,15] = NA
-            output.df[1,16] = NA
-            output.df[1,17] = NA
-            output.df[1,18] = NA
-            output.df[1,19] = NA
-            output.df[1,20] = NA
-            output.df[1,21] = NA
-            output.df[1,22] = NA
-            output.df[1,23] = NA
-            output.df[1,24] = NA
-            output.df[1,25] = NA
-            output.df[1,26] = NA
-            output.df[1,27] = NA
+            output.df[1,8:27] = NA
           }
 
           # Check if current gene is found in transcription data. If so, output
@@ -617,14 +539,7 @@ library(WVPlots)
               output.df[1,35] = NA
             }
           }else{
-            output.df[1,28] = NA
-            output.df[1,29] = NA
-            output.df[1,30] = NA
-            output.df[1,31] = NA
-            output.df[1,32] = NA
-            output.df[1,33] = NA
-            output.df[1,34] = NA
-            output.df[1,35] = NA
+            output.df[1,28:35] = NA
           }
 
           geneName = T
@@ -638,14 +553,12 @@ library(WVPlots)
 
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
-          if(output.df[1,2] %in% position_table$V16){
-            output.df[1,3] = position_table$V1[position_table$V16 == output.df[1,2]]
-            output.df[1,4] = position_table$V4[position_table$V16 == output.df[1,2]]
-            output.df[1,5] = position_table$V5[position_table$V16 == output.df[1,2]]
+          if(output.df[1,2] %in% position_table$Gene_Name){
+            output.df[1,3] = position_table$Scaffold[position_table$Gene_Name == output.df[1,2]]
+            output.df[1,4] = position_table$Start_Locus[position_table$Gene_Name == output.df[1,2]]
+            output.df[1,5] = position_table$End_Locus[position_table$Gene_Name == output.df[1,2]]
           }else{
-            output.df[1,3] = NA
-            output.df[1,4] = NA
-            output.df[1,5] = NA
+            output.df[1,3:5] = NA
           }
 
           # Check if gene is present in GO term table. If so, output GO terms. If
@@ -682,92 +595,66 @@ library(WVPlots)
             output.df[1,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input]
           }else{
             output.df[1,6] = NA
-            output.df[1,8] = NA
-            output.df[1,9] = NA
-            output.df[1,10] = NA
-            output.df[1,11] = NA
-            output.df[1,12] = NA
-            output.df[1,13] = NA
-            output.df[1,14] = NA
-            output.df[1,15] = NA
-            output.df[1,16] = NA
-            output.df[1,17] = NA
-            output.df[1,18] = NA
-            output.df[1,19] = NA
-            output.df[1,20] = NA
-            output.df[1,21] = NA
-            output.df[1,22] = NA
-            output.df[1,23] = NA
-            output.df[1,24] = NA
-            output.df[1,25] = NA
-            output.df[1,26] = NA
-            output.df[1,27] = NA
+            output.df[1,8:27] = NA
           }
 
           # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
-          if(input %in% condition_control$ï..Gene_stable_ID){
+          if(input %in% condition_control$Gene_stable_ID){
             if(length(condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]) != 0){
               output.df[1,28] = condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Choy",condition_control$Class))]
               output.df[1,32] = condition_control$PValue[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Choy",condition_control$Class))]
             }else{
               output.df[1,28] = NA
               output.df[1,32] = NA
             }
             if(length(condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]) != 0){
               output.df[1,29] = condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Pachon",condition_control$Class))]
               output.df[1,33] = condition_control$PValue[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Pachon",condition_control$Class))]
             }else{
               output.df[1,29] = NA
               output.df[1,33] = NA
             }
             if(length(condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]) != 0){
               output.df[1,30] = condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Molino",condition_control$Class))]
               output.df[1,34] = condition_control$PValue[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Molino",condition_control$Class))]
             }else{
               output.df[1,30] = NA
               output.df[1,34] = NA
             }
             if(length(condition_control$logFC[
-              (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+              (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]) != 0){
               output.df[1,31] = condition_control$logFC[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Tinaja",condition_control$Class))]
               output.df[1,35] = condition_control$PValue[
-                (condition_control$ï..Gene_stable_ID == input_vec[i]) &
+                (condition_control$Gene_stable_ID == input_vec[i]) &
                   (grepl("Tinaja",condition_control$Class))]
             }else{
               output.df[1,31] = NA
               output.df[1,35] = NA
             }
           }else{
-            output.df[1,28] = NA
-            output.df[1,29] = NA
-            output.df[1,30] = NA
-            output.df[1,31] = NA
-            output.df[1,32] = NA
-            output.df[1,33] = NA
-            output.df[1,34] = NA
-            output.df[1,35] = NA
+            output.df[1,28:35] = NA
           }
           geneID = T
           geneName = F
@@ -798,11 +685,17 @@ library(WVPlots)
         if((sum(grepl(input, GeneToGO$Gene.ontology..biological.process.)) != 0) |
            (sum(grepl(input, GeneToGO$Gene.ontology..cellular.component.)) != 0) |
            (sum(grepl(input, GeneToGO$Gene.ontology..molecular.function.)) != 0)){
-          input_vec <- append(input_vec, GeneToGO$Gene.names[
-            grepl(input, GeneToGO$Gene.ontology..biological.process.),
-            grepl(input, GeneToGO$Gene.ontology..cellular.component.),
-            grepl(input, GeneToGO$Gene.ontology..molecular.function.)
-          ]
+          input_vec <- append(input_vec,
+                              c(GeneToGO$Gene.names[
+              grepl(input, GeneToGO$Gene.ontology..biological.process.)
+              ],
+              GeneToGO$Gene.names[
+              grepl(input, GeneToGO$Gene.ontology..cellular.component.)
+              ],
+              GeneToGO$Gene.names[
+              grepl(input, GeneToGO$Gene.ontology..molecular.function.)
+              ]
+                              )
           )
         }
         if(sum(grepl(input, all.genes_IDs$all_genes)) != 0){
@@ -822,21 +715,23 @@ library(WVPlots)
         # Initialize df in which to store output based on number of genes
         output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
 
-        # For each stable ID, collect all values associated with the stable ID
+        # For each gene, collect all values associated with the gene
         for(i in 1:length(input_vec)){
           output.df[i,1] = input_vec[i]
-          output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
+          if(input_vec[i] %in% all.genes_IDs$all_genes){
+            output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
+          }else{
+            output.df[i,2] = NA
+          }
 
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
-          if(input_vec[i] %in% position_table$V16){
-            output.df[i,3] = position_table$V1[position_table$V16 == input_vec[i]]
-            output.df[i,4] = position_table$V4[position_table$V16 == input_vec[i]]
-            output.df[i,5] = position_table$V5[position_table$V16 == input_vec[i]]
+          if(input_vec[i] %in% position_table$Gene_Name){
+            output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == input_vec[i]]
+            output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == input_vec[i]]
+            output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == input_vec[i]]
           }else{
-            output.df[i,3] = NA
-            output.df[i,4] = NA
-            output.df[i,5] = NA
+            output.df[i,3:5] = NA
           }
 
           # Check if gene is present in GO term table. If so, output GO terms. If
@@ -873,26 +768,7 @@ library(WVPlots)
             output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
           }else{
             output.df[i,6] = NA
-            output.df[i,8] = NA
-            output.df[i,9] = NA
-            output.df[i,10] = NA
-            output.df[i,11] = NA
-            output.df[i,12] = NA
-            output.df[i,13] = NA
-            output.df[i,14] = NA
-            output.df[i,15] = NA
-            output.df[i,16] = NA
-            output.df[i,17] = NA
-            output.df[i,18] = NA
-            output.df[i,19] = NA
-            output.df[i,20] = NA
-            output.df[i,21] = NA
-            output.df[i,22] = NA
-            output.df[i,23] = NA
-            output.df[i,24] = NA
-            output.df[i,25] = NA
-            output.df[i,26] = NA
-            output.df[i,27] = NA
+            output.df[i,8:27] = NA
           }
 
           # Check if current gene is found in transcription data. If so, output
@@ -951,14 +827,7 @@ library(WVPlots)
               output.df[i,35] = NA
             }
           }else{
-            output.df[i,28] = NA
-            output.df[i,29] = NA
-            output.df[i,30] = NA
-            output.df[i,31] = NA
-            output.df[i,32] = NA
-            output.df[i,33] = NA
-            output.df[i,34] = NA
-            output.df[i,35] = NA
+            output.df[i,28:35] = NA
           }
         }
       }
@@ -1091,7 +960,7 @@ library(WVPlots)
               morph2.rows$logFC[morph2.rows$Gene_name == m1.genes[g]]
             delta_FC <- append(delta_FC, diff)
             genes <- append(genes, m1.genes[g])
-            G_IDs <- append(G_IDs, morph1.rows$ï..Gene_stable_ID[
+            G_IDs <- append(G_IDs, morph1.rows$Gene_stable_ID[
               morph1.rows$Gene_name == m1.genes[g]])
             EF_IDs <- append(EF_IDs, morph1.rows$Ensembl_Family_Description[
               morph1.rows$Gene_name == m1.genes[g]])
@@ -1148,7 +1017,6 @@ library(WVPlots)
       return(output.df)
     }
     StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
-      library(tibble)
       # Create a two vectors of the indices corresponding to each population or pop
       # pair's statistic values
       indices <- c()
@@ -1363,22 +1231,22 @@ library(WVPlots)
       for(g in 1:length(genes)){
         # If gene is present in positions table and GO table, obtain scaffold and GO
         # terms
-        if((genes[g] %in% position_table$V16) & (genes[g] %in% GeneToGO$Gene.names)){
-          scaffs[g] = position_table$V1[position_table$V16 == genes[g]]
+        if((genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
+          scaffs[g] = position_table$Scaffold[position_table$Gene_Name == genes[g]]
           DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]]
           # If gene is present in position table but NOT GO table, output NA for GO
           # term but output real scaffold
-        }else if((genes[g] %in% position_table$V16) & !(genes[g] %in% GeneToGO$Gene.names)){
-          scaffs[g] = position_table$V1[position_table$V16 == genes[g]]
+        }else if((genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
+          scaffs[g] = position_table$Scaffold[position_table$Gene_Name == genes[g]]
           DF_GOs[g] = "Not applicable"
           # If gene is present in GO table but NOT position table, output NA for scaffold
           # term but output real GO
-        }else if(!(genes[g] %in% position_table$V16) & (genes[g] %in% GeneToGO$Gene.names)){
+        }else if(!(genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
           scaffs[g] = "Not applicable"
           DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]]
           # If gene is present in neither GO nor position tables, output NA for scaff
           # and GO
-        }else if(!(genes[g] %in% position_table$V16) & !(genes[g] %in% GeneToGO$Gene.names)){
+        }else if(!(genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
           scaffs[g] = "Not applicable"
           DF_GOs[g] = "Not applicable"
         }

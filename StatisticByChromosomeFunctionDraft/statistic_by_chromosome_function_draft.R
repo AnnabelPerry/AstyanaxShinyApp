@@ -211,18 +211,18 @@ server <- function(input, output) {
         # Check if current gene is in stat AND position table
         # If so...
         if((geneGOs$Gene[g] %in% stat_table$Gene_Name) & 
-           (geneGOs$Gene[g] %in% position_table$V16)){
+           (geneGOs$Gene[g] %in% position_table$Gene_Name)){
           # Output the current gene
           Gene <- append(Gene, geneGOs$Gene[g])
           # Output scaffold of current gene
           Scaffold <- append(Scaffold, 
-                             position_table$V1[position_table$V16 == geneGOs$Gene[g]])
+                             position_table$Scaffold[position_table$Gene_Name == geneGOs$Gene[g]])
           # Output starting position of the current gene
           Start_Position <- append(Start_Position, 
-                                   position_table$V4[position_table$V16 == geneGOs$Gene[g]])
+                                   position_table$Start_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
           # Output the ending position of the current gene
           End_Position <- append(End_Position, 
-                                 position_table$V5[position_table$V16 == geneGOs$Gene[g]])
+                                 position_table$End_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
           # Output ALL GO terms associated with the current gene
           GO_IDs <- append(GO_IDs,
                            paste(geneGOs$GO_ID[geneGOs$Gene == geneGOs$Gene[g]], collapse = "; "))
