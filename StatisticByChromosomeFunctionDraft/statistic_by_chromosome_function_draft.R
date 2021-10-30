@@ -43,15 +43,15 @@ ui <- fluidPage(
   ),
     selectInput(
       inputId = "stat_PlotSelect",
-      label = "Visualize Statistic...",
+      label = "Visualize statistic...",
       choices = "",
       selected = NULL,
       multiple = FALSE
     ),
     selectInput(
       inputId = "scaff_PlotSelect",
-      label = "Visualize Scaffold",
-      choices = c("APWO02000027.1","APWO02000109.1","3","7"),
+      label = "...plotted along scaffold:",
+      choices = "",
       selected = NULL,
       multiple = FALSE
     ),
@@ -320,8 +320,25 @@ server <- function(input, output) {
   observe({
     updateSelectInput(session = getDefaultReactiveDomain(),
                       inputId = "stat_PlotSelect",
-                      label = "Visualize Statistic...",
+                      label = "Visualize statistic...",
                       choices = input$statist)
+    if(length(SBCT()) == 2){
+      all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$statist)
+      available_scaffs <- c()
+      for(i in 1:length(all_plots)){
+        available_scaffs <- append(available_scaffs,
+                                   str_split(names(all_plots)[[i]], ":")[[1]][2])
+      }
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        inputId = "scaff_PlotSelect",
+                        label = "...plotted along scaffold:",
+                        choices = available_scaffs)
+    }else{
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        inputId = "scaff_PlotSelect",
+                        label = "...plotted along scaffold:",
+                        choices = "")
+    }
   })
   
   SBCT <- eventReactive(input$GO_search, valueExpr = {
@@ -354,7 +371,12 @@ server <- function(input, output) {
     }
     plot_out
   })
-  output$test2 <- renderTable(SBCT()[[2]])
+  output$test2 <- renderTable(
+    if(length(SBCT()) == 2){
+      SBCT()[[2]]
+    }else{
+      data.frame(Data = c("No data to display; see explanation below"))
+    })
   output$test1 <- renderText(SBCT()[[1]])
   output$SBC_plot <- renderPlot(SBCP())
 }
