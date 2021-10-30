@@ -102,81 +102,150 @@ library(tibble)
 
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
-                                    tableOutput("test")
+                                    tableOutput("transc_table_out")
                    )
                  )
                  )
                )
       ),
         tabPanel("Population Genetics", fluid = TRUE,
-                 sidebarLayout(
-                   sidebarPanel(
-                     radioButtons("type",
-                                  label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
-                                  choices = c("Number of Genes" = "Gene Count", "Statistic Value")
+                 radioButtons("which_function",
+                              label = "Would you like to search for genes within a range of statistic values or search for genes using GO terms?",
+                              choices = c("Range of Statistic Values" = "distr_func", 
+                                          "GO Terms" = "stat_by_chr_func")
+                 ),
+                 conditionalPanel(
+                   condition = "input.which_function == 'distr_func'",
+                   sidebarLayout(
+                     sidebarPanel(
+                       radioButtons("type",
+                                    label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
+                                    choices = c("Number of Genes" = "Gene Count", "Statistic Value")
+                       ),
+                       radioButtons("dist_statist",
+                                    label = "Statistic of Interest",
+                                    choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
+                       checkboxGroupInput("dist_pops",
+                                          label = "Population(s) of Interest",
+                                          choices = c("Molino", "Pachon", "Rascon", "Rio Choy", "Tinaja")),
+                       
+                       # Only show this panel if the user wants to find the number of genes
+                       # with the greatest or smallest values for the stat of interest
+                       conditionalPanel(
+                         condition = "input.type == 'Gene Count'",
+                         sliderInput("gene_count", "How many genes would you like to see?",
+                                     min = 1, max = 1000, value = 10),
+                         radioButtons("TB",
+                                      label = "Output genes with largest or smallest values of the desired statistic?",
+                                      choices = c("Largest" = "top", "Smallest" ="bottom")),
+                         actionButton("GCDistTable_enter","Find Genes"),
+                       ),
+                       # Only show this panel if the user wants to find genes with stat values
+                       # above or below a specific threshhold
+                       conditionalPanel(
+                         condition = "input.type == 'Statistic Value'",
+                         sliderInput("thrsh", "Threshhold statistical value: ",min = -3,
+                                     max = 3, value = 0, step = 0.05),
+                         radioButtons("TB",
+                                      label = "Output genes whose value is above or below the threshhold?",
+                                      choices = c("Above" = "top", "Below" ="bottom")),
+                         actionButton("SVDistTable_enter","Find Genes"),
+                         actionButton("SVDistPlot_enter", "Visualize"),
+                       )
                      ),
-                     radioButtons("statist",
-                                  label = "Statistic of Interest",
-                                  choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-                     checkboxGroupInput("pops",
-                                        label = "Population(s) of Interest",
-                                        choices = c("Molino", "Pachon", "Rascon", "Rio Choy", "Tinaja")),
-
-                     # Only show this panel if the user wants to find the number of genes
-                     # with the greatest or smallest values for the stat of interest
-                     conditionalPanel(
-                       condition = "input.type == 'Gene Count'",
-                       sliderInput("gene_count", "How many genes would you like to see?",
-                                   min = 1, max = 1000, value = 10),
-                       radioButtons("TB",
-                                    label = "Output genes with largest or smallest values of the desired statistic?",
-                                    choices = c("Largest" = "top", "Smallest" ="bottom")),
-                       actionButton("GCDistTable_enter","Find Genes"),
-                     ),
-                     # Only show this panel if the user wants to find genes with stat values
-                     # above or below a specific threshhold
-                     conditionalPanel(
-                       condition = "input.type == 'Statistic Value'",
-                       sliderInput("thrsh", "Threshhold statistical value: ",min = -3,
-                                   max = 3, value = 0, step = 0.05),
-                       radioButtons("TB",
-                                    label = "Output genes whose value is above or below the threshhold?",
-                                    choices = c("Above" = "top", "Below" ="bottom")),
-                       actionButton("SVDistTable_enter","Find Genes"),
-                       actionButton("SVDistPlot_enter", "Visualize"),
-                     )
-                   ),
-                   mainPanel(
-                     conditionalPanel(
-                       condition = "input.type == 'Gene Count'",
-                       tableOutput("GCdist_tab"),
-                       textOutput("GCdist_wrnings"),
-                     ),
-                     # Only show this panel if the user wants to find genes with stat values
-                     # above or below a specific threshhold
-                     conditionalPanel(
-                       condition = "input.type == 'Statistic Value'",
-                       plotOutput("SVdist_plot"),
-                       tableOutput("SVdist_tab"),
-                       textOutput("SVdist_wrnings"),
+                     mainPanel(
+                       conditionalPanel(
+                         condition = "input.type == 'Gene Count'",
+                         tableOutput("GCdist_tab"),
+                         textOutput("GCdist_wrnings"),
+                       ),
+                       # Only show this panel if the user wants to find genes with stat values
+                       # above or below a specific threshhold
+                       conditionalPanel(
+                         condition = "input.type == 'Statistic Value'",
+                         plotOutput("SVdist_plot"),
+                         tableOutput("SVdist_tab"),
+                         textOutput("SVdist_wrnings"),
+                       )
                      )
                    )
+                 ),
+                 conditionalPanel(
+                   condition = "input.which_function == 'stat_by_chr_func'",
+                   checkboxGroupInput("sbc_statist", 
+                                      label = "Statistic of Interest",
+                                      choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
+                   checkboxGroupInput("sbc_pops", 
+                                      label = "Population(s) of Interest",
+                                      choices = c("Molino", "Pachon", "Rascon", "Rio Choy", 
+                                                  "Tinaja")),
+                   searchInput(
+                     inputId = "GO_search", label = "GO ID or Term",
+                     placeholder = "GO:0000001, mitochondrion, etc...",
+                     btnSearch = icon("search"),
+                     btnReset = icon("remove"),
+                     width = "450px"
+                   ),
+                   selectInput(
+                     inputId = "stat_PlotSelect",
+                     label = "Visualize statistic...",
+                     choices = "",
+                     selected = NULL,
+                     multiple = FALSE
+                   ),
+                   selectInput(
+                     inputId = "scaff_PlotSelect",
+                     label = "...plotted along scaffold:",
+                     choices = "",
+                     selected = NULL,
+                     multiple = FALSE
+                   ),
+                   actionButton("SBCP_enter","Visualize"),
+                   tableOutput("SBC_table"),
+                   textOutput("SBC_wrnings"),
+                   plotOutput("SBC_plot")
                  )
         )
     )
   )
 
   server = function(input, output) {
+    
     observe({
-      all_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
-                       "Rio Choy")
-      # Update widget to only enable comparisons between current morph and
-      # morph which is NOT morph1
+      transc_morph_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
+                                "Rio Choy")
+      # Transcription Page: Update morph-selection widget to only enable 
+      # comparisons between current morph and morph which is NOT morph1
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "morph2",
-                        choices = all_choices[all_choices != input$morph1],
-                        selected = tail(all_choices, 1)
+                        choices = transc_morph_choices[transc_morph_choices != input$morph1],
+                        selected = tail(transc_morph_choices, 1)
       )
+      # Population Genetics (Stat-By-Chr Suppage): Update widget for selecting 
+      # which statistic to plot
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        inputId = "stat_PlotSelect",
+                        label = "Visualize statistic...",
+                        choices = input$sbc_statist)
+      # Population Genetics (Stat-By-Chr Suppage): If a table has been created, 
+      # update the widget for selecting which scaffold to plot
+      if(length(SBCT()) == 2){
+        all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
+        available_scaffs <- c()
+        for(i in 1:length(all_plots)){
+          available_scaffs <- append(available_scaffs,
+                                     str_split(names(all_plots)[[i]], ":")[[1]][2])
+        }
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          inputId = "scaff_PlotSelect",
+                          label = "...plotted along scaffold:",
+                          choices = available_scaffs)
+      }else{
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          inputId = "scaff_PlotSelect",
+                          label = "...plotted along scaffold:",
+                          choices = "")
+      }
     })
 
     GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
@@ -1423,6 +1492,262 @@ library(tibble)
                      position_table)
       }
     })
+    StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
+      # Initialize vector for all GO terms of interest
+      GOs <- c()
+      # Initialize vector in which to store warnings
+      wrnings <- c("Notes: ")
+      
+      # Check if user inputted a word/phrase or a GO ID. If the user inputted a 
+      # word/phrase, find the name(s) which contains that word/phrase and set the GO
+      # vector equal to the corresponding GO IDs.
+      if(!(GOTerm %in% GoIDToNames$GO.ID)){
+        GOs <- GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
+                                             ignore.case = T))]
+        # If user inputted a GO ID, add that ID 
+      }else if(GOTerm %in% GoIDToNames$GO.ID){
+        GOs <- GOTerm
+      }
+      
+      # Find all GO terms which are LOWER than the GO terms in the GO vector.
+      # First, loop through each GO ID in the vector-of-GOs. As more GO IDs, are 
+      # added to the vector, the number of remaining iterations will increase.
+      for(g in 1:length(GOs)){
+        # Add all "Lower" GO IDs which occur on a row where the current vector entry
+        # is an "Upper" to the vector of GO IDs, then move to the next GO ID
+        if(GOs[g] %in% UpperLower$Upper){
+          GOs <- append(GOs, UpperLower$Lower[UpperLower$Upper == GOs[g]])
+          # If the current GO ID does NOT occur anywhere in the "Upper" column, skip it
+        }else{
+          next
+        }
+      }
+      # Find all genes associated with the current GO IDs and add to vector of genes
+      gene_vec <- c()
+      found_GOs <- c()
+      for(g in 1:length(GOs)){
+        # If the GO term appears in the data frame of names AND the corresponding gene
+        # occurs in the statistics vector, add the GO term and gene name
+        if(GOs[g] %in% GeneToGO$Gene.ontology.IDs){
+          gene_vec <- append(gene_vec, GeneToGO$Gene.names[grepl(GOs[g], GeneToGO$Gene.ontology.IDs)])
+          found_GOs <- append(found_GOs, rep(GOs[g], length(gene_vec)))
+          # If the GO term does NOT appear in the dataframe of names, skip it
+        }else{
+          next
+        }
+      }
+      geneGOs <- data.frame(
+        Gene = gene_vec,
+        GO_ID = found_GOs
+      )
+      geneGOs <- geneGOs[!duplicated(geneGOs), ]
+      
+      # Extract all possible combinations of populations from populations of interest
+      if((is.vector(all_pops)) & (length(all_pops) > 1)){
+        all_pops <- combn(all_pops,2) 
+      }
+      
+      # Create vectors in which to store values for later dataframe
+      Statistic_Type_prelim <- c()
+      Population_prelim <- c()
+      Statistic_Value_prelim <- numeric()
+      
+      for(s in 1:length(stat_vec)){
+        # Check if statistic of interest makes comparisons between TWO populations
+        if((stat_vec[s] == "Fst") | (stat_vec[s] == "Dxy")){
+          # Check if pops is a matrix
+          if(is.matrix(all_pops)){
+            # If so, iterate through each combination and output stat value for that
+            # combination
+            for(pair in 1:ncol(all_pops)){
+              
+              # If pops is a matrix, read the strings, find the column corresponding 
+              # to the stat of interest for the populations in the vector, and set 
+              # "index" equal to the column housing this statistic
+              val <- which(grepl(all_pops[1, pair], names(stat_table))
+                           & grepl(all_pops[2, pair], names(stat_table))
+                           & grepl(stat_vec[s], names(stat_table)))
+              # If statistic for populations-of-interest is not present, return error
+              if(length(val) == 0){
+                wrnings <- append(wrnings, paste(c("Statistic ",stat_vec[s],
+                                                   " is not present for the populations ",
+                                                   all_pops[1, pair]," and ",
+                                                   all_pops[2, pair], " | "),collapse = ""))
+              }else{
+                # Create a row to add to the indices dataframe
+                temp_str <- paste(c(all_pops[1, pair],"-",all_pops[2, pair]), 
+                                  collapse = "")
+                Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
+                Population_prelim <- append(Population_prelim,temp_str)
+                Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
+              }
+              # If pops is NOT a matrix, return an error
+            }
+          }else if(!is.matrix(all_pops)){
+            null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+            names(null.df) <- c("Gene",
+                                "Scaffold",
+                                "Start_Position",
+                                "End_Position",
+                                "GO_IDs",
+                                "Statistic_Type",
+                                "Population",
+                                "Statistic_Value")
+            return(list(paste(c("Warning: Only one population, ", all_pops, 
+                                ", supplied for the two-population statistic ", 
+                                stat_vec[s], "."),
+                              collapse = ""), null.df))
+            
+            # Check if statistic of interest makes comparisons between ONE population
+          }
+        }else if((stat_vec[s] == "TajimasD") | (stat_vec[s] == "Pi")){
+          # Iterate through each individual population
+          for(p in 1:length(all_pops)){
+            # If pops is a string, set indx equal to the column housing the stat of
+            # interest for this population
+            val <- which(grepl(all_pops[p], names(stat_table))
+                         & grepl(stat_vec[s], names(stat_table)))
+            # If statistic for populations-of-interest is not present, return a 
+            # warning 
+            if(length(val) == 0){
+              wrnings <- append(wrnings, paste(c("Statistic ",stat_vec[s],
+                                                 " is not present for the population ",
+                                                 all_pops[p], " | "), collapse = ""))
+            }else{
+              # Create a row to add to the indices dataframe
+              Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
+              Population_prelim <- append(Population_prelim,all_pops[p])
+              Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
+            }
+          }
+        }
+      }
+      
+      # For each GO Term in the vector of GO Terms-of-interest, find...
+      # 1. All gene names which occur in the positions table AND in the statistics
+      #    table
+      # 2. The scaffolds of those genes
+      # 3. The starting positions of those genes
+      # 4. The ending positions of those genes
+      # 5. The GO terms associated with those genes
+      # 6. Each of the 4 statistic types
+      # 7. Each of the populations/population combinations
+      # 8. Each of the statistical values
+      
+      # For each statistic-population pair, iterate through each gene and find the 
+      # statistic value, scaffold, starting position, and ending position and
+      # output to a dataframe
+      Gene <- c()
+      Scaffold <- c()
+      Start_Position <- c()
+      End_Position <- c()
+      GO_IDs <- c()
+      Statistic_Type <- c()
+      Population <- c()
+      Statistic_Value <- c()
+      
+      for(s in 1:length(Statistic_Type_prelim)){
+        for(g in 1:length(geneGOs$Gene)){
+          # Check if current gene is in stat AND position table
+          # If so...
+          if((geneGOs$Gene[g] %in% stat_table$Gene_Name) & 
+             (geneGOs$Gene[g] %in% position_table$Gene_Name)){
+            # Output the current gene
+            Gene <- append(Gene, geneGOs$Gene[g])
+            # Output scaffold of current gene
+            Scaffold <- append(Scaffold, 
+                               position_table$Scaffold[position_table$Gene_Name == geneGOs$Gene[g]])
+            # Output starting position of the current gene
+            Start_Position <- append(Start_Position, 
+                                     position_table$Start_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
+            # Output the ending position of the current gene
+            End_Position <- append(End_Position, 
+                                   position_table$End_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
+            # Output ALL GO terms associated with the current gene
+            GO_IDs <- append(GO_IDs,
+                             paste(geneGOs$GO_ID[geneGOs$Gene == geneGOs$Gene[g]], collapse = "; "))
+            # Output the current statistic type
+            Statistic_Type <- append(Statistic_Type, Statistic_Type_prelim[s])
+            # Output the population(s)
+            Population <- append(Population, Population_prelim[s])
+            # Output the statistic value
+            Statistic_Value <- append(Statistic_Value, 
+                                      stat_table[stat_table$Gene_Name == geneGOs$Gene[g], 
+                                                 Statistic_Value_prelim[s]])
+            # If not, skip the gene
+          }else{
+            next
+          }
+        }
+      }
+      output_df <- data.frame(Gene,
+                              Scaffold,
+                              Start_Position,
+                              End_Position,
+                              GO_IDs,
+                              Statistic_Type,
+                              Population,
+                              Statistic_Value
+      )
+      return(list(wrnings, output_df))
+    }
+    StatByChrGraph <- function(Full_Table, stat_vec){
+      
+      # Count the number of unique scaffolds in the table
+      unique_scaffs <- levels(as.factor(Full_Table$Scaffold))
+      num_scaff <- length(unique_scaffs)
+      
+      # Find number of unique statistics so you can create a distinct plot for each
+      # statistic-scaffold pair
+      unique_stats <- levels(as.factor(Full_Table$Statistic_Type))
+      num_stats <- length(unique_stats)
+      
+      # Initialize a list in which to store all plots
+      plist <- vector(mode = "list", length = num_scaff*num_stats)
+      
+      # Create vector of names
+      names_vec <- c()
+      # Start at the 0th entry in the list
+      p = 0
+      # For each scaffold-statistic combo, create a new plot
+      for(s in 1:num_stats){
+        # For each scaffold represented by the selected genes, create a new plot
+        for(c in 1:num_scaff){
+          # Each time you reach a new scaffold-statistic combination, move to a new 
+          # position in the plot list 
+          p = p + 1
+          # Create a new name from this combination
+          names_vec <- append(names_vec, paste(c(stat_vec[s],unique_scaffs[c]), 
+                                               collapse = ":"))
+          # Find all rows in the table whose basic statistic and scaffold match the
+          # current statistic and scaffold
+          plot_dat <- data.frame(
+            Locus = Full_Table$Start_Position[(Full_Table$Scaffold == unique_scaffs[c])
+                                              & (Full_Table$Statistic_Type == unique_stats[s])],
+            Value = Full_Table$Statistic_Value[(Full_Table$Scaffold == unique_scaffs[c])
+                                               & (Full_Table$Statistic_Type == unique_stats[s])],
+            Populations = Full_Table$Population[(Full_Table$Scaffold == unique_scaffs[c])
+                                                & (Full_Table$Statistic_Type == unique_stats[s])]
+          )
+          
+          # Plot the statistic values for all genes which occur on the scaffold
+          # of interest, colored by population or population pair
+          plist[[p]] <- ggplot(plot_dat, aes(x=Locus, y=Value, color=Populations)) + 
+            ylab(stat_vec[s]) +
+            xlab("Locus") +
+            ggtitle(paste(c("Scaffold:", unique_scaffs[c]), collapse = " ")) +
+            geom_point() +
+            theme_bw()
+          #Store the plot in a vector
+        }
+      }
+      # Add names to plot list
+      names(plist) <- names_vec
+      return(plist)
+    }
+    
+    # Gene Search Page: Output a table of all statistics associated with the 
+    # entered gene
     output$GeneCent_table <- renderTable({
       if(typeof(GeneCentOutput()) == "list"){
         GeneCentOutput()
@@ -1430,6 +1755,8 @@ library(tibble)
         data.frame()
       }
     })
+    
+    # Gene Search Page: Output any warnings associated with the searched gene
     output$GeneCent_warnings <- renderText({
       if(typeof(GeneCentOutput()) == "list"){
         "No warnings or errors"
@@ -1438,10 +1765,15 @@ library(tibble)
       }
     })
 
+    # Transcription Page: Create a label which changes based on the morphs to be 
+    # searched for
     output$dir_label <- renderText({
       paste(c("Search for genes which are UP or DOWNregulated in ",
               input$morph1, " relative to ", input$morph2, "?"), collapse = "")
     })
+    
+    # Transcription Page: Create a label which changes based on whether up- or
+    # downregulation was specified
     output$per_label <- renderText({
       if(input$direction == "Upregulated"){
         "Percent upregulation:"
@@ -1449,7 +1781,9 @@ library(tibble)
         "Percent downregulation:"
       }
     })
-    testing <- eventReactive(input$Transc_enter, valueExpr = {
+    
+    # Transcription Page: Output a table with specified transcription data
+    transc_table <- eventReactive(input$Transc_enter, valueExpr = {
       if(input$morph2 == "Control"){
         condit <- input$condition
       }else{
@@ -1462,43 +1796,95 @@ library(tibble)
                   percent = input$percent_change,
                   GOTable = GeneToGO)
     })
-    output$test <- renderTable({
-      testing()
+    output$transc_table_out <- renderTable({
+      transc_table()
     })
-
+    
+    # Population Genetics (Distribution Suppage): If Statistic Value was 
+    # specified, output a table of all genes within the specified range of 
+    # statistic values
     SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
       StatDistTable(input$type,
                     input$TB,
-                    input$statist,
+                    input$dist_statist,
                     thresh = input$thrsh,
                     stat_table,
-                    input$pops)
+                    input$dist_pops)
     }
     )
     output$SVdist_tab <- renderTable(SVDT()[[2]])
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
 
+    # Population Genetics (Distribution Suppage): If Visualize was pressed, 
+    # output a plot of the number of genes with each value of the specified 
+    # statistic 
     SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
-      StatDistPlot(stat = input$statist,
+      StatDistPlot(stat = input$dist_statist,
                    UL = input$TB,
                    thresh = input$thrsh,
                    stat_table,
-                   pops = input$pops)
+                   pops = input$dist_pops)
     }
     )
     output$SVdist_plot <- renderPlot(SVDP())
 
+    # Population Genetics (Distribution Suppage): If Gene Count was specified,
+    # output the statistics associated with the indicated number of genes
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
       StatDistTable(input$type,
                     input$TB,
-                    input$statist,
+                    input$dist_statist,
                     thresh = input$gene_count,
                     stat_table,
-                    input$pops)
+                    input$dist_pops)
     }
     )
     output$GCdist_tab <- renderTable(GCDT()[[2]])
     output$GCdist_wrnings <- renderText(GCDT()[[1]])
+    
+    # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and 
+    # GO term have been entered, output a table of associated genes
+    SBCT <- eventReactive(input$GO_search, valueExpr = {
+      if((length(input$sbc_statist) == 0) & (length(input$sbc_pops) != 0)){
+        "Please choose at least one statistic of interest"
+      }else if((length(input$sbc_statist) != 0) & (length(input$sbc_pops) == 0)){
+        "Please choose at least one population of interest"
+      }else if((length(input$sbc_statist) == 0) & (length(input$sbc_pops) == 0)){
+        "Please choose at least one statistic and population of interest"
+      }else if((length(input$sbc_statist) != 0) & (length(input$sbc_pops) != 0)){
+        StatByChrTable(GOTerm = input$GO_search,
+                       GeneToGO,
+                       GoIDToNames, 
+                       UpperLower, 
+                       stat_vec = input$sbc_statist, 
+                       position_table, 
+                       stat_table, 
+                       all_pops = input$sbc_pops
+        )
+      }
+    }
+    )
+    
+    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed, 
+    # output a plot of the appropriate statistic x scaffold pair
+    SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
+      SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
+      for(i in 1:length(SBC_plots)){
+        if((str_split(names(SBC_plots)[[i]], ":")[[1]][1] == input$stat_PlotSelect)
+           & (str_split(names(SBC_plots)[[i]], ":")[[1]][2] == input$scaff_PlotSelect)){
+          plot_out <- SBC_plots[[i]]
+        }
+      }
+      plot_out
+    })
+    output$SBC_table <- renderTable(
+      if(length(SBCT()) == 2){
+        SBCT()[[2]]
+      }else{
+        data.frame(Data = c("No data to display; see explanation below"))
+      })
+    output$SBC_wrnings <- renderText(SBCT()[[1]])
+    output$SBC_plot <- renderPlot(SBCP())
   }
 
 

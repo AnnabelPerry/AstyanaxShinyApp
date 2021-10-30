@@ -30,7 +30,7 @@ ui <- fluidPage(
   checkboxGroupInput("statist", 
                label = "Statistic of Interest",
                choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-  checkboxGroupInput("pops", 
+  checkboxGroupInput("sbc_pops", 
                      label = "Population(s) of Interest",
                      choices = c("Molino", "Pachon", "Rascon", "Rio Choy", 
                                  "Tinaja")),
@@ -56,8 +56,8 @@ ui <- fluidPage(
       multiple = FALSE
     ),
     actionButton("SBCP_enter","Visualize"),
-  tableOutput("test2"),
-  textOutput("test1"),
+  tableOutput("SBC_table"),
+  textOutput("SBC_wrnings"),
   plotOutput("SBC_plot")
 )
 
@@ -341,14 +341,15 @@ server <- function(input, output) {
     }
   })
   
+  
   SBCT <- eventReactive(input$GO_search, valueExpr = {
-    if((length(input$statist) == 0) & (length(input$pops) != 0)){
+    if((length(input$statist) == 0) & (length(input$sbc_pops) != 0)){
       "Please choose at least one statistic of interest"
-    }else if((length(input$statist) != 0) & (length(input$pops) == 0)){
+    }else if((length(input$statist) != 0) & (length(input$sbc_pops) == 0)){
       "Please choose at least one population of interest"
-    }else if((length(input$statist) == 0) & (length(input$pops) == 0)){
+    }else if((length(input$statist) == 0) & (length(input$sbc_pops) == 0)){
       "Please choose at least one statistic and population of interest"
-    }else if((length(input$statist) != 0) & (length(input$pops) != 0)){
+    }else if((length(input$statist) != 0) & (length(input$sbc_pops) != 0)){
       StatByChrTable(GOTerm = input$GO_search,
                      GeneToGO,
                      GoIDToNames = GoID_Names, 
@@ -356,8 +357,8 @@ server <- function(input, output) {
                      stat_vec = input$statist, 
                      position_table = pos_table, 
                      stat_table = s_table, 
-                     all_pops = input$pops
-                     )
+                     all_pops = input$sbc_pops
+      )
     }
   }
   )
@@ -371,13 +372,13 @@ server <- function(input, output) {
     }
     plot_out
   })
-  output$test2 <- renderTable(
+  output$SBC_table <- renderTable(
     if(length(SBCT()) == 2){
       SBCT()[[2]]
     }else{
       data.frame(Data = c("No data to display; see explanation below"))
     })
-  output$test1 <- renderText(SBCT()[[1]])
+  output$SBC_wrnings <- renderText(SBCT()[[1]])
   output$SBC_plot <- renderPlot(SBCP())
 }
 
