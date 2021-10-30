@@ -10,6 +10,21 @@
 library(shiny)
 library(shinyWidgets)
 library(ggplot2)
+library(stringr)
+
+
+pos_table <- read.csv("../data/AmexPositionTable.csv", fill = TRUE)
+
+GeneToGO <- read.csv("../data/AMexGOTerms.csv", fill = T)
+GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
+# Convert gene names in GeneToGO to lowercase to make compatible with other tables
+GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
+
+GoID_Names <- read.table("../data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
+Up_Low <- read.table("../data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
+
+s_table <- read.csv("../data/AMexicanus_Genes_and_Stats.csv")
+s_table <- s_table[,(names(s_table) != "X")]
 
 ui <- fluidPage(
   checkboxGroupInput("statist", 
@@ -26,32 +41,28 @@ ui <- fluidPage(
     btnReset = icon("remove"),
     width = "450px"
   ),
-  selectInput(
-    inputId = "SBCP_select",
-    label = "Visualize Scaffold...",
-    choices = "",
-    selected = NULL,
-    multiple = FALSE
-  ),
+    selectInput(
+      inputId = "stat_PlotSelect",
+      label = "Visualize Statistic...",
+      choices = "",
+      selected = NULL,
+      multiple = FALSE
+    ),
+    selectInput(
+      inputId = "scaff_PlotSelect",
+      label = "Visualize Scaffold",
+      choices = c("APWO02000027.1","APWO02000109.1","3","7"),
+      selected = NULL,
+      multiple = FALSE
+    ),
+    actionButton("SBCP_enter","Visualize"),
   tableOutput("test2"),
-  textOutput("test1")
+  textOutput("test1"),
+  plotOutput("SBC_plot")
 )
 
 
 server <- function(input, output) {
-  pos_table <- read.csv("../data/AmexPositionTable.csv", fill = TRUE)
-  
-  GeneToGO <- read.csv("../data/AMexGOTerms.csv", fill = T)
-  GeneToGO <- GeneToGO[GeneToGO$Gene.names != "",]
-  # Convert gene names in GeneToGO to lowercase to make compatible with other tables
-  GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
-  
-  GoID_Names <- read.table("../data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-  Up_Low <- read.table("../data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
-  
-  s_table <- read.csv("../data/AMexicanus_Genes_and_Stats.csv")
-  s_table <- s_table[,(names(s_table) != "X")]
-  
   StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
     # Initialize vector for all GO terms of interest
     GOs <- c()
@@ -306,6 +317,12 @@ server <- function(input, output) {
     return(plist)
   }
   
+  observe({
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      inputId = "stat_PlotSelect",
+                      label = "Visualize Statistic...",
+                      choices = input$statist)
+  })
   
   SBCT <- eventReactive(input$GO_search, valueExpr = {
     if((length(input$statist) == 0) & (length(input$pops) != 0)){
@@ -327,17 +344,19 @@ server <- function(input, output) {
     }
   }
   )
-  SBCP <- eventReactive(input$GO_search, valueExpr = {
-    StatByChrTable_input <- SBCT()[[2]]
-    updateSelectInput(session = getDefaultReactiveDomain(),
-                      inputId = "SBCP_select",
-                      label = "Visualize Scaffold...",
-                      choices = levels(as.factor(StatByChrTable_input$Scaffold)))
-  }
-  )
+  SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
+    SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$statist)
+    for(i in 1:length(SBC_plots)){
+      if((str_split(names(SBC_plots)[[i]], ":")[[1]][1] == input$stat_PlotSelect)
+         & (str_split(names(SBC_plots)[[i]], ":")[[1]][2] == input$scaff_PlotSelect)){
+        plot_out <- SBC_plots[[i]]
+      }
+    }
+    plot_out
+  })
   output$test2 <- renderTable(SBCT()[[2]])
   output$test1 <- renderText(SBCT()[[1]])
-  
+  output$SBC_plot <- renderPlot(SBCP())
 }
 
 # Run the application 
