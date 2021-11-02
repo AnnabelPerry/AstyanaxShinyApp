@@ -1123,6 +1123,24 @@ library(tibble)
             wrnings <- append(wrnings, (paste(c("Statistic",stat,
                                                 "is not present for the populations",two_pops[1, pair],"and",
                                                 two_pops[2, pair], "\n"),collapse = " ")))
+            # If these populations-of-interest are the only pops which were
+            # inputted, return a warning
+            if(ncol(two_pops) == 1){
+              null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+              names(null.df) <- c("Gene",
+                                  "Scaffold",
+                                  "Start_Position",
+                                  "End_Position",
+                                  "GO_IDs",
+                                  "Statistic_Type",
+                                  "Population",
+                                  "Statistic_Value")
+              return(list(paste(c("Statistic ",stat,
+                                        " is not present for the populations ",
+                                        two_pops[1, pair]," and ",
+                                        two_pops[2, pair]),collapse = ""), 
+                          null.df))
+            }
           }else{
             # Create a row to add to the indices dataframe
             temp_str <- paste(c(two_pops[1, pair],"-",two_pops[2, pair]), collapse = "")
@@ -1290,7 +1308,7 @@ library(tibble)
           }
         }
       }
-      # If no population pairs were found, output and error
+      # If no population pairs were found, output an error
       if(length(indices) == 0){
         null.df <- data.frame(matrix(nrow = 1, ncol = 6))
         names(null.df) <- c("Rank","Population(s)",stat,"Scaffold",
@@ -1450,7 +1468,15 @@ library(tibble)
             wrnings <- append(wrnings, paste(c("Statistic",stat,
                            "is not present for the populations",two_pops[1, pair],"and",
                            two_pops[2, pair]),collapse = " "))
-            next
+            # If these populations-of-interest are the only pops which were
+            # inputted, return a warning
+            if(ncol(two_pops) == 1){
+              return(list(paste(c("Statistic ",stat,
+                                  " is not present for the populations ",
+                                  two_pops[1, pair]," and ",
+                                  two_pops[2, pair]),collapse = ""), 
+                          error_plot))
+            }
           }else{
             indices <- append(indices, indx)
             next
@@ -1478,6 +1504,11 @@ library(tibble)
             next
           }
         }
+      }
+      # If no population pairs were found, output an error
+      if(length(indices) == 0){
+        return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
+                          collapse = " "), error_plot))
       }
       
       # Create dataframe with values of stat-of-interest for every single pop-of
@@ -1621,12 +1652,31 @@ library(tibble)
               val <- which(grepl(all_pops[1, pair], names(stat_table))
                            & grepl(all_pops[2, pair], names(stat_table))
                            & grepl(stat_vec[s], names(stat_table)))
-              # If statistic for populations-of-interest is not present, return error
+              # If statistic for populations-of-interest is not present, add a
+              # warning
               if(length(val) == 0){
                 wrnings <- append(wrnings, paste(c("Statistic ",stat_vec[s],
                                                    " is not present for the populations ",
                                                    all_pops[1, pair]," and ",
                                                    all_pops[2, pair], " | "),collapse = ""))
+                # If these populations-of-interest are the only pops which were
+                # inputted, return a warning
+                if(ncol(all_pops) == 1){
+                  null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+                  names(null.df) <- c("Gene",
+                                      "Scaffold",
+                                      "Start_Position",
+                                      "End_Position",
+                                      "GO_IDs",
+                                      "Statistic_Type",
+                                      "Population",
+                                      "Statistic_Value")
+                  return(list(paste(paste(c("Statistic ",stat_vec[s],
+                                            " is not present for the populations ",
+                                            all_pops[1, pair]," and ",
+                                            all_pops[2, pair]),collapse = "")), 
+                              null.df))
+                }
               }else{
                 # Create a row to add to the indices dataframe
                 temp_str <- paste(c(all_pops[1, pair],"-",all_pops[2, pair]), 
@@ -1647,7 +1697,7 @@ library(tibble)
                                 "Statistic_Type",
                                 "Population",
                                 "Statistic_Value")
-            return(list(paste(c("Warning: Only one population, ", all_pops, 
+            return(list(paste(c("ERROR: Only one population, ", all_pops, 
                                 ", supplied for the two-population statistic ", 
                                 stat_vec[s], "."),
                               collapse = ""), null.df))
@@ -1675,6 +1725,21 @@ library(tibble)
             }
           }
         }
+      }
+      # If NONE of the populations-of-interest had values for the statistics-of-
+      # interest, output an error
+      if(is.null(Statistic_Type_prelim)){
+        null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+        names(null.df) <- c("Gene",
+                            "Scaffold",
+                            "Start_Position",
+                            "End_Position",
+                            "GO_IDs",
+                            "Statistic_Type",
+                            "Population",
+                            "Statistic_Value")
+        return(list("ERROR: None of the input statistics are present for any of the input populations", 
+                    null.df)) 
       }
       
       # For each GO Term in the vector of GO Terms-of-interest, find...
@@ -1920,17 +1985,20 @@ library(tibble)
     }
     )
     
-    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed, 
-    # output a plot of the appropriate statistic x scaffold pair
+    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and 
+    # input table is NOT full of NAs, output a plot of the appropriate statistic x 
+    # scaffold pair
     SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
-      SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
-      for(i in 1:length(SBC_plots)){
-        if((str_split(names(SBC_plots)[[i]], ":")[[1]][1] == input$stat_PlotSelect)
-           & (str_split(names(SBC_plots)[[i]], ":")[[1]][2] == input$scaff_PlotSelect)){
-          plot_out <- SBC_plots[[i]]
+      if((!is.na(SBCT()[[2]][1,1])) & (nrow(SBCT()[[2]]) != 1)){
+        SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
+        for(i in 1:length(SBC_plots)){
+          if((str_split(names(SBC_plots)[[i]], ":")[[1]][1] == input$stat_PlotSelect)
+             & (str_split(names(SBC_plots)[[i]], ":")[[1]][2] == input$scaff_PlotSelect)){
+            plot_out <- SBC_plots[[i]]
+          }
         }
+        plot_out
       }
-      plot_out
     })
     output$SBC_table <- renderTable(
       if(length(SBCT()) == 2){
