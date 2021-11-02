@@ -11,6 +11,8 @@ position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
 
+# EDIT: This data is fake. We currently lack between-morph comparisons, so this
+# CSV file is simply used as a filler to ensure the function works
 morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
@@ -164,6 +166,7 @@ library(tibble)
                        conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
                          plotOutput("SVdist_plot"),
+                         textOutput("SVdist_plot_wrnings"),
                          tableOutput("SVdist_tab"),
                          textOutput("SVdist_wrnings"),
                        )
@@ -1403,82 +1406,127 @@ library(tibble)
     StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
       # EDIT: Check if threshold is within appropriate range for statistic-of-interest. If
       # not, return an error.
-
+      
+      # Initialize vector into which notes will be stored
+      wrnings <- c("Notes: ")
+      # Create an error plot to be returned if an error occurs
+      error_plot <- plot(x = c(.95, .955,  .975,  1, 1.025, 1.05,   1.07,  1.075, 0.99, 1.035), 
+                         y = c( 1, 1.5, 1.75, 2, 2,    1.75,  1.5,   1,    3.5,    3.5), pch = 16, axes = F,
+                         ylab = "",
+                         xlab = "Whoops! Something went wrong. See errors")
+      # Initialize vector of indices
+      indices <- c()
+      
       # Check if statistic of interest makes comparisons between TWO populations
       if((stat == "Fst") | (stat == "Dxy")){
-        # Check if pops is a vector
-        if(is.vector(pops)){
-          # If pops is a vector, read the strings, find the column corresponding
+        # Tell the program that a two-population statistic was entered so the
+        # program outputs the specified number of genes for EACH population
+        stat_type = "Two Pop"
+        
+        if(length(pops) == 1){
+          return(list("ERROR: Only one population supplied for a two-population statistic
+             \n Either 'pops' is not a vector or 'pops' has only one entry.\n",error_plot))
+        }
+        # Find all population pairs
+        two_pops <- combn(pops,2)
+        # If so, iterate through each combination of pops and output the indices
+        # and string version of the population pair
+        for(pair in 1:ncol(two_pops)){
+          # Read the strings, find the column corresponding
           # to the stat of interest for the populations in the vector, and set
           # "indx" equal to the column housing this statistic
-          indx <- which(grepl(pops[1], names(stat_table))
-                        & grepl(pops[2], names(stat_table))
+          indx <- which(grepl(two_pops[1, pair], names(stat_table))
+                        & grepl(two_pops[2, pair], names(stat_table))
                         & grepl(stat, names(stat_table)))
+          
           # If statistic for populations-of-interest is not present, return error
           if(length(indx) == 0){
-            return(paste(c("ERROR: Statistic",stat,
-                           "is not present for the populations",pops[1],"and",
-                           pops[2]),collapse = " "))
+            wrnings <- append(wrnings, paste(c("Statistic",stat,
+                           "is not present for the populations",two_pops[1, pair],"and",
+                           two_pops[2, pair]),collapse = " "))
+            next
+          }else{
+            indices <- append(indices, indx)
+            next
           }
-          # If pops is NOT a vector, return an error
-        }else if(!is.vector(pops)){
-          return("ERROR: Only one population supplied for a two-population statistic
-             \n Either 'pops' is not a vector or 'pops' has only one entry.\n")
-          # Check if statistic of interest makes comparisons between ONE population
         }
+          # Check if statistic of interest makes comparisons between ONE population
       }else if((stat == "TajimasD") | (stat == "Pi")){
-        # Ensure that only one population was entered
-        if(is.character(pops) & length(pops) == 1){
+        # Tell the program that a one-population statistic was entered so the
+        # program outputs the specified number of genes across ALL populations
+        stat_type = "One Pop"
+        # Iterate through each individual population
+        for(p in 1:length(pops)){
           # If pops is a string, set indx equal to the column housing the stat of
           # interest for this population
-          indx <- which(grepl(pops, names(stat_table))
-                        & grepl(stat, names(stat_table)))
-          # If statistic for populations-of-interest is not present, return error
+          indx <- append(indices, which(grepl(pops[p], names(stat_table))
+                        & grepl(stat, names(stat_table))))
+          # If statistic for populations-of-interest is not present, return note
           if(length(indx) == 0){
-            return(paste(c("ERROR: Statistic",stat,
-                           "is not present for the population",pops),
+            wrnings <- append(wrnings, paste(c("Statistic",stat,
+                           "is not present for the population",pops[p]),
                          collapse = " "))
+            next
+          }else{
+            indices <- append(indices, indx)
+            next
           }
-          # If more than one population was entered, return an error
-        }else if(!is.character(pops) | length(pops) != 1){
-          return("ERROR: Detected inappropriate number of populations for a
-              one-population statistic\n Either 'pops' is not a string or 'pops'
-             was not supplied.\n")
         }
-      }else{
-        return("ERROR: Invald statistic name")
       }
-      # Remove all rows where stat-of-interest is NA
-      filt_table <- stat_table[!is.na(stat_table[,indx]),]
-      # Create dataframe with gene names, appropriate stat values, and GO terms
-      # EDIT: Include GO terms
-      df <- data.frame(
-        Genes = filt_table$Gene_Name,
-        Stats = filt_table[,indx]
-      )
-      # Rename df satistics column with specific statistic name
-      names(df)[2] <- stat
-      # Pick a tail based on whether "top" or "bottom" was specified
+      
+      # Create dataframe with values of stat-of-interest for every single pop-of
+      # -interest
+      temp = c()
+      for(i in 1:length(indices)){
+        temp <- append(temp, stat_table[,indices[i]])
+      }
+      # Remove missing vlaues so plotting function will work
+      temp <- temp[!is.na(temp)]
+      
+      # Coerce statistics into a one column dataframe so you can use 
+      # ShadedDensity()
+      filt_table <- as.data.frame(temp)
+      
+      # Rename df statistics column so you can reference the statistic values i
+      # in the plotting function
+      names(filt_table)[1] <- "Statistic_Values"
+      
+      # Pick a direction to shade in based on whether "top" or "bottom" was 
+      # specified
       if(UL == "top"){
         t = "right"
       }else if(UL == "bottom"){
         t = "left"
       }
-      # Create density plot. Title must be different depending on whether you have 1
-      # or two populations
-      if(is.vector(pops)){
-        ShadedDensity(frame = df,
-                      xvar = stat,
-                      threshold = thresh,
-                      title = paste(c(stat, " values for ", pops[1], " and ", pops[2]), collapse = ""),
-                      tail = t)
-      }else{
-        ShadedDensity(frame = df,
-                      xvar = stat,
-                      threshold = thresh,
-                      title = paste(c(stat, " values for ", pops), collapse = ""),
-                      tail = t)
+      
+      # Create a string to be used in the title of the density plot
+      pop_string = ""
+      for(p in 1:length(pops)){
+        if(p == 1){
+          pop_string <- pops[p]
+        }else if((p != length(pops)) & (p != 1)){
+          pop_string <- paste(c(pop_string, ", ", pops[p]), collapse = "")
+        }else if(p == length(pops)){
+          pop_string <- paste(c(pop_string, pops[p]), collapse = ", and ")
+        }
       }
+      
+      # Create density plot. Title must be different depending on whether you 
+      # have one or two populations
+      if(stat_type == "Two Pop"){
+        plot_title <- paste(c("Pairwise", stat, " values for ",pop_string), 
+                            collapse = "")
+      }else{
+        plot_title <- paste(c(stat, " values for ", pop_string),collapse = "")
+      }
+      
+      output_plot <- ShadedDensity(frame = filt_table,
+                        xvar = "Statistic_Values",
+                        threshold = thresh,
+                        title = plot_title,
+                        tail = t,
+                        shading = "maroon")
+      return(list(wrnings, output_plot))
     }
 
     GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
@@ -1826,7 +1874,8 @@ library(tibble)
                    pops = input$dist_pops)
     }
     )
-    output$SVdist_plot <- renderPlot(SVDP())
+    output$SVdist_plot_wrnings <- renderText(SVDP()[[1]])
+    output$SVdist_plot <- renderPlot(SVDP()[[2]])
 
     # Population Genetics (Distribution Suppage): If Gene Count was specified,
     # output the statistics associated with the indicated number of genes
