@@ -175,38 +175,44 @@ library(tibble)
                  ),
                  conditionalPanel(
                    condition = "input.which_function == 'stat_by_chr_func'",
-                   checkboxGroupInput("sbc_statist", 
-                                      label = "Statistic of Interest",
-                                      choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-                   checkboxGroupInput("sbc_pops", 
-                                      label = "Population(s) of Interest",
-                                      choices = c("Molino", "Pachon", "Rascon", "Rio Choy", 
-                                                  "Tinaja")),
-                   searchInput(
-                     inputId = "GO_search", label = "GO ID or Term",
-                     placeholder = "GO:0000001, mitochondrion, etc...",
-                     btnSearch = icon("search"),
-                     btnReset = icon("remove"),
-                     width = "450px"
-                   ),
-                   selectInput(
-                     inputId = "stat_PlotSelect",
-                     label = "Visualize statistic...",
-                     choices = "",
-                     selected = NULL,
-                     multiple = FALSE
-                   ),
-                   selectInput(
-                     inputId = "scaff_PlotSelect",
-                     label = "...plotted along scaffold:",
-                     choices = "",
-                     selected = NULL,
-                     multiple = FALSE
-                   ),
-                   actionButton("SBCP_enter","Visualize"),
-                   tableOutput("SBC_table"),
-                   textOutput("SBC_wrnings"),
-                   plotOutput("SBC_plot")
+                   sidebarLayout(
+                     sidebarPanel(
+                       checkboxGroupInput("sbc_statist", 
+                                          label = "Statistic of Interest",
+                                          choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
+                       checkboxGroupInput("sbc_pops", 
+                                          label = "Population(s) of Interest",
+                                          choices = c("Molino", "Pachon", "Rascon", "Rio Choy", 
+                                                      "Tinaja")),
+                       searchInput(
+                         inputId = "GO_search", label = "GO ID or Term",
+                         placeholder = "GO:0000001, mitochondrion, etc...",
+                         btnSearch = icon("search"),
+                         btnReset = icon("remove"),
+                         width = "450px"
+                       ),
+                       selectInput(
+                         inputId = "stat_PlotSelect",
+                         label = "Visualize statistic...",
+                         choices = "",
+                         selected = NULL,
+                         multiple = FALSE
+                       ),
+                       selectInput(
+                         inputId = "scaff_PlotSelect",
+                         label = "...plotted along scaffold:",
+                         choices = "",
+                         selected = NULL,
+                         multiple = FALSE
+                       ),
+                       actionButton("SBCP_enter","Visualize")
+                     ),
+                     mainPanel(
+                        tableOutput("SBC_table"),
+                        textOutput("SBC_wrnings"),
+                        plotOutput("SBC_plot")
+                     )
+                   )
                  )
         )
     )
@@ -1424,8 +1430,8 @@ library(tibble)
         stat_type = "Two Pop"
         
         if(length(pops) == 1){
-          return(list("ERROR: Only one population supplied for a two-population statistic
-             \n Either 'pops' is not a vector or 'pops' has only one entry.\n",error_plot))
+          return(list("ERROR: Only one population supplied for a two-population statistic",
+                      error_plot))
         }
         # Find all population pairs
         two_pops <- combn(pops,2)
