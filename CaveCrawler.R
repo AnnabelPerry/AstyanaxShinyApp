@@ -18,10 +18,53 @@ morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 
 GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
+# When you first read in GoIDToNames, some entire lines are, for whatever reason,
+# combined into a single GO term cell
+
+# This section of the script...
+# 1. Identifies all GO term cells containing information from multiple lines
+messed_cells <- GoIDToNames$GO.Term[grepl("\n", GoIDToNames$GO.Term)]
+
+# 2. Splices the cells into strings based on newline characters and adds strings
+#    to a vector
+newline_strings <- c()
+sites.of.errors <- c()
+for(c in 1:length(messed_cells)){
+  newline_strings <- append(newline_strings, str_split(string = messed_cells[c],
+                                                       pattern = "\n"))
+  sites.of.errors <- append(sites.of.errors, 
+                            which(GoIDToNames$GO.Term == messed_cells[c]))
+}
+
+
+error.replacements <- c()
+for(i in 1:length(newline_strings)){
+  # 3. Records sites at which an erroneous GO term must be replaced with a
+  #    corrected GO term
+  error.replacements <- append(error.replacements, newline_strings[[i]][1])
+  newline_strings[[i]] <- newline_strings[[i]][-1]
+  # 4. Splices the strings of the vector into substrings based on \t and adds 
+  #    substring pairs as columns to a temporary dataframe
+  temp_df <- data.frame(matrix(ncol = 2, nrow = 1))
+  new_rows <- str_split(string = newline_strings[[i]], pattern = "\t")
+  for(r in 1:length(new_rows)){
+    temp_df <- rbind(temp_df, new_rows[[r]])
+  }
+  temp_df <- temp_df[-1,]
+  names(temp_df) <- names(GoIDToNames)
+  # 5. Inserts the temporary data frame into the master data frame
+  GoIDToNames <- rbind(GoIDToNames, temp_df)
+  next
+}
+# 6. Replaces the erroneous GO term with a corrected GO term
+GoIDToNames$GO.Term[sites.of.errors] <- error.replacements
+
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
 stat_table <- read.csv("data/AMexicanus_Genes_and_Stats.csv")
 stat_table <- stat_table[,(names(stat_table) != "X")]
+
+GO_classes <- read.table("data/GOID_Namespaces.txt", fill = T, sep = "\t", header = T)
 
 # Obtain complete dataframe of all possible genes and corresponding IDs across
 # the statistic and transcription data
@@ -35,6 +78,10 @@ all.genes_IDs <- data.frame(
 )
 all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
 all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
+
+# Obtain a complete vector of all GO IDs
+all.GO_IDs <- c(GO_classes$GO_ID)
+all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
 
 library(shinyWidgets)
 library(shiny)
@@ -214,7 +261,25 @@ library(tibble)
                      )
                    )
                  )
-        )
+        ),
+      tabPanel("GO Term Info", fluid = TRUE,
+               sidebarLayout(
+                 sidebarPanel(
+                   searchInput(
+                     inputId = "GO_info_search",
+                     label = "Phrase or comma-separated list of GO IDs",
+                     placeholder = "GO:0000001, mitochondrion, etc...",
+                     btnSearch = icon("search"),
+                     btnReset = icon("remove"),
+                     width = "450px"
+                   )
+                 ),
+                 mainPanel(
+                   tableOutput("GOinfo_table"),
+                   textOutput("GOinfo_wrnings")
+                 )
+               )
+      )
     )
   )
 
@@ -1864,6 +1929,115 @@ library(tibble)
       names(plist) <- names_vec
       return(plist)
     }
+    # In this function, the user inputs GO ID(s) or a phrase and the function 
+    # outputs the class, lower-level GO IDs, and GO term associated with each
+    # relevant GO ID
+    GOInfo <- function(GO_input, GO_classes, GOIDToNames, UpperLower, all.GO_IDs){
+      # Initialize a vector in which to store GO IDs
+      GO_ID_vec <- c()
+      
+      # Initialize an empty dataframe to output in the event of an error
+      error.df <- data.frame(matrix(nrow = 1, ncol = 4))
+      names(error.df) <- c("GO ID",
+                          "GO Term",
+                          "Namespace",
+                          "All Nested GO IDs")
+      
+      # Initialize a vector in which to output warnings/errors
+      wrnings <- c("Notes: ")
+      
+      # Find whether input is comma-separated list of GO IDs, single GO ID, or
+      # phrase and fill GO_ID_vec with appropriate GO IDs based on answer
+      if((grepl(", ", GO_input))){
+        # If input is a comma-separated list of GO IDs, parse string and add
+        # each GO ID to the vector of GO IDs
+        temp_GO_ID_vec <- str_split(string = GO_input, pattern = ", ")[[1]]
+        # Check to ensure that at least one of the inputted IDs is a real GO ID
+        for(i in 1:length(temp_GO_ID_vec)){
+          if(temp_GO_ID_vec[i] %in% all.GO_IDs){
+            GO_ID_vec <- append(GO_ID_vec, temp_GO_ID_vec[i])
+            next
+          }else{
+            wrnings <- append(wrnings, paste(c("Input ",temp_GO_ID_vec[i], 
+                                               " is not a GO ID."), 
+                                             collapse = ""))
+            next
+          }
+        }
+        # If NONE of the inputs are real GO IDs, output an error 
+        if(is.null(GO_ID_vec)){
+          return(list("ERROR: None of the inputs in the comma-separated list are GO IDs",
+                      error.df))
+        }
+        
+      }else if(!(grepl(", ", GO_input)) & (GO_input %in% all.GO_IDs)){
+        # If input is a single GO ID, add it to the vector of GO IDs
+        GO_ID_vec <- GO_input
+      }else if(!(grepl(", ", GO_input)) & !(GO_input %in% all.GO_IDs)){
+        # If input is a phrase, find all GO terms associated with that phrase
+        if(sum(grepl(GO_input, GoIDToNames$GO.Term, ignore.case = T)) != 0){
+          GO_ID_vec <- GoIDToNames$GO.ID[grepl(GO_input, GoIDToNames$GO.Term, 
+                                               ignore.case = T)]
+        # If NO GO terms are associated with the phrase, output an error
+        }else{
+          return(list(paste(c("ERROR: Input ", GO_input,
+                              " is neither a GO ID nor a phrase associated with any recorded GO IDs"),
+                      collapse = ""), error.df))
+        }
+        
+      }
+      
+      # Create a dataframe with the GO terms, namespaces, and lower-level GO IDs
+      # associated with all input GO IDs
+      GO_df <- data.frame(matrix(nrow = length(GO_ID_vec), ncol = 4))
+      names(GO_df) <- c("GO ID",
+                         "GO Term",
+                         "Namespace",
+                         "All Nested GO IDs")
+      for(GO in 1:length(GO_ID_vec)){
+        # Output GO ID
+        GO_df$`GO ID`[GO] <- GO_ID_vec[GO]
+        # Output GO term, if present
+        if(GO_ID_vec[GO] %in% GoIDToNames$GO.ID){
+          GO_df$`GO Term`[GO] <- GoIDToNames$GO.Term[GoIDToNames$GO.ID == GO_ID_vec[GO]]
+        }else{
+          GO_df$`GO Term`[GO] <- "Not applicable"
+        }
+        # Output class of GO ID
+        if(GO_ID_vec[GO] %in% GO_classes$GO_ID){
+          GO_df$Namespace[GO] <- GO_classes$Namespace[GO_classes$GO_ID == GO_ID_vec[GO]]
+        }else{
+          GO_df$Namespace[GO] <- "Not applicable"
+        }
+        # Output all lower-level GO IDs associated with current GO ID
+        # First, add the current GO ID to a vector
+        lower_GOs <- GO_ID_vec[GO]
+        for(g in 1:length(lower_GOs)){
+          # Add all "Lower" GO IDs which occur on a row where the current vector entry
+          # is an "Upper" to the vector of GO IDs, then move to the next GO ID
+          if(lower_GOs[g] %in% UpperLower$Upper){
+            lower_GOs <- append(lower_GOs, 
+                                UpperLower$Lower[UpperLower$Upper == lower_GOs[g]])
+            # If the current GO ID does NOT occur anywhere in the "Upper" column,
+            # skip it
+          }else{
+            next
+          }
+        }
+        # Remove the first GO ID from the vector of lower GO IDs, as this is the
+        # original GO ID
+        lower_GOs <- lower_GOs[-1]
+        if(length(lower_GOs) != 0){
+          GO_df$`All Nested GO IDs`[GO] <- paste(lower_GOs, collapse = "; ")
+        }else{
+          GO_df$`All Nested GO IDs`[GO] <- "No lower-level GO IDs"
+        }
+        
+      }
+      
+      # Return data frame and warnings, if applicable
+      return(list(wrnings, GO_df))
+    }
     
     # Gene Search Page: Output a table of all statistics associated with the 
     # entered gene
@@ -2008,6 +2182,42 @@ library(tibble)
       })
     output$SBC_wrnings <- renderText(SBCT()[[1]])
     output$SBC_plot <- renderPlot(SBCP())
+    
+    # GO Term Info: If GO ID or phrase was inputted, output class, lower-level
+    # GO IDs, and GO terms associated with all relevant GO IDs
+    GOInfoOutWarnings <- eventReactive(input$GO_info_search, valueExpr = {
+      if(input$GO_info_search == ""){
+        "Warnings will populate here once GO ID or phrase is inputted."
+      }else{
+        GOInfo(
+          GO_input = input$GO_info_search, 
+           GO_classes, 
+           GOIDToNames, 
+           UpperLower, 
+           all.GO_IDs
+          )[[1]]
+      }
+    })
+    GOInfoOutTable <- eventReactive(input$GO_info_search, valueExpr = {
+      if(input$GO_info_search == ""){
+        data.frame(`Column Name` = "Data will populate here once GO ID or phrase is inputted.")
+      }else{
+        GOInfo(
+          GO_input = input$GO_info_search, 
+          GO_classes, 
+          GOIDToNames, 
+          UpperLower, 
+          all.GO_IDs
+        )[[2]]
+      }
+    })
+    output$GOinfo_table <- renderTable(
+        GOInfoOutTable()
+    )
+    output$GOinfo_wrnings <- renderText(
+        GOInfoOutWarnings()
+    )
+      
   }
 
 
