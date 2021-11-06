@@ -7,6 +7,14 @@
 #    http://shiny.rstudio.com/
 #
 ################################ Load in data ################################
+
+library(shinyWidgets)
+library(shiny)
+library(plotly)
+library(WVPlots)
+library(stringr)
+library(tibble)
+
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
@@ -82,13 +90,6 @@ all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
 # Obtain a complete vector of all GO IDs
 all.GO_IDs <- c(GO_classes$GO_ID)
 all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
-
-library(shinyWidgets)
-library(shiny)
-library(plotly)
-library(WVPlots)
-library(stringr)
-library(tibble)
 
   ui = fluidPage(
     theme = "dark_mode.css",
@@ -193,8 +194,7 @@ library(tibble)
                        # above or below a specific threshhold
                        conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
-                         sliderInput("thrsh", "Threshhold statistical value: ",min = -3,
-                                     max = 3, value = 0, step = 0.05),
+                         uiOutput("thrsh_slider"),
                          radioButtons("TB",
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
@@ -284,55 +284,17 @@ library(tibble)
   )
 
   server = function(input, output) {
-    
-    observe({
-      transc_morph_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
-                                "Rio Choy")
-      # Transcription Page: Update morph-selection widget to only enable 
-      # comparisons between current morph and morph which is NOT morph1
-      updateSelectInput(session = getDefaultReactiveDomain(),
-                        "morph2",
-                        choices = transc_morph_choices[transc_morph_choices != input$morph1],
-                        selected = tail(transc_morph_choices, 1)
-      )
-      # Population Genetics (Stat-By-Chr Suppage): Update widget for selecting 
-      # which statistic to plot
-      updateSelectInput(session = getDefaultReactiveDomain(),
-                        inputId = "stat_PlotSelect",
-                        label = "Visualize statistic...",
-                        choices = input$sbc_statist)
-      # Population Genetics (Stat-By-Chr Suppage): If a table has been created, 
-      # update the widget for selecting which scaffold to plot
-      if(length(SBCT()) == 2){
-        all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
-        available_scaffs <- c()
-        for(i in 1:length(all_plots)){
-          available_scaffs <- append(available_scaffs,
-                                     str_split(names(all_plots)[[i]], ":")[[1]][2])
-        }
-        updateSelectInput(session = getDefaultReactiveDomain(),
-                          inputId = "scaff_PlotSelect",
-                          label = "...plotted along scaffold:",
-                          choices = available_scaffs)
-      }else{
-        updateSelectInput(session = getDefaultReactiveDomain(),
-                          inputId = "scaff_PlotSelect",
-                          label = "...plotted along scaffold:",
-                          choices = "")
-      }
-    })
-
     GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                              position_table){
       comma <- ", "
-
+      
       # If input is a comma-separated string, parse string and separate elements,
       # then determine whether vector contains gene names or gene IDs
       if(grepl(comma, input)){
         input_vec <- str_split(input, pattern = comma)[[1]]
         # Dataframe in which to store inputs and associated values
         output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
-
+        
         # Next, iterate through each element of vector
         for(i in 1:length(input_vec)){
           # If element is present in all_genes, consider vector a vector of gene
@@ -340,7 +302,7 @@ library(tibble)
           if(input_vec[i] %in% all.genes_IDs$all_genes){
             output.df[i,1] = input_vec[i]
             output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
-
+            
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
             if(input_vec[i] %in% position_table$Gene_Name){
@@ -350,7 +312,7 @@ library(tibble)
             }else{
               output.df[i,3:5] = NA
             }
-
+            
             # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
             if(input_vec[i] %in% GeneToGO$Gene.names){
@@ -358,7 +320,7 @@ library(tibble)
             }else{
               output.df[i,7] = NA
             }
-
+            
             # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Gene_Name){
@@ -387,7 +349,7 @@ library(tibble)
               output.df[i,6] = NA
               output.df[i,8:27] = NA
             }
-
+            
             # Check if current gene is found in transcription data. If so, output
             # associated information. If not, output NAs
             if(input_vec[i] %in% condition_control$Gene_name){
@@ -446,7 +408,7 @@ library(tibble)
             }else{
               output.df[i,28:35] = NA
             }
-
+            
             geneName = T
             geneID = F
             # If element is present in all_IDs, consider vector a vector of IDs and
@@ -454,7 +416,7 @@ library(tibble)
           }else if(input_vec[i] %in% all.genes_IDs$all_IDs){
             output.df[i,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input_vec[i]]
             output.df[i,2] = input_vec[i]
-
+            
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
             if(output.df[i,2] %in% position_table$Gene_Name){
@@ -464,7 +426,7 @@ library(tibble)
             }else{
               output.df[i,3:5] = NA
             }
-
+            
             # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
             if(output.df[i,2] %in% GeneToGO$Gene.names){
@@ -472,7 +434,7 @@ library(tibble)
             }else{
               output.df[i,7] = NA
             }
-
+            
             # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Stable_Gene_ID){
@@ -501,7 +463,7 @@ library(tibble)
               output.df[i,6] = NA
               output.df[i,8:27] = NA
             }
-
+            
             # Check if current gene is found in transcription data. If so, output
             # associated information. If not, output NAs
             if(input_vec[i] %in% condition_control$Gene_stable_ID){
@@ -578,7 +540,7 @@ library(tibble)
           output.df <- data.frame(matrix(ncol = 35, nrow = 1))
           output.df[1,1] = input
           output.df[1,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input]
-
+          
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input %in% position_table$Gene_Name){
@@ -588,7 +550,7 @@ library(tibble)
           }else{
             output.df[1,3:5] = NA
           }
-
+          
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input %in% GeneToGO$Gene.names){
@@ -596,7 +558,7 @@ library(tibble)
           }else{
             output.df[1,7] = NA
           }
-
+          
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Gene_Name){
@@ -625,7 +587,7 @@ library(tibble)
             output.df[1,6] = NA
             output.df[1,8:27] = NA
           }
-
+          
           # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input %in% condition_control$Gene_name){
@@ -684,7 +646,7 @@ library(tibble)
           }else{
             output.df[1,28:35] = NA
           }
-
+          
           geneName = T
           geneID = F
         }else if(input %in% all.genes_IDs$all_IDs){
@@ -693,7 +655,7 @@ library(tibble)
           output.df <- data.frame(matrix(ncol = 35, nrow = 1))
           output.df[1,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input]
           output.df[1,2] = input
-
+          
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(output.df[1,2] %in% position_table$Gene_Name){
@@ -703,7 +665,7 @@ library(tibble)
           }else{
             output.df[1,3:5] = NA
           }
-
+          
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(output.df[1,2] %in% GeneToGO$Gene.names){
@@ -711,7 +673,7 @@ library(tibble)
           }else{
             output.df[1,7] = NA
           }
-
+          
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Stable_Gene_ID){
@@ -740,7 +702,7 @@ library(tibble)
             output.df[1,6] = NA
             output.df[1,8:27] = NA
           }
-
+          
           # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input %in% condition_control$Gene_stable_ID){
@@ -807,14 +769,14 @@ library(tibble)
           geneID = F
         }
       }
-
-
+      
+      
       # If the input string contains NO commas but is not WHOLLY comprised of IDs or
       # names, consider the string a phrase
       if((!geneID) & (!geneName)){
         # Find all gene names whose description, GO terms, or gene name contains the
         # phrase-of-interest
-
+        
         # Must first check if phrase is found in any column-of-interest prior to
         # appending phrase to column of interest
         input_vec <- c()
@@ -830,14 +792,14 @@ library(tibble)
            (sum(grepl(input, GeneToGO$Gene.ontology..molecular.function.)) != 0)){
           input_vec <- append(input_vec,
                               c(GeneToGO$Gene.names[
-              grepl(input, GeneToGO$Gene.ontology..biological.process.)
-              ],
-              GeneToGO$Gene.names[
-              grepl(input, GeneToGO$Gene.ontology..cellular.component.)
-              ],
-              GeneToGO$Gene.names[
-              grepl(input, GeneToGO$Gene.ontology..molecular.function.)
-              ]
+                                grepl(input, GeneToGO$Gene.ontology..biological.process.)
+                              ],
+                              GeneToGO$Gene.names[
+                                grepl(input, GeneToGO$Gene.ontology..cellular.component.)
+                              ],
+                              GeneToGO$Gene.names[
+                                grepl(input, GeneToGO$Gene.ontology..molecular.function.)
+                              ]
                               )
           )
         }
@@ -846,10 +808,10 @@ library(tibble)
                               all.genes_IDs$all_genes[grepl(input,
                                                             all.genes_IDs$all_genes)])
         }
-
+        
         # Remove duplicate genes from input vector
         input_vec <- input_vec[!duplicated(input_vec)]
-
+        
         # If no gene descriptions contain the phrase, return an error
         if(length(input_vec) == 0){
           return(paste(c("ERROR: No genes-of-interest can be described by the phrase",
@@ -857,7 +819,7 @@ library(tibble)
         }
         # Initialize df in which to store output based on number of genes
         output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
-
+        
         # For each gene, collect all values associated with the gene
         for(i in 1:length(input_vec)){
           output.df[i,1] = input_vec[i]
@@ -866,7 +828,7 @@ library(tibble)
           }else{
             output.df[i,2] = NA
           }
-
+          
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input_vec[i] %in% position_table$Gene_Name){
@@ -876,7 +838,7 @@ library(tibble)
           }else{
             output.df[i,3:5] = NA
           }
-
+          
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input_vec[i] %in% GeneToGO$Gene.names){
@@ -884,7 +846,7 @@ library(tibble)
           }else{
             output.df[i,7] = NA
           }
-
+          
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input_vec[i] %in% stat_table$Gene_Name){
@@ -913,7 +875,7 @@ library(tibble)
             output.df[i,6] = NA
             output.df[i,8:27] = NA
           }
-
+          
           # Check if current gene is found in transcription data. If so, output
           # associated information. If not, output NAs
           if(input_vec[i] %in% condition_control$Gene_name){
@@ -974,7 +936,7 @@ library(tibble)
           }
         }
       }
-
+      
       # Output all values obtained for gene(s) of interest
       names(output.df) <- c(
         "Gene Name",
@@ -983,7 +945,7 @@ library(tibble)
         "Start Position",
         "Stop Position",
         "Gene Description",
-        "GO Term(s)",
+        "GO ID(s)",
         "Pi_RioChoy",
         "Pi_Pachon",
         "Pi_Molino",
@@ -1027,7 +989,7 @@ library(tibble)
         if(direction == "Upregulated"){
           # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST
           # logFC scores AND p-value < 0.05
-
+          
           # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
           # upregulated, condition matches the input specification, and p-value is
           # less than 0.05
@@ -1041,7 +1003,7 @@ library(tibble)
         }else if(direction == "Downregulated"){
           # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST
           # logFC scores AND p-value < 0.05
-
+          
           # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
           # downregulated, condition matches the input specification, and p-value is
           # less than 0.05
@@ -1081,12 +1043,12 @@ library(tibble)
           "p-value",
           "Ensembl Family Description"
         )
-
+        
         # If condition is "Between morph"...
       }else if(condition == "Between morph"){
         # Use transcription data for between-morph comparisons
         in_table <- morph1.morph2
-
+        
         # Find rows corresponding to morphs of interest
         morph1.rows <- in_table[in_table$Class == morph1,]
         morph2.rows <- in_table[in_table$Class == morph2,]
@@ -1166,7 +1128,7 @@ library(tibble)
       pop_strings <- c()
       # Create vector into which warnings will be stored for later output
       wrnings <- c("Notes:\n")
-
+      
       # Check if statistic of interest makes comparisons between TWO populations
       if((stat == "Fst") | (stat == "Dxy")){
         # Tell the program that a two-population statistic was entered so the
@@ -1201,9 +1163,9 @@ library(tibble)
                                   "Population",
                                   "Statistic_Value")
               return(list(paste(c("Statistic ",stat,
-                                        " is not present for the populations ",
-                                        two_pops[1, pair]," and ",
-                                        two_pops[2, pair]),collapse = ""), 
+                                  " is not present for the populations ",
+                                  two_pops[1, pair]," and ",
+                                  two_pops[2, pair]),collapse = ""), 
                           null.df))
             }
           }else{
@@ -1238,13 +1200,13 @@ library(tibble)
       }else{
         return("ERROR: Invalid statistic name")
       }
-
+      
       # Initialize vectors of gene names, populations, and statistic values
       genes <- c()
       DF_pops <- c()
       stat_vals <- c()
-
-
+      
+      
       # Check if statistic value or gene count was entered
       # If value was entered...
       if(in_type == "Statistic Value"){
@@ -1381,11 +1343,11 @@ library(tibble)
         return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                           collapse = " "), null.df))
       }
-
+      
       # Initialize a vector of GO terms and a vector of scaffolds
       scaffs <- character(length = length(genes))
       DF_GOs <- character(length = length(genes))
-
+      
       # For each gene in the gene vector, output the associated scaffolds to the
       # vector of scaffolds and output the associated GO terms to the vector of GO
       # terms
@@ -1423,8 +1385,8 @@ library(tibble)
       )
       # Sort into a final dataframe
       final_df <- data.frame()
-
-
+      
+      
       # Sort df based on statistic values
       # If "top" was checked, sort dataframe in DESCENDING order from top to bottom
       # but retain population groups
@@ -1475,7 +1437,7 @@ library(tibble)
                                  .before = T)
         }
       }
-
+      
       # Rename df stat type and stat value columns with specific statistic's name
       names(final_df) <- c(
         "Rank",
@@ -1485,7 +1447,7 @@ library(tibble)
         "Gene Name",
         "GO Term(s)"
       )
-
+      
       # Output df and warnings
       if(is.na(final_df[1,2])){
         final_df <- final_df[-1,]
@@ -1531,8 +1493,8 @@ library(tibble)
           # If statistic for populations-of-interest is not present, return error
           if(length(indx) == 0){
             wrnings <- append(wrnings, paste(c("Statistic",stat,
-                           "is not present for the populations",two_pops[1, pair],"and",
-                           two_pops[2, pair]),collapse = " "))
+                                               "is not present for the populations",two_pops[1, pair],"and",
+                                               two_pops[2, pair]),collapse = " "))
             # If these populations-of-interest are the only pops which were
             # inputted, return a warning
             if(ncol(two_pops) == 1){
@@ -1547,7 +1509,7 @@ library(tibble)
             next
           }
         }
-          # Check if statistic of interest makes comparisons between ONE population
+        # Check if statistic of interest makes comparisons between ONE population
       }else if((stat == "TajimasD") | (stat == "Pi")){
         # Tell the program that a one-population statistic was entered so the
         # program outputs the specified number of genes across ALL populations
@@ -1557,12 +1519,12 @@ library(tibble)
           # If pops is a string, set indx equal to the column housing the stat of
           # interest for this population
           indx <- append(indices, which(grepl(pops[p], names(stat_table))
-                        & grepl(stat, names(stat_table))))
+                                        & grepl(stat, names(stat_table))))
           # If statistic for populations-of-interest is not present, return note
           if(length(indx) == 0){
             wrnings <- append(wrnings, paste(c("Statistic",stat,
-                           "is not present for the population",pops[p]),
-                         collapse = " "))
+                                               "is not present for the population",pops[p]),
+                                             collapse = " "))
             next
           }else{
             indices <- append(indices, indx)
@@ -1623,14 +1585,14 @@ library(tibble)
       }
       
       output_plot <- ShadedDensity(frame = filt_table,
-                        xvar = "Statistic_Values",
-                        threshold = thresh,
-                        title = plot_title,
-                        tail = t,
-                        shading = "maroon")
+                                   xvar = "Statistic_Values",
+                                   threshold = thresh,
+                                   title = plot_title,
+                                   tail = t,
+                                   shading = "maroon")
       return(list(wrnings, output_plot))
     }
-
+    
     GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
       if(input$Gene_search == ""){
         data.frame()
@@ -1642,6 +1604,7 @@ library(tibble)
                      position_table)
       }
     })
+    
     StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
       # Initialize vector for all GO terms of interest
       GOs <- c()
@@ -1939,9 +1902,9 @@ library(tibble)
       # Initialize an empty dataframe to output in the event of an error
       error.df <- data.frame(matrix(nrow = 1, ncol = 4))
       names(error.df) <- c("GO ID",
-                          "GO Term",
-                          "Namespace",
-                          "All Nested GO IDs")
+                           "GO Term",
+                           "Namespace",
+                           "All Nested GO IDs")
       
       # Initialize a vector in which to output warnings/errors
       wrnings <- c("Notes: ")
@@ -1978,11 +1941,11 @@ library(tibble)
         if(sum(grepl(GO_input, GoIDToNames$GO.Term, ignore.case = T)) != 0){
           GO_ID_vec <- GoIDToNames$GO.ID[grepl(GO_input, GoIDToNames$GO.Term, 
                                                ignore.case = T)]
-        # If NO GO terms are associated with the phrase, output an error
+          # If NO GO terms are associated with the phrase, output an error
         }else{
           return(list(paste(c("ERROR: Input ", GO_input,
                               " is neither a GO ID nor a phrase associated with any recorded GO IDs"),
-                      collapse = ""), error.df))
+                            collapse = ""), error.df))
         }
         
       }
@@ -1991,9 +1954,9 @@ library(tibble)
       # associated with all input GO IDs
       GO_df <- data.frame(matrix(nrow = length(GO_ID_vec), ncol = 4))
       names(GO_df) <- c("GO ID",
-                         "GO Term",
-                         "Namespace",
-                         "All Nested GO IDs")
+                        "GO Term",
+                        "Namespace",
+                        "All Nested GO IDs")
       for(GO in 1:length(GO_ID_vec)){
         # Output GO ID
         GO_df$`GO ID`[GO] <- GO_ID_vec[GO]
@@ -2038,6 +2001,115 @@ library(tibble)
       # Return data frame and warnings, if applicable
       return(list(wrnings, GO_df))
     }
+    
+    # This function finds the minimum and maximum values for a population-specific
+    # statistic in a statistical table
+    MinMax <- function(mm_pops, mm_stat, stat_table){
+      # Create matrix to store all columns which house the morphs-of-interest
+      cols.w.morphs <- data.frame(matrix(nrow = length(mm_pops), 
+                                         ncol = ncol(stat_table)))
+      colnames(cols.w.morphs) <- colnames(stat_table)
+      
+      # Find all columns of stat_table which house at least one morph-of-interest
+      for(m in 1:length(mm_pops)){
+        cols.w.morphs[m,] <- grepl(mm_pops[m], names(stat_table), 
+                                   ignore.case = T)
+      }
+      cols.of.interest <- c()
+      for(i in 1:ncol(cols.w.morphs)){
+        if(sum(cols.w.morphs[,i]) > 0){
+          cols.of.interest <- append(cols.of.interest, names(cols.w.morphs)[i])
+        }
+      }
+      # Of the columns of stat_table which house at least one morph-of-interest,
+      # exclude the columns which have morphs which are NOT morphs of interest
+      bad.morphs <- c("Pachon", "Rascon", "RioChoy", "Molino", "Tinaja")
+      for(i in 1:length(mm_pops)){
+        bad.morphs <- bad.morphs[bad.morphs != mm_pops[i]]
+      }
+      for(b in 1:length(bad.morphs)){
+        if(sum(grepl(bad.morphs[b], cols.of.interest,ignore.case = T)) != 0){
+          cols.of.interest <- cols.of.interest[!(grepl(bad.morphs[b], 
+                                                       cols.of.interest, 
+                                                       ignore.case = T))]
+        }
+      }
+      # Find columns-of-interest which house stat-of-interest
+      cols.of.interest <- cols.of.interest[grepl(mm_stat, 
+                                                 cols.of.interest, 
+                                                 ignore.case = T)]
+      # Combine columns-of-interest into a single vector of numbers
+      num_pool <- c()
+      for(i in 1:length(cols.of.interest)){
+        num_pool <- append(num_pool, 
+                           stat_table[,names(stat_table) == cols.of.interest[i]])
+      }
+      
+      # Output the minimum and maximum values in that vector
+      minimum <- num_pool[which.min(num_pool)]
+      maximum <- num_pool[which.max(num_pool)]
+      return(list(minimum,maximum))
+    }
+    
+    observe({
+      transc_morph_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
+                                "Rio Choy")
+      # Transcription Page: Update morph-selection widget to only enable 
+      # comparisons between current morph and morph which is NOT morph1
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "morph2",
+                        choices = transc_morph_choices[transc_morph_choices != input$morph1],
+                        selected = tail(transc_morph_choices, 1)
+      )
+      # Population Genetics (Stat-By-Chr Suppage): Update widget for selecting 
+      # which statistic to plot
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        inputId = "stat_PlotSelect",
+                        label = "Visualize statistic...",
+                        choices = input$sbc_statist)
+      # Population Genetics (Stat-By-Chr Suppage): If a table has been created, 
+      # update the widget for selecting which scaffold to plot
+      if(length(SBCT()) == 2){
+        all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
+        available_scaffs <- c()
+        for(i in 1:length(all_plots)){
+          available_scaffs <- append(available_scaffs,
+                                     str_split(names(all_plots)[[i]], ":")[[1]][2])
+        }
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          inputId = "scaff_PlotSelect",
+                          label = "...plotted along scaffold:",
+                          choices = available_scaffs)
+      }else{
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          inputId = "scaff_PlotSelect",
+                          label = "...plotted along scaffold:",
+                          choices = "")
+      }
+      # Population Genetics (StatDist Subpage): Update min and max values for 
+      # threshold slider 
+      output$thrsh_slider <- renderUI({
+        if(((length(input$dist_pops) >= 2) & 
+         ((input$dist_statist == "Fst") | (input$dist_statist == "Dxy"))) | 
+         ((length(input$dist_pops) < 2) & 
+         ((input$dist_statist != "Fst") & (input$dist_statist != "Dxy")))){
+        min_max_list <- MinMax(mm_pops = input$dist_pops,
+                               mm_stat = input$dist_statist,
+                               stat_table)
+        sliderInput("thrsh", "Threshhold statistical value: ",
+                    min = round(min_max_list[[1]],2), 
+                    max = round(min_max_list[[2]],2), value = 0, step = 0.05)
+      }else{
+        sliderInput("thrsh", 
+                    "Threshold selector will appear here once you have inputted enough populations for the selected statistic.",
+                    min = 0, max = 0, value = 0, 
+                    step = 0.05)
+      }
+      })
+    })
+
+    
+    
     
     # Gene Search Page: Output a table of all statistics associated with the 
     # entered gene
@@ -2217,7 +2289,8 @@ library(tibble)
     output$GOinfo_wrnings <- renderText(
         GOInfoOutWarnings()
     )
-      
+    
+    
   }
 
 
