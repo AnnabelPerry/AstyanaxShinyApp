@@ -3,7 +3,7 @@
 # the 'Run App' button above.
 #
 # Find out more about building applications with Shiny here:
-#mtnr1al
+#
 #    http://shiny.rstudio.com/
 #
 ################################ Load in data ################################
@@ -14,6 +14,8 @@ library(plotly)
 library(WVPlots)
 library(stringr)
 library(tibble)
+library(ggplot2)
+library(dplyr)
 
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
@@ -69,8 +71,20 @@ GoIDToNames$GO.Term[sites.of.errors] <- error.replacements
 
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
-stat_table <- read.csv("data/AMexicanus_Genes_and_Stats.csv")
-stat_table <- stat_table[,(names(stat_table) != "X")]
+# Read in both outlier and non-outlier datasets and integrate into a single data
+# frame, adding a column describing the publication from which the data came
+outlier_table <- read.csv("data/AMexicanus_Outlier_Stats.csv")
+outlier_table <- outlier_table[,(names(outlier_table) != "X")]
+outlier_table$Publication_Name <- rep("Outlier paper (Provisional)", 
+                                      nrow(outlier_table))
+chica_table <- read.csv("data/AMexicanus_iScienceS4R1_Stats.csv")
+names(chica_table) <- names(outlier_table)
+chica_table$Publication_Name <- rep("Chica paper (Provisional)", 
+                                    nrow(chica_table))
+chica_table <- chica_table[,1:ncol(outlier_table)]
+stat_table <- rbind(outlier_table, chica_table)
+stat_table <- stat_table[((stat_table$Gene_Name != "") & 
+                                      (stat_table$Gene_Name != " ")),]
 
 GO_classes <- read.table("data/GOID_Namespaces.txt", fill = T, sep = "\t", header = T)
 
@@ -84,21 +98,32 @@ all.genes_IDs <- data.frame(
               condition_control$Gene_stable_ID
   )
 )
-all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
 all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
+all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
 
 # Obtain a complete vector of all GO IDs
 all.GO_IDs <- c(GO_classes$GO_ID)
 all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
 
   ui = fluidPage(
-    theme = "dark_mode.css",
+    theme = "style.css",
     tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
     tags$style(type="text/css",
                ".shiny-output-error { visibility: hidden; }",
                ".shiny-output-error:before { visibility: hidden; }"),
 
     tabsetPanel(
+      tabPanel("Home", fluid = TRUE,
+               textOutput("home_text1"),
+               br(),
+               textOutput("home_text2"),
+               br(),
+               textOutput("home_text3"),
+               br(),
+               textOutput("home_text4"),
+               br(),
+               textOutput("home_text5")
+      ),
       tabPanel("Gene Search", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(
@@ -288,66 +313,85 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                              position_table){
       comma <- ", "
       
+      # Dataframe in which to store inputs and associated values
+      output.df <- data.frame(matrix(ncol = 36))
+      
       # If input is a comma-separated string, parse string and separate elements,
       # then determine whether vector contains gene names or gene IDs
       if(grepl(comma, input)){
         input_vec <- str_split(input, pattern = comma)[[1]]
-        # Dataframe in which to store inputs and associated values
-        output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
         
         # Next, iterate through each element of vector
         for(i in 1:length(input_vec)){
           # If element is present in all_genes, consider vector a vector of gene
           # names and output all associated elements to output dataframe
-          if(input_vec[i] %in% all.genes_IDs$all_genes){
-            output.df[i,1] = input_vec[i]
-            output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
+          if(input_vec[i] %in% c(position_table$Gene_Name, stat_table$Gene_Name,
+                                 condition_control$Gene_name)){
+            # Find number of times this gene occurs in stat_table
+            num_stat_copies <- sum(str_count(stat_table$Gene_Name, input_vec[i]))
+            # If number of copies of gene in statistic data is 0, copy the gene at
+            # least once so at least one copy is present for transcription data
+            if(num_stat_copies == 0){
+              num_stat_copies = 1
+            }
+            # Create temporary dataframe to be appended to final
+            temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 36))
+            
+            temp.df[,1] = rep(input_vec[i], num_stat_copies)
+            temp.df[,2] = rep(all.genes_IDs$all_IDs[
+              all.genes_IDs$all_genes == input_vec[i]], num_stat_copies)
             
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
             if(input_vec[i] %in% position_table$Gene_Name){
-              output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == input_vec[i]]
-              output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == input_vec[i]]
-              output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == input_vec[i]]
+              temp.df[,3] = rep(position_table$Scaffold[
+                position_table$Gene_Name == input_vec[i]], num_stat_copies)
+              temp.df[,4] = rep(position_table$Start_Locus[
+                position_table$Gene_Name == input_vec[i]], num_stat_copies)
+              temp.df[,5] = rep(position_table$End_Locus[
+                position_table$Gene_Name == input_vec[i]], num_stat_copies)
             }else{
-              output.df[i,3:5] = NA
+              temp.df[,3:5] = rep(NA, num_stat_copies)
             }
             
             # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
             if(input_vec[i] %in% GeneToGO$Gene.names){
-              output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input_vec[i]]
+              temp.df[,7] = rep(GeneToGO$Gene.ontology.IDs[
+                GeneToGO$Gene.names == input_vec[i]], num_stat_copies)
             }else{
-              output.df[i,7] = NA
+              temp.df[,7] = rep(NA, num_stat_copies)
             }
             
             # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Gene_Name){
-              output.df[i,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
-              output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
+              temp.df[,36] = stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]]
             }else{
-              output.df[i,6] = NA
-              output.df[i,8:27] = NA
+              temp.df[,6] = rep(NA, num_stat_copies)
+              temp.df[,8:27] = rep(NA, num_stat_copies)
+              temp.df[,36] = rep(NA, num_stat_copies)
             }
             
             # Check if current gene is found in transcription data. If so, output
@@ -356,112 +400,132 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               if(length(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
                 (grepl("Choy",condition_control$Class))]) != 0){
-                output.df[i,28] = condition_control$logFC[
+                temp.df[,28] = rep(condition_control$logFC[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Choy",condition_control$Class))]
-                output.df[i,32] = condition_control$PValue[
+                    (grepl("Choy",condition_control$Class))], num_stat_copies)
+                temp.df[,32] = rep(condition_control$PValue[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Choy",condition_control$Class))]
+                    (grepl("Choy",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,28] = NA
-                output.df[i,32] = NA
+                temp.df[,28] = rep(NA, num_stat_copies)
+                temp.df[,32] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
                 (grepl("Pachon",condition_control$Class))]) != 0){
-                output.df[i,29] = condition_control$logFC[
+                temp.df[,29] = rep(condition_control$logFC[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Pachon",condition_control$Class))]
-                output.df[i,33] = condition_control$PValue[
+                    (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                temp.df[,33] = rep(condition_control$PValue[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Pachon",condition_control$Class))]
+                    (grepl("Pachon",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,29] = NA
-                output.df[i,33] = NA
+                temp.df[,29] = rep(NA, num_stat_copies)
+                temp.df[,33] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
                 (grepl("Molino",condition_control$Class))]) != 0){
-                output.df[i,30] = condition_control$logFC[
+                temp.df[,30] = rep(condition_control$logFC[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Molino",condition_control$Class))]
-                output.df[i,34] = condition_control$PValue[
+                    (grepl("Molino",condition_control$Class))], num_stat_copies)
+                temp.df[,34] = rep(condition_control$PValue[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Molino",condition_control$Class))]
+                    (grepl("Molino",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,30] = NA
-                output.df[i,34] = NA
+                temp.df[,30] = rep(NA, num_stat_copies)
+                temp.df[,34] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
                 (grepl("Tinaja",condition_control$Class))]) != 0){
-                output.df[i,31] = condition_control$logFC[
+                temp.df[,31] = rep(condition_control$logFC[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Tinaja",condition_control$Class))]
-                output.df[i,35] = condition_control$PValue[
+                    (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                temp.df[,35] = rep(condition_control$PValue[
                   (condition_control$Gene_name == input_vec[i]) &
-                    (grepl("Tinaja",condition_control$Class))]
+                    (grepl("Tinaja",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,31] = NA
-                output.df[i,35] = NA
+                temp.df[,31] = rep(NA, num_stat_copies)
+                temp.df[,35] = rep(NA, num_stat_copies)
               }
             }else{
-              output.df[i,28:35] = NA
+              temp.df[,28:35] = rep(NA, num_stat_copies)
             }
             
             geneName = T
             geneID = F
+            
             # If element is present in all_IDs, consider vector a vector of IDs and
             # output all associated elements to output dataframe
-          }else if(input_vec[i] %in% all.genes_IDs$all_IDs){
-            output.df[i,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input_vec[i]]
-            output.df[i,2] = input_vec[i]
+          }else if(input_vec[i] %in% c(position_table$Gene_ID, 
+                                       stat_table$Stable_Gene_ID, 
+                                       condition_control$Gene_stable_ID)){
+            # Find number of times this gene ID occurs in the statistics data
+            num_stat_copies <- sum(str_count(stat_table$Stable_Gene_ID, 
+                                             input_vec[i]))
+            # If number of copies of gene in statistic data is 0, copy the gene at
+            # least once so at least one copy is present for transcription data
+            if(num_stat_copies == 0){
+              num_stat_copies = 1
+            }
+            # Create temporary dataframe to be appended to final
+            temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 36))
+            
+            temp.df[,1] = rep(all.genes_IDs$all_genes[
+              all.genes_IDs$all_IDs == input_vec[i]], num_stat_copies)
+            temp.df[,2] = rep(input_vec[i], num_stat_copies)
             
             # If the current gene is present in the position table, output position
             # table info. If not, output all NA
-            if(output.df[i,2] %in% position_table$Gene_Name){
-              output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == output.df[i,2]]
-              output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == output.df[i,2]]
-              output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == output.df[i,2]]
+            if(temp.df[i,2] %in% position_table$Gene_Name){
+              temp.df[,3] = rep(position_table$Scaffold[
+                position_table$Gene_Name == temp.df[,2]], num_stat_copies)
+              temp.df[,4] = rep(position_table$Start_Locus[
+                position_table$Gene_Name == temp.df[,2]], num_stat_copies)
+              temp.df[,5] = rep(position_table$End_Locus[
+                position_table$Gene_Name == temp.df[,2]], num_stat_copies)
             }else{
-              output.df[i,3:5] = NA
+              temp.df[,3:5] = rep(NA, num_stat_copies)
             }
             
             # Check if gene is present in GO term table. If so, output GO terms. If
             # not, output NA
-            if(output.df[i,2] %in% GeneToGO$Gene.names){
-              output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == output.df[i,2]]
+            if(temp.df[i,1] %in% GeneToGO$Gene.names){
+              temp.df[,7] = rep(GeneToGO$Gene.ontology.IDs[
+                GeneToGO$Gene.names == temp.df[i,1]], num_stat_copies)
             }else{
-              output.df[i,7] = NA
+              temp.df[,7] = rep(NA, num_stat_copies)
             }
             
             # Check if gene is present in stat table. If so, output info. If not,
             # output NAs
             if(input_vec[i] %in% stat_table$Stable_Gene_ID){
-              output.df[i,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,10] = stat_table$Pi_Molino[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,11] = stat_table$Pi_Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,12] = stat_table$Pi_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,19] = stat_table$Fst_RioChoy.Molino[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,21] = stat_table$Fst_Pachon.Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,23] = stat_table$TajimasD_RioChoy[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,24] = stat_table$TajimasD_Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,25] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,26] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
-              output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,10] = stat_table$Pi_Molino[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,11] = stat_table$Pi_Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,12] = stat_table$Pi_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,19] = stat_table$Fst_RioChoy.Molino[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,21] = stat_table$Fst_Pachon.Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,23] = stat_table$TajimasD_RioChoy[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,24] = stat_table$TajimasD_Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,25] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,26] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
+              temp.df[,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
             }else{
-              output.df[i,6] = NA
-              output.df[i,8:27] = NA
+              temp.df[,6] = rep(NA, num_stat_copies)
+              temp.df[,8:27] = rep(NA, num_stat_copies)
+              temp.df[,36] = rep(NA, num_stat_copies)
             }
             
             # Check if current gene is found in transcription data. If so, output
@@ -470,57 +534,57 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               if(length(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Choy",condition_control$Class))]) != 0){
-                output.df[i,28] = condition_control$logFC[
+                temp.df[,28] = rep(condition_control$logFC[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Choy",condition_control$Class))]
-                output.df[i,32] = condition_control$PValue[
+                    (grepl("Choy",condition_control$Class))], num_stat_copies)
+                temp.df[,32] = rep(condition_control$PValue[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Choy",condition_control$Class))]
+                    (grepl("Choy",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,28] = NA
-                output.df[i,32] = NA
+                temp.df[,28] = rep(NA, num_stat_copies)
+                temp.df[,32] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Pachon",condition_control$Class))]) != 0){
-                output.df[i,29] = condition_control$logFC[
+                temp.df[,29] = rep(condition_control$logFC[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Pachon",condition_control$Class))]
-                output.df[i,33] = condition_control$PValue[
+                    (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                temp.df[,33] = rep(condition_control$PValue[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Pachon",condition_control$Class))]
+                    (grepl("Pachon",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,29] = NA
-                output.df[i,33] = NA
+                temp.df[,29] = rep(NA, num_stat_copies)
+                temp.df[,33] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Molino",condition_control$Class))]) != 0){
-                output.df[i,30] = condition_control$logFC[
+                temp.df[,30] = rep(condition_control$logFC[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Molino",condition_control$Class))]
-                output.df[i,34] = condition_control$PValue[
+                    (grepl("Molino",condition_control$Class))], num_stat_copies)
+                temp.df[,34] = rep(condition_control$PValue[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Molino",condition_control$Class))]
+                    (grepl("Molino",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,30] = NA
-                output.df[i,34] = NA
+                temp.df[,30] = rep(NA, num_stat_copies)
+                temp.df[,34] = rep(NA, num_stat_copies)
               }
               if(length(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
                 (grepl("Tinaja",condition_control$Class))]) != 0){
-                output.df[i,31] = condition_control$logFC[
+                temp.df[,31] = rep(condition_control$logFC[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Tinaja",condition_control$Class))]
-                output.df[i,35] = condition_control$PValue[
+                    (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                temp.df[,35] = rep(condition_control$PValue[
                   (condition_control$Gene_stable_ID == input_vec[i]) &
-                    (grepl("Tinaja",condition_control$Class))]
+                    (grepl("Tinaja",condition_control$Class))], num_stat_copies)
               }else{
-                output.df[i,31] = NA
-                output.df[i,35] = NA
+                temp.df[,31] = rep(NA, num_stat_copies)
+                temp.df[,35] = rep(NA, num_stat_copies)
               }
             }else{
-              output.df[i,28:35] = NA
+              temp.df[,28:35] = NA
             }
             geneName = T
             geneID = F
@@ -530,62 +594,81 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             return(paste(c("ERROR: No transcription or statistical data present for
                        the gene", input_vec[i], "."), collapse = " "))
           }
+          # Bind temporary datframe to output.df
+          output.df <- rbind(output.df, temp.df)
         }
         # If input is NOT a comma-separated string, check whether input is a ID, name,
         # or phrase
       }else if(!grepl(comma, input)){
-        if(input %in% all.genes_IDs$all_genes){
+        if(input %in% c(position_table$Gene_Name, stat_table$Gene_Name,
+                        condition_control$Gene_name)){
+          # Count how many times this gene occurs in the stat_table
+          num_stat_copies <- sum(str_count(stat_table$Gene_Name, input))
+          # If number of copies of gene in statistic data is 0, copy the gene at
+          # least once so at least one copy is present for transcription data
+          if(num_stat_copies == 0){
+            num_stat_copies = 1
+          }
+          # Create temporary dataframe to be appended to final
+          temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 36))
           # Store input and associated values in appropriate objects and mark input
           # as a gene name
-          output.df <- data.frame(matrix(ncol = 35, nrow = 1))
-          output.df[1,1] = input
-          output.df[1,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input]
+          temp.df[,1] = rep(input, num_stat_copies)
+          temp.df[,2] = rep(all.genes_IDs$all_IDs[
+            all.genes_IDs$all_genes == input], num_stat_copies)
           
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input %in% position_table$Gene_Name){
-            output.df[1,3] = position_table$Scaffold[position_table$Gene_Name == input]
-            output.df[1,4] = position_table$Start_Locus[position_table$Gene_Name == input]
-            output.df[1,5] = position_table$End_Locus[position_table$Gene_Name == input]
+            temp.df[,3] = rep(position_table$Scaffold[
+              position_table$Gene_Name == input], num_stat_copies)
+            temp.df[,4] = rep(position_table$Start_Locus[
+              position_table$Gene_Name == input], num_stat_copies)
+            temp.df[,5] = rep(position_table$End_Locus[
+              position_table$Gene_Name == input], num_stat_copies)
           }else{
-            output.df[1,3:5] = NA
+            temp.df[,3:5] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input %in% GeneToGO$Gene.names){
-            output.df[1,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input]
+            temp.df[,7] = rep(GeneToGO$Gene.ontology.IDs[
+              GeneToGO$Gene.names == input], num_stat_copies)
           }else{
-            output.df[1,7] = NA
+            temp.df[,7] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Gene_Name){
-            output.df[1,6] = stat_table$Gene_Description[stat_table$Gene_Name == input]
-            output.df[1,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input]
-            output.df[1,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input]
-            output.df[1,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input]
-            output.df[1,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input]
-            output.df[1,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input]
-            output.df[1,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input]
-            output.df[1,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input]
-            output.df[1,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input]
-            output.df[1,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input]
-            output.df[1,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input]
-            output.df[1,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input]
-            output.df[1,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input]
-            output.df[1,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input]
-            output.df[1,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input]
-            output.df[1,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input]
-            output.df[1,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input]
-            output.df[1,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input]
-            output.df[1,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input]
-            output.df[1,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input]
-            output.df[1,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input]
+            temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input]
+            temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input]
+            temp.df[,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input]
+            temp.df[,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input]
+            temp.df[,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input]
+            temp.df[,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input]
+            temp.df[,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input]
+            temp.df[,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input]
+            temp.df[,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input]
+            temp.df[,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input]
+            temp.df[,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input]
+            temp.df[,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input]
+            temp.df[,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input]
+            temp.df[,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input]
+            temp.df[,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input]
+            temp.df[,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input]
+            temp.df[,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input]
+            temp.df[,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input]
+            temp.df[,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input]
+            temp.df[,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input]
+            temp.df[,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input]
+            temp.df[,36] = stat_table$Publication_Name[stat_table$Gene_Name == input]
+            
           }else{
-            output.df[1,6] = NA
-            output.df[1,8:27] = NA
+            temp.df[,6] = rep(NA, num_stat_copies)
+            temp.df[,8:27] = rep(NA, num_stat_copies)
+            temp.df[,36] = rep(NA, num_stat_copies)
           }
           
           # Check if current gene is found in transcription data. If so, output
@@ -594,113 +677,133 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]) != 0){
-              output.df[1,28] = condition_control$logFC[
+              temp.df[,28] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
-              output.df[1,32] = condition_control$PValue[
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
+              temp.df[,32] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,28] = NA
-              output.df[1,32] = NA
+              temp.df[,28] = rep(NA, num_stat_copies)
+              temp.df[,32] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]) != 0){
-              output.df[1,29] = condition_control$logFC[
+              temp.df[,29] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
-              output.df[1,33] = condition_control$PValue[
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              temp.df[,33] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,29] = NA
-              output.df[1,33] = NA
+              temp.df[,29] = rep(NA, num_stat_copies)
+              temp.df[,33] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]) != 0){
-              output.df[1,30] = condition_control$logFC[
+              temp.df[,30] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
-              output.df[1,34] = condition_control$PValue[
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
+              temp.df[,34] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,30] = NA
-              output.df[1,34] = NA
+              temp.df[,30] = rep(NA, num_stat_copies)
+              temp.df[,34] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]) != 0){
-              output.df[1,31] = condition_control$logFC[
+              temp.df[,31] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
-              output.df[1,35] = condition_control$PValue[
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              temp.df[,35] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,31] = NA
-              output.df[1,35] = NA
+              temp.df[,31] = rep(NA, num_stat_copies)
+              temp.df[,35] = rep(NA, num_stat_copies)
             }
           }else{
-            output.df[1,28:35] = NA
+            temp.df[,28:35] = rep(NA, num_stat_copies)
           }
           
           geneName = T
           geneID = F
-        }else if(input %in% all.genes_IDs$all_IDs){
+          
+          output.df <- rbind(output.df, temp.df)
+          
+        }else if(input %in% c(position_table$Gene_ID, stat_table$Stable_Gene_ID,
+                              condition_control$Gene_stable_ID)){
+          
+          # Count how many times this ID occurs in the stat_table
+          num_stat_copies <- sum(str_count(stat_table$Stable_Gene_ID, input))
+          # If number of copies of gene in statistic data is 0, copy the gene at
+          # least once so at least one copy is present for transcription data
+          if(num_stat_copies == 0){
+            num_stat_copies = 1
+          }
+          # Create temporary dataframe to later be bound to final df
+          temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 36))
           # Store input and associated values in appropriate objects and mark input
           # as a gene ID
-          output.df <- data.frame(matrix(ncol = 35, nrow = 1))
-          output.df[1,1] = all.genes_IDs$all_genes[all.genes_IDs$all_IDs == input]
-          output.df[1,2] = input
+          temp.df[,1] = rep(all.genes_IDs$all_genes[
+            all.genes_IDs$all_IDs == input], num_stat_copies)
+          temp.df[,2] = rep(input, num_stat_copies)
           
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
-          if(output.df[1,2] %in% position_table$Gene_Name){
-            output.df[1,3] = position_table$Scaffold[position_table$Gene_Name == output.df[1,2]]
-            output.df[1,4] = position_table$Start_Locus[position_table$Gene_Name == output.df[1,2]]
-            output.df[1,5] = position_table$End_Locus[position_table$Gene_Name == output.df[1,2]]
+          if(temp.df[1,2] %in% position_table$Gene_Name){
+            temp.df[,3] = rep(position_table$Scaffold[
+              position_table$Gene_Name == temp.df[1,2]], num_stat_copies)
+            temp.df[,4] = rep(position_table$Start_Locus[
+              position_table$Gene_Name == temp.df[1,2]], num_stat_copies)
+            temp.df[,5] = rep(position_table$End_Locus[
+              position_table$Gene_Name == temp.df[1,2]], num_stat_copies)
           }else{
-            output.df[1,3:5] = NA
+            temp.df[,3:5] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
-          if(output.df[1,2] %in% GeneToGO$Gene.names){
-            output.df[1,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == output.df[1,2]]
+          if(temp.df[1,2] %in% GeneToGO$Gene.names){
+            temp.df[,7] = rep(GeneToGO$Gene.ontology.IDs[
+              GeneToGO$Gene.names == temp.df[1,2]], num_stat_copies)
           }else{
-            output.df[1,7] = NA
+            temp.df[,7] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input %in% stat_table$Stable_Gene_ID){
-            output.df[1,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input]
-            output.df[1,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input]
-            output.df[1,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input]
-            output.df[1,10] = stat_table$Pi_Molino[stat_table$Stable_Gene_ID == input]
-            output.df[1,11] = stat_table$Pi_Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,12] = stat_table$Pi_Rascon[stat_table$Stable_Gene_ID == input]
-            output.df[1,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Stable_Gene_ID == input]
-            output.df[1,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Stable_Gene_ID == input]
-            output.df[1,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Stable_Gene_ID == input]
-            output.df[1,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Stable_Gene_ID == input]
-            output.df[1,19] = stat_table$Fst_RioChoy.Molino[stat_table$Stable_Gene_ID == input]
-            output.df[1,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,21] = stat_table$Fst_Pachon.Rascon[stat_table$Stable_Gene_ID == input]
-            output.df[1,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,23] = stat_table$TajimasD_RioChoy[stat_table$Stable_Gene_ID == input]
-            output.df[1,24] = stat_table$TajimasD_Pachon[stat_table$Stable_Gene_ID == input]
-            output.df[1,25] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input]
-            output.df[1,26] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input]
-            output.df[1,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input]
+            temp.df[,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input]
+            temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input]
+            temp.df[,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input]
+            temp.df[,10] = stat_table$Pi_Molino[stat_table$Stable_Gene_ID == input]
+            temp.df[,11] = stat_table$Pi_Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,12] = stat_table$Pi_Rascon[stat_table$Stable_Gene_ID == input]
+            temp.df[,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Stable_Gene_ID == input]
+            temp.df[,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Stable_Gene_ID == input]
+            temp.df[,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Stable_Gene_ID == input]
+            temp.df[,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Stable_Gene_ID == input]
+            temp.df[,19] = stat_table$Fst_RioChoy.Molino[stat_table$Stable_Gene_ID == input]
+            temp.df[,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,21] = stat_table$Fst_Pachon.Rascon[stat_table$Stable_Gene_ID == input]
+            temp.df[,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,23] = stat_table$TajimasD_RioChoy[stat_table$Stable_Gene_ID == input]
+            temp.df[,24] = stat_table$TajimasD_Pachon[stat_table$Stable_Gene_ID == input]
+            temp.df[,25] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input]
+            temp.df[,26] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input]
+            temp.df[,27] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input]
+            temp.df[,36] = stat_table$Publication_Name[stat_table$Stable_Gene_ID == input]
           }else{
-            output.df[1,6] = NA
-            output.df[1,8:27] = NA
+            temp.df[,6] = rep(NA, num_stat_copies)
+            temp.df[,8:27] = rep(NA, num_stat_copies)
+            temp.df[,36] = rep(NA, num_stat_copies)
           }
           
           # Check if current gene is found in transcription data. If so, output
@@ -709,60 +812,62 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             if(length(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]) != 0){
-              output.df[1,28] = condition_control$logFC[
+              temp.df[,28] = rep(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
-              output.df[1,32] = condition_control$PValue[
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
+              temp.df[,32] = rep(condition_control$PValue[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,28] = NA
-              output.df[1,32] = NA
+              temp.df[,28] = rep(NA, num_stat_copies)
+              temp.df[,32] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]) != 0){
-              output.df[1,29] = condition_control$logFC[
+              temp.df[,29] = rep(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
-              output.df[1,33] = condition_control$PValue[
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              temp.df[,33] = rep(condition_control$PValue[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,29] = NA
-              output.df[1,33] = NA
+              temp.df[,29] = rep(NA, num_stat_copies)
+              temp.df[,33] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]) != 0){
-              output.df[1,30] = condition_control$logFC[
+              temp.df[,30] = rep(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
-              output.df[1,34] = condition_control$PValue[
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
+              temp.df[,34] = rep(condition_control$PValue[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,30] = NA
-              output.df[1,34] = NA
+              temp.df[,30] = rep(NA, num_stat_copies)
+              temp.df[,34] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]) != 0){
-              output.df[1,31] = condition_control$logFC[
+              temp.df[,31] = rep(condition_control$logFC[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
-              output.df[1,35] = condition_control$PValue[
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              temp.df[,35] = rep(condition_control$PValue[
                 (condition_control$Gene_stable_ID == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[1,31] = NA
-              output.df[1,35] = NA
+              temp.df[,31] = rep(NA, num_stat_copies)
+              temp.df[,35] = rep(NA, num_stat_copies)
             }
           }else{
-            output.df[1,28:35] = NA
+            temp.df[,28:35] = rep(NA, num_stat_copies)
           }
           geneID = T
           geneName = F
+          
+          output.df <- rbind(output.df, temp.df)
         }else if(!(input %in% all.genes_IDs$all_genes) &
                  !(input %in% all.genes_IDs$all_IDs)){
           geneName = F
@@ -817,63 +922,78 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
           return(paste(c("ERROR: No genes-of-interest can be described by the phrase",
                          input), collapse = " "))
         }
-        # Initialize df in which to store output based on number of genes
-        output.df <- data.frame(matrix(nrow = length(input_vec), ncol = 35))
         
         # For each gene, collect all values associated with the gene
         for(i in 1:length(input_vec)){
-          output.df[i,1] = input_vec[i]
+          # Find number of copies of this gene in stat table
+          num_stat_copies <- sum(str_count(stat_table$Gene_Name, input_vec[i]))
+          # If number of copies of gene in statistic data is 0, copy the gene at
+          # least once so at least one copy is present for transcription data
+          if(num_stat_copies == 0){
+            num_stat_copies = 1
+          }
+          # Create temporary dataframe to be appended to final
+          temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 36))
+          
+          temp.df[,1] = rep(input_vec[i], num_stat_copies)
           if(input_vec[i] %in% all.genes_IDs$all_genes){
-            output.df[i,2] = all.genes_IDs$all_IDs[all.genes_IDs$all_genes == input_vec[i]]
+            temp.df[,2] = rep(all.genes_IDs$all_IDs[
+              all.genes_IDs$all_genes == input_vec[i]], num_stat_copies)
           }else{
-            output.df[i,2] = NA
+            temp.df[,2] = rep(NA, num_stat_copies)
           }
           
           # If the current gene is present in the position table, output position
           # table info. If not, output all NA
           if(input_vec[i] %in% position_table$Gene_Name){
-            output.df[i,3] = position_table$Scaffold[position_table$Gene_Name == input_vec[i]]
-            output.df[i,4] = position_table$Start_Locus[position_table$Gene_Name == input_vec[i]]
-            output.df[i,5] = position_table$End_Locus[position_table$Gene_Name == input_vec[i]]
+            temp.df[,3] = rep(position_table$Scaffold[
+              position_table$Gene_Name == input_vec[i]], num_stat_copies)
+            temp.df[,4] = rep(position_table$Start_Locus[
+              position_table$Gene_Name == input_vec[i]], num_stat_copies)
+            temp.df[,5] = rep(position_table$End_Locus[
+              position_table$Gene_Name == input_vec[i]], num_stat_copies)
           }else{
-            output.df[i,3:5] = NA
+            temp.df[,3:5] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in GO term table. If so, output GO terms. If
           # not, output NA
           if(input_vec[i] %in% GeneToGO$Gene.names){
-            output.df[i,7] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == input_vec[i]]
+            temp.df[,7] = rep(GeneToGO$Gene.ontology.IDs[
+              GeneToGO$Gene.names == input_vec[i]], num_stat_copies)
           }else{
-            output.df[i,7] = NA
+            temp.df[,7] = rep(NA, num_stat_copies)
           }
           
           # Check if gene is present in stat table. If so, output info. If not,
           # output NAs
           if(input_vec[i] %in% stat_table$Gene_Name){
-            output.df[i,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
-            output.df[i,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,10] = stat_table$Pi_Molino[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,11] = stat_table$Pi_Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,12] = stat_table$Pi_Rascon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,13] = stat_table$Dxy_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,14] = stat_table$Dxy_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,15] = stat_table$Dxy_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,16] = stat_table$Dxy_Rascon.Pachon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,17] = stat_table$Dxy_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,18] = stat_table$Fst_RioChoy.Pachon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,19] = stat_table$Fst_RioChoy.Molino[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,20] = stat_table$Fst_RioChoy.Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,21] = stat_table$Fst_Pachon.Rascon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,22] = stat_table$Fst_Rascon.Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,23] = stat_table$TajimasD_RioChoy[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,24] = stat_table$TajimasD_Pachon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,25] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,26] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,27] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
+            temp.df[,36] = stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]]
           }else{
-            output.df[i,6] = NA
-            output.df[i,8:27] = NA
+            temp.df[,6] = rep(NA, num_stat_copies)
+            temp.df[,8:27] = rep(NA, num_stat_copies)
+            temp.df[,36] = rep(NA, num_stat_copies)
           }
           
           # Check if current gene is found in transcription data. If so, output
@@ -882,60 +1002,64 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Choy",condition_control$Class))]) != 0){
-              output.df[i,28] = condition_control$logFC[
+              temp.df[,28] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
-              output.df[i,32] = condition_control$PValue[
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
+              temp.df[,32] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Choy",condition_control$Class))]
+                  (grepl("Choy",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[i,28] = NA
-              output.df[i,32] = NA
+              temp.df[,28] = rep(NA, num_stat_copies)
+              temp.df[,32] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Pachon",condition_control$Class))]) != 0){
-              output.df[i,29] = condition_control$logFC[
+              temp.df[,29] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
-              output.df[i,33] = condition_control$PValue[
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              temp.df[,33] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Pachon",condition_control$Class))]
+                  (grepl("Pachon",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[i,29] = NA
-              output.df[i,33] = NA
+              temp.df[,29] = rep(NA, num_stat_copies)
+              temp.df[,33] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Molino",condition_control$Class))]) != 0){
-              output.df[i,30] = condition_control$logFC[
+              temp.df[,30] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
-              output.df[i,34] = condition_control$PValue[
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
+              temp.df[,34] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Molino",condition_control$Class))]
+                  (grepl("Molino",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[i,30] = NA
-              output.df[i,34] = NA
+              temp.df[,30] = rep(NA, num_stat_copies)
+              temp.df[,34] = rep(NA, num_stat_copies)
             }
             if(length(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
               (grepl("Tinaja",condition_control$Class))]) != 0){
-              output.df[i,31] = condition_control$logFC[
+              temp.df[,31] = rep(condition_control$logFC[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
-              output.df[i,35] = condition_control$PValue[
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              temp.df[,35] = rep(condition_control$PValue[
                 (condition_control$Gene_name == input_vec[i]) &
-                  (grepl("Tinaja",condition_control$Class))]
+                  (grepl("Tinaja",condition_control$Class))], num_stat_copies)
             }else{
-              output.df[i,31] = NA
-              output.df[i,35] = NA
+              temp.df[,31] = rep(NA, num_stat_copies)
+              temp.df[,35] = rep(NA, num_stat_copies)
             }
           }else{
-            output.df[i,28:35] = NA
+            temp.df[,28:35] = rep(NA, num_stat_copies)
           }
+          # Add current temporary dataframe to output dataframe
+          output.df <- rbind(output.df, temp.df)
         }
       }
+      # Remove first row, as it is empty
+      output.df <- output.df[-1,]
       
       # Output all values obtained for gene(s) of interest
       names(output.df) <- c(
@@ -973,7 +1097,8 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
         "p-value for SD_log(FC)_RioChoy",
         "p-value for SD_log(FC)_Pachon",
         "p-value for SD_log(FC)_Molino",
-        "p-value for SD_log(FC)_Tinaja"
+        "p-value for SD_log(FC)_Tinaja",
+        "Publication Name (Population Genetics Data)"
       )
       return(output.df)
     }
@@ -1122,10 +1247,11 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       return(output.df)
     }
     StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
-      # Create a two vectors of the indices corresponding to each population or pop
+      # Create 2 vectors of the indices corresponding to each population or pop
       # pair's statistic values
       indices <- c()
       pop_strings <- c()
+      
       # Create vector into which warnings will be stored for later output
       wrnings <- c("Notes:\n")
       
@@ -1153,15 +1279,16 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             # If these populations-of-interest are the only pops which were
             # inputted, return a warning
             if(ncol(two_pops) == 1){
-              null.df <- data.frame(matrix(nrow = 1, ncol = 8))
-              names(null.df) <- c("Gene",
-                                  "Scaffold",
-                                  "Start_Position",
-                                  "End_Position",
-                                  "GO_IDs",
-                                  "Statistic_Type",
-                                  "Population",
-                                  "Statistic_Value")
+              null.df <- data.frame(matrix(nrow = 1, ncol = 7))
+              names(null.df) <- c(
+                "Rank",
+                "Population(s)",
+                stat,
+                "Scaffold",
+                "Gene Name",
+                "GO Term(s)",
+                "Publication Name"
+              )
               return(list(paste(c("Statistic ",stat,
                                   " is not present for the populations ",
                                   two_pops[1, pair]," and ",
@@ -1201,10 +1328,12 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
         return("ERROR: Invalid statistic name")
       }
       
-      # Initialize vectors of gene names, populations, and statistic values
+      # Initialize vectors of gene names, populations, statistic values, and
+      # publication names
       genes <- c()
       DF_pops <- c()
       stat_vals <- c()
+      pub_names <- c()
       
       
       # Check if statistic value or gene count was entered
@@ -1216,12 +1345,17 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
           for(i in 1:length(indices)){
             # First, remove all NA values for this index
             stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-            # For each index, collect all genes, scaffolds, populations, and values
-            # whose stat values fall above the entered value
-            genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])
+            # For each index, collect all genes, scaffolds, populations, values,
+            # and publication names whose stat values fall above the entered value
+            genes <- append(genes,stat_table$Gene_Name[
+              stat_table[,indices[i]] >= thresh])
             DF_pops <- append(DF_pops,rep(pop_strings[i],
-                                          length(stat_table$Gene_Name[stat_table[,indices[i]] >= thresh])))
-            stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] >= thresh,indices[i]])
+                                          length(stat_table$Gene_Name[
+                                            stat_table[,indices[i]] >= thresh])))
+            stat_vals <- append(stat_vals,stat_table[
+              stat_table[,indices[i]] >= thresh,indices[i]])
+            pub_names <- append(pub_names,stat_table$Publication_Name[
+              stat_table[,indices[i]] >= thresh])
           }
           # If lower tail was requested, iterate through each index
         }else if(UL == "bottom"){
@@ -1230,10 +1364,15 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
             # For each index, collect all genes, populations, and statistic values
             # whose values fall in lowest tail
-            genes <- append(genes,stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])
+            genes <- append(genes,stat_table$Gene_Name[
+              stat_table[,indices[i]] <= thresh])
             DF_pops <- append(DF_pops,rep(pop_strings[i],
-                                          length(stat_table$Gene_Name[stat_table[,indices[i]] <= thresh])))
-            stat_vals <- append(stat_vals,stat_table[stat_table[,indices[i]] <= thresh,indices[i]])
+                                          length(stat_table$Gene_Name[
+                                            stat_table[,indices[i]] <= thresh])))
+            stat_vals <- append(stat_vals,stat_table[
+              stat_table[,indices[i]] <= thresh,indices[i]])
+            pub_names <- append(pub_names,stat_table$Publication_Name[
+              stat_table[,indices[i]] <= thresh])
           }
         }
         # If count was entered...
@@ -1250,12 +1389,15 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               # First, remove all NA values for this index
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
               # Collect positions of top N genes for the current index
-              top_genes <- order(stat_table[,indices[i]], decreasing = T)[1:thresh]
+              top_genes <- order(
+                stat_table[,indices[i]], decreasing = T)[1:thresh]
               # Collect the genes with the highest values, as well as the associated
               # populations and values
               genes <- append(genes,stat_table$Gene_Name[top_genes])
               DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
               stat_vals <- append(stat_vals,stat_table[top_genes,indices[i]])
+              pub_names <- append(pub_names,stat_table$Publication_Name[
+                top_genes])
             }
             # If statistic is a one-population statistic, output collect the N genes
             # with the HIGHEST stat value, regardless of pop
@@ -1265,6 +1407,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             all_stats <- c()
             all_pops <- c()
             all_genes <- c()
+            all_pubs <- c()
             for(i in 1:length(indices)){
               # First, remove all NA values for this index
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
@@ -1272,19 +1415,23 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               all_pops <- append(all_pops,rep(pop_strings[i],
                                               length(stat_table[,indices[i]])))
               all_genes <- append(all_genes, stat_table$Gene_Name)
+              all_pubs <- append(all_genes, stat_table$Publication_Name)
             }
             # Organize vectors into a dataframe
             temp_df <- data.frame(
               all_stats,
               all_pops,
-              all_genes
+              all_genes,
+              all_pubs
             )
-            # Retreat the parallel indeices for the N highest genes
+            # Retrieve the parallel indices for the N highest genes
             par_indices <- order(temp_df$all_stats, decreasing = T)[1:thresh]
-            # Retrieve the gene names, population names
+            # Retrieve the gene names, population names, stat values, and 
+            # publication names
             genes <- append(genes,temp_df$all_genes[par_indices])
             DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
             stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
+            pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
           }
           # If lower proportion was requested, iterate through each index
         }else if(UL == "bottom"){
@@ -1298,11 +1445,12 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
               # Collect positions of bottom N genes for the current index
               bottom_genes <- order(stat_table[,indices[i]], decreasing = F)[1:thresh]
-              # Collect the genes with the highest values, as well as the associated
-              # populations and values
+              # Collect the genes with the highest values, as well as the 
+              # associated populations, values, and publications
               genes <- append(genes,stat_table$Gene_Name[bottom_genes])
               DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
               stat_vals <- append(stat_vals,stat_table[bottom_genes,indices[i]])
+              pub_names <- append(pub_names,stat_table$Publication_Name[bottom_genes])
             }
             # If statistic is a one-population statistic, output collect the N genes
             # with the HIGHEST stat value, regardless of pop
@@ -1312,6 +1460,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             all_stats <- c()
             all_pops <- c()
             all_genes <- c()
+            all_pubs <- c()
             for(i in 1:length(indices)){
               # First, remove all NA values for this index
               stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
@@ -1319,12 +1468,14 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
               all_pops <- append(all_pops,rep(pop_strings[i],
                                               length(stat_table[,indices[i]])))
               all_genes <- append(all_genes, stat_table$Gene_Name)
+              all_pubs <- append(all_genes, stat_table$Publication_Name)
             }
             # Organize vectors into a dataframe
             temp_df <- data.frame(
               all_stats,
               all_pops,
-              all_genes
+              all_genes,
+              all_pubs
             )
             # Retreat the parallel indeices for the N highest genes
             par_indices <- order(temp_df$all_stats, decreasing = F)[1:thresh]
@@ -1332,14 +1483,22 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             genes <- append(genes,temp_df$all_genes[par_indices])
             DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
             stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
+            pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
           }
         }
       }
       # If no population pairs were found, output an error
       if(length(indices) == 0){
-        null.df <- data.frame(matrix(nrow = 1, ncol = 6))
-        names(null.df) <- c("Rank","Population(s)",stat,"Scaffold",
-                            "Gene Name","GO Term(s)")
+        null.df <- data.frame(matrix(nrow = 1, ncol = 7))
+        names(null.df) <- c(
+          "Rank",
+          "Population(s)",
+          stat,
+          "Scaffold",
+          "Gene Name",
+          "GO Term(s)",
+          "Publication Name"
+        )
         return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                           collapse = " "), null.df))
       }
@@ -1381,7 +1540,8 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
         stat_vals,
         scaffs,
         genes,
-        DF_GOs
+        DF_GOs,
+        pub_names
       )
       # Sort into a final dataframe
       final_df <- data.frame()
@@ -1445,7 +1605,8 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
         stat,
         "Scaffold",
         "Gene Name",
-        "GO Term(s)"
+        "GO Term(s)",
+        "Publication Name"
       )
       
       # Output df and warnings
@@ -1578,7 +1739,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       # Create density plot. Title must be different depending on whether you 
       # have one or two populations
       if(stat_type == "Two Pop"){
-        plot_title <- paste(c("Pairwise", stat, " values for ",pop_string), 
+        plot_title <- paste(c("Pairwise ", stat, " values for ",pop_string), 
                             collapse = "")
       }else{
         plot_title <- paste(c(stat, " values for ", pop_string),collapse = "")
@@ -1605,7 +1766,8 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       }
     })
     
-    StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, stat_vec, position_table, stat_table, all_pops){
+    StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower, 
+                               stat_vec, position_table, stat_table, pops){
       # Initialize vector for all GO terms of interest
       GOs <- c()
       # Initialize vector in which to store warnings
@@ -1615,8 +1777,34 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       # word/phrase, find the name(s) which contains that word/phrase and set the GO
       # vector equal to the corresponding GO IDs.
       if(!(GOTerm %in% GoIDToNames$GO.ID)){
-        GOs <- GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
-                                             ignore.case = T))]
+        if(length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
+                                                ignore.case = T))]) != 0){
+          GOs <- GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
+                                               ignore.case = T))]
+        # If the input is not found in the GO terms but does have a comma,
+        # output both as GO IDs and check whether they are valid GO IDs
+        }else if((length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
+                                                       ignore.case = T))]) == 0)
+                 & (grepl(", ", GOTerm, ignore.case = T))){
+          GOs <- str_split(GOTerm, ", ")[[1]]
+        # If the input is not found in the GO terms and does not have a comma,
+        # return an error
+        }else if((length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term, 
+                                                       ignore.case = T))]) == 0)
+                 & !(grepl(", ", GOTerm, ignore.case = T))){
+          null.df <- data.frame(matrix(nrow = 1, ncol = 9))
+          names(null.df) <- c("Gene",
+                              "Scaffold",
+                              "Start_Position",
+                              "End_Position",
+                              "GO_IDs",
+                              "Statistic_Type",
+                              "Population",
+                              "Statistic_Value",
+                              "Publication_Name")
+          return(list("ERROR: Input is neither a valid GO ID nor a valid phrase", 
+                      null.df))
+        }
         # If user inputted a GO ID, add that ID 
       }else if(GOTerm %in% GoIDToNames$GO.ID){
         GOs <- GOTerm
@@ -1639,11 +1827,22 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       gene_vec <- c()
       found_GOs <- c()
       for(g in 1:length(GOs)){
+        found = F
         # If the GO term appears in the data frame of names AND the corresponding gene
         # occurs in the statistics vector, add the GO term and gene name
-        if(GOs[g] %in% GeneToGO$Gene.ontology.IDs){
-          gene_vec <- append(gene_vec, GeneToGO$Gene.names[grepl(GOs[g], GeneToGO$Gene.ontology.IDs)])
-          found_GOs <- append(found_GOs, rep(GOs[g], length(gene_vec)))
+        for(i in 1:length(GeneToGO$Gene.ontology.IDs)){
+          if(grepl(GOs[g], GeneToGO$Gene.ontology.IDs[i])){
+            found = T
+          }else{
+            next
+          }
+        }
+        if(found){
+          gene_vec <- append(gene_vec, GeneToGO$Gene.names[grepl(GOs[g], 
+                                                                 GeneToGO$Gene.ontology.IDs)])
+          found_GOs <- append(found_GOs, rep(GOs[g], 
+                                             length(GeneToGO$Gene.names[grepl(GOs[g], 
+                                                                              GeneToGO$Gene.ontology.IDs)])))
           # If the GO term does NOT appear in the dataframe of names, skip it
         }else{
           next
@@ -1656,20 +1855,23 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       geneGOs <- geneGOs[!duplicated(geneGOs), ]
       
       # Extract all possible combinations of populations from populations of interest
-      if((is.vector(all_pops)) & (length(all_pops) > 1)){
-        all_pops <- combn(all_pops,2) 
+      if(("Fst" %in% stat_vec) | ("Dxy" %in% stat_vec)){
+        all_pops <- combn(pops,2) 
+        two_pop <- T
+      }else{
+        two_pop <- F
       }
       
-      # Create vectors in which to store values for later dataframe
-      Statistic_Type_prelim <- c()
-      Population_prelim <- c()
-      Statistic_Value_prelim <- numeric()
+      # Create a temporary dataframe for all possible combinations of statistic
+      # types, columns, and the populations to which they correspond 
+      stat_pop_combos <- data.frame(matrix(ncol = 3))
+      colnames(stat_pop_combos) <- c("Stat_Type", "Pop", "Col")
       
       for(s in 1:length(stat_vec)){
         # Check if statistic of interest makes comparisons between TWO populations
         if((stat_vec[s] == "Fst") | (stat_vec[s] == "Dxy")){
-          # Check if pops is a matrix
-          if(is.matrix(all_pops)){
+          # Check if all_pops was created
+          if(two_pop){
             # If so, iterate through each combination and output stat value for that
             # combination
             for(pair in 1:ncol(all_pops)){
@@ -1690,7 +1892,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                 # If these populations-of-interest are the only pops which were
                 # inputted, return a warning
                 if(ncol(all_pops) == 1){
-                  null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+                  null.df <- data.frame(matrix(nrow = 1, ncol = 9))
                   names(null.df) <- c("Gene",
                                       "Scaffold",
                                       "Start_Position",
@@ -1698,25 +1900,25 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                                       "GO_IDs",
                                       "Statistic_Type",
                                       "Population",
-                                      "Statistic_Value")
-                  return(list(paste(paste(c("Statistic ",stat_vec[s],
+                                      "Statistic_Value",
+                                      "Publication_Name")
+                  return(list(paste(c("Statistic ",stat_vec[s],
                                             " is not present for the populations ",
                                             all_pops[1, pair]," and ",
                                             all_pops[2, pair]),collapse = "")), 
-                              null.df))
+                              null.df)
                 }
               }else{
-                # Create a row to add to the indices dataframe
+                # Create a row to add to the indices data frame
                 temp_str <- paste(c(all_pops[1, pair],"-",all_pops[2, pair]), 
                                   collapse = "")
-                Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
-                Population_prelim <- append(Population_prelim,temp_str)
-                Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
+                temp_vec <- c(stat_vec[s],temp_str,val)
+                stat_pop_combos <- rbind(stat_pop_combos, temp_vec)
               }
               # If pops is NOT a matrix, return an error
             }
-          }else if(!is.matrix(all_pops)){
-            null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+          }else{
+            null.df <- data.frame(matrix(nrow = 1, ncol = 9))
             names(null.df) <- c("Gene",
                                 "Scaffold",
                                 "Start_Position",
@@ -1724,8 +1926,9 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                                 "GO_IDs",
                                 "Statistic_Type",
                                 "Population",
-                                "Statistic_Value")
-            return(list(paste(c("ERROR: Only one population, ", all_pops, 
+                                "Statistic_Value",
+                                "Publication_Name")
+            return(list(paste(c("ERROR: Only one population, ", pops, 
                                 ", supplied for the two-population statistic ", 
                                 stat_vec[s], "."),
                               collapse = ""), null.df))
@@ -1734,30 +1937,29 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
           }
         }else if((stat_vec[s] == "TajimasD") | (stat_vec[s] == "Pi")){
           # Iterate through each individual population
-          for(p in 1:length(all_pops)){
+          for(p in 1:length(pops)){
             # If pops is a string, set indx equal to the column housing the stat of
             # interest for this population
-            val <- which(grepl(all_pops[p], names(stat_table))
+            val <- which(grepl(pops[p], names(stat_table))
                          & grepl(stat_vec[s], names(stat_table)))
             # If statistic for populations-of-interest is not present, return a 
             # warning 
             if(length(val) == 0){
               wrnings <- append(wrnings, paste(c("Statistic ",stat_vec[s],
                                                  " is not present for the population ",
-                                                 all_pops[p], " | "), collapse = ""))
+                                                 pops[p], " | "), collapse = ""))
             }else{
               # Create a row to add to the indices dataframe
-              Statistic_Type_prelim <- append(Statistic_Type_prelim,stat_vec[s])
-              Population_prelim <- append(Population_prelim,all_pops[p])
-              Statistic_Value_prelim <- append(Statistic_Value_prelim,val)
+              temp_vec <- c(stat_vec[s],pops[p],val)
+              stat_pop_combos <- rbind(stat_pop_combos, temp_vec)
             }
           }
         }
       }
       # If NONE of the populations-of-interest had values for the statistics-of-
       # interest, output an error
-      if(is.null(Statistic_Type_prelim)){
-        null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+      if(nrow(stat_pop_combos) == 1){
+        null.df <- data.frame(matrix(nrow = 1, ncol = 9))
         names(null.df) <- c("Gene",
                             "Scaffold",
                             "Start_Position",
@@ -1765,10 +1967,14 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                             "GO_IDs",
                             "Statistic_Type",
                             "Population",
-                            "Statistic_Value")
+                            "Statistic_Value",
+                            "Publication_Name")
         return(list("ERROR: None of the input statistics are present for any of the input populations", 
                     null.df)) 
       }
+      # If dataframe was valid, remove first row (as this is all NAs from)
+      # initialization
+      stat_pop_combos <- stat_pop_combos[-1,]
       
       # For each GO Term in the vector of GO Terms-of-interest, find...
       # 1. All gene names which occur in the positions table AND in the statistics
@@ -1780,6 +1986,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       # 6. Each of the 4 statistic types
       # 7. Each of the populations/population combinations
       # 8. Each of the statistical values
+      # 9. Publication from which the statistic value was derived
       
       # For each statistic-population pair, iterate through each gene and find the 
       # statistic value, scaffold, starting position, and ending position and
@@ -1792,35 +1999,58 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
       Statistic_Type <- c()
       Population <- c()
       Statistic_Value <- c()
+      Pub_Name <- c()
       
-      for(s in 1:length(Statistic_Type_prelim)){
+      for(i in 1:nrow(stat_pop_combos)){
         for(g in 1:length(geneGOs$Gene)){
           # Check if current gene is in stat AND position table
           # If so...
           if((geneGOs$Gene[g] %in% stat_table$Gene_Name) & 
              (geneGOs$Gene[g] %in% position_table$Gene_Name)){
-            # Output the current gene
-            Gene <- append(Gene, geneGOs$Gene[g])
-            # Output scaffold of current gene
+            # Find the number of copies of the current gene in the statistic 
+            # table
+            copies <- length(stat_table[stat_table$Gene_Name == geneGOs$Gene[g], 
+                                        as.numeric(stat_pop_combos$Col[i])])
+            # Output the current gene as many times as there are copies
+            Gene <- append(Gene, rep(geneGOs$Gene[g], copies))
+            # Output scaffold of current gene as many times as there are copies
             Scaffold <- append(Scaffold, 
-                               position_table$Scaffold[position_table$Gene_Name == geneGOs$Gene[g]])
-            # Output starting position of the current gene
+                               rep(position_table$Scaffold[position_table$Gene_Name == geneGOs$Gene[g]], 
+                                   copies))
+            # Output starting position of the current gene as many times as 
+            # there are copies of the gene
             Start_Position <- append(Start_Position, 
-                                     position_table$Start_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
-            # Output the ending position of the current gene
+                                     rep(position_table$Start_Locus[position_table$Gene_Name == geneGOs$Gene[g]],
+                                         copies))
+            # Output the ending position of the current gene as many times as 
+            # there are copies of the gene
             End_Position <- append(End_Position, 
-                                   position_table$End_Locus[position_table$Gene_Name == geneGOs$Gene[g]])
-            # Output ALL GO terms associated with the current gene
+                                   rep(position_table$End_Locus[position_table$Gene_Name == geneGOs$Gene[g]],
+                                       copies))
+            # Output ALL GO terms associated with the current gene as many times
+            # as there are copies of the gene
             GO_IDs <- append(GO_IDs,
-                             paste(geneGOs$GO_ID[geneGOs$Gene == geneGOs$Gene[g]], collapse = "; "))
-            # Output the current statistic type
-            Statistic_Type <- append(Statistic_Type, Statistic_Type_prelim[s])
-            # Output the population(s)
-            Population <- append(Population, Population_prelim[s])
-            # Output the statistic value
+                             rep(
+                               paste(geneGOs$GO_ID[geneGOs$Gene == geneGOs$Gene[g]], collapse = "; "),
+                             copies))
+            # Output the current statistic type as many times as there are copies
+            # of the gene
+            Statistic_Type <- append(Statistic_Type, 
+                                     rep(stat_pop_combos$Stat_Type[i], 
+                                               copies))
+            # Output the population(s) which correspond to the current column,
+            # and output as many times as there are copies of the gene.
+            Population <- append(Population, rep(stat_pop_combos$Pop[i], 
+                                                 copies))
+            # Output the statistic value. Will automatically output value for
+            # each copy of the gene.
             Statistic_Value <- append(Statistic_Value, 
                                       stat_table[stat_table$Gene_Name == geneGOs$Gene[g], 
-                                                 Statistic_Value_prelim[s]])
+                                                 as.numeric(stat_pop_combos$Col[i])])
+            # Output the publication from which the statistic was obtained
+            Pub_Name <- append(Pub_Name, stat_table$Publication_Name[which(
+                                     stat_table$Gene_Name == geneGOs$Gene[g]
+                                   )])
             # If not, skip the gene
           }else{
             next
@@ -1834,7 +2064,8 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                               GO_IDs,
                               Statistic_Type,
                               Population,
-                              Statistic_Value
+                              Statistic_Value,
+                              Pub_Name
       )
       return(list(wrnings, output_df))
     }
@@ -1874,7 +2105,9 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             Value = Full_Table$Statistic_Value[(Full_Table$Scaffold == unique_scaffs[c])
                                                & (Full_Table$Statistic_Type == unique_stats[s])],
             Populations = Full_Table$Population[(Full_Table$Scaffold == unique_scaffs[c])
-                                                & (Full_Table$Statistic_Type == unique_stats[s])]
+                                                & (Full_Table$Statistic_Type == unique_stats[s])],
+            Pub_Name = Full_Table$Pub_Name[(Full_Table$Scaffold == unique_scaffs[c])
+                                           & (Full_Table$Statistic_Type == unique_stats[s])]
           )
           
           # Plot the statistic values for all genes which occur on the scaffold
@@ -1883,7 +2116,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
             ylab(stat_vec[s]) +
             xlab("Locus") +
             ggtitle(paste(c("Scaffold:", unique_scaffs[c]), collapse = " ")) +
-            geom_point() +
+            geom_point(aes(shape = Pub_Name)) +
             theme_bw()
           #Store the plot in a vector
         }
@@ -2098,7 +2331,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                                stat_table)
         sliderInput("thrsh", "Threshhold statistical value: ",
                     min = round(min_max_list[[1]],2), 
-                    max = round(min_max_list[[2]],2), value = 0, step = 0.05)
+                    max = round(min_max_list[[2]],2), value = 0, step = 0.0005)
       }else{
         sliderInput("thrsh", 
                     "Threshold selector will appear here once you have inputted enough populations for the selected statistic.",
@@ -2109,7 +2342,13 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
     })
 
     
-    
+    # Home Page: Output text describing website, functions, data contribution,
+    # and Astyanax mexicanus
+    output$home_text1 <- renderText("Welcome to CaveCrawler")
+    output$home_text2 <- renderText("CaveCrawler is a reactive web interface for bioinformatic analysis of data in the Mexican tetra (Astyanax mexicanus), an emerging evolutionary model organism.")
+    output$home_text3 <- renderText("CaveCrawler consists of 4 subpages: a Gene Search page for querying data about specific genes, a Transcription page for finding genes whose transcriptional levels differ between samples, a Population Genetics page for investigating statistics on diversity and selection, and a GO Term Info page for identifying and obtaining information on GO terms-of-interest.")
+    output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Annabel Perry at annabelperry@tamu.edu")
+    output$home_text5 <- renderText("To cite CaveCrawler, please cite our paper <link>")
     
     # Gene Search Page: Output a table of all statistics associated with the 
     # entered gene
@@ -2177,7 +2416,18 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                     input$dist_pops)
     }
     )
-    output$SVdist_tab <- renderTable(SVDT()[[2]])
+    # Render table with 5 units per statistic value
+    output$SVdist_tab <- renderTable(
+      if(length(SVDT()) == 2){
+        SVtemp_df <- data.frame(
+          SVDT()[[2]][,1:2],
+          format(SVDT()[[2]][,3], digits = 5),
+          SVDT()[[2]][,4:7]
+        )
+        names(SVtemp_df) <- names(SVDT()[[2]])
+        SVtemp_df
+      }
+    )
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
 
     # Population Genetics (Distribution Suppage): If Visualize was pressed, 
@@ -2205,7 +2455,18 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                     input$dist_pops)
     }
     )
-    output$GCdist_tab <- renderTable(GCDT()[[2]])
+    # Output table with 5 decimals for the statistic column
+    output$GCdist_tab <- renderTable(
+      if(length(GCDT()) == 2){
+        GCtemp_df <- data.frame(
+          GCDT()[[2]][,1:2],
+          format(GCDT()[[2]][,3], digits = 5),
+          GCDT()[[2]][,4:7]
+        )
+        names(GCtemp_df) <- names(GCDT()[[2]])
+        GCtemp_df
+      }
+    )
     output$GCdist_wrnings <- renderText(GCDT()[[1]])
     
     # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and 
@@ -2225,7 +2486,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                        stat_vec = input$sbc_statist, 
                        position_table, 
                        stat_table, 
-                       all_pops = input$sbc_pops
+                       pops = input$sbc_pops
         )
       }
     }
@@ -2248,7 +2509,13 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
     })
     output$SBC_table <- renderTable(
       if(length(SBCT()) == 2){
-        SBCT()[[2]]
+        temp_df <- data.frame(
+          SBCT()[[2]][,1:7],
+          format(SBCT()[[2]][,8], digits = 5),
+          SBCT()[[2]][,9]
+        )
+        names(temp_df) <- names(SBCT()[[2]])
+        temp_df
       }else{
         data.frame(Data = c("No data to display; see explanation below"))
       })
