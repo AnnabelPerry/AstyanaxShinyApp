@@ -106,15 +106,21 @@ all.GO_IDs <- c(GO_classes$GO_ID)
 all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
 
   ui = fluidPage(
+    chooseSliderSkin("Flat", color = "#e8c4c2"),
     theme = "style.css",
     tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
     tags$style(type="text/css",
                ".shiny-output-error { visibility: hidden; }",
                ".shiny-output-error:before { visibility: hidden; }"),
-
+    # Change background color of tabs
+    tags$style(HTML("
+    .tabbable > .nav > li > a                  {background-color: black; border-color: black;}
+    .tabbable > .nav > li[class=active]    > a {background-color: #e8c4c2; border-color: #e4867e}
+    .tabbable > .nav > li > a:hover {background-color: #e8c4c2; border-color: #e4867e}
+  ")),
     tabsetPanel(
-      tabPanel("Home", fluid = TRUE,
-               textOutput("home_text1"),
+      tabPanel(h1("Home"), fluid = TRUE,
+               h1("Welcome to CaveCrawler"),
                br(),
                textOutput("home_text2"),
                br(),
@@ -124,9 +130,9 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                br(),
                textOutput("home_text5")
       ),
-      tabPanel("Gene Search", fluid = TRUE,
+      tabPanel(h2("Gene Search"), fluid = TRUE,
                sidebarLayout(
-                 sidebarPanel(
+                 sidebarPanel(id = "sidebar",
                    searchInput(
                      inputId = "Gene_search",
                      label = "Gene name, gene stable ID, or phrase",
@@ -136,15 +142,15 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                      width = "450px"
                    )
                    ),
-                 mainPanel(
+                 mainPanel(id = "main",
                    textOutput("GeneCent_warnings"),
                    tableOutput("GeneCent_table")
                  )
                )
       ),
-      tabPanel("Transcription", fluid = TRUE,
+      tabPanel(h2("Transcription"), fluid = TRUE,
                sidebarLayout(
-                 sidebarPanel(
+                 sidebarPanel(id = "sidebar",
                    selectInput(
                      inputId = "morph1",
                      label = "Compare...",
@@ -183,16 +189,21 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                  )
                )
       ),
-        tabPanel("Population Genetics", fluid = TRUE,
-                 radioButtons("which_function",
-                              label = "Would you like to search for genes within a range of statistic values or search for genes using GO terms?",
-                              choices = c("Range of Statistic Values" = "distr_func", 
-                                          "GO Terms" = "stat_by_chr_func")
+        tabPanel(h2("Population Genetics"), fluid = TRUE,
+                 sidebarLayout(
+                   sidebarPanel(id = "sidebar2",
+                     radioButtons("which_function",
+                                  label = "Would you like to search for genes within a range of statistic values or search for genes using GO terms?",
+                                  choices = c("Range of Statistic Values" = "distr_func", 
+                                              "GO Terms" = "stat_by_chr_func")
+                     ),
+                   ),
+                   mainPanel()
                  ),
                  conditionalPanel(
                    condition = "input.which_function == 'distr_func'",
                    sidebarLayout(
-                     sidebarPanel(
+                     sidebarPanel(id = "sidebar",
                        radioButtons("type",
                                     label = "Search for Top/Bottom Number of Genes or Genes Above/Below a Statistical Value?",
                                     choices = c("Number of Genes" = "Gene Count", "Statistic Value")
@@ -248,7 +259,7 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                  conditionalPanel(
                    condition = "input.which_function == 'stat_by_chr_func'",
                    sidebarLayout(
-                     sidebarPanel(
+                     sidebarPanel(id = "sidebar",
                        checkboxGroupInput("sbc_statist", 
                                           label = "Statistic of Interest",
                                           choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
@@ -287,9 +298,9 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
                    )
                  )
         ),
-      tabPanel("GO Term Info", fluid = TRUE,
+      tabPanel(h2("GO Term Info"), fluid = TRUE,
                sidebarLayout(
-                 sidebarPanel(
+                 sidebarPanel(id = "sidebar",
                    searchInput(
                      inputId = "GO_info_search",
                      label = "Phrase or comma-separated list of GO IDs",
@@ -2344,7 +2355,6 @@ all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
     
     # Home Page: Output text describing website, functions, data contribution,
     # and Astyanax mexicanus
-    output$home_text1 <- renderText("Welcome to CaveCrawler")
     output$home_text2 <- renderText("CaveCrawler is a reactive web interface for bioinformatic analysis of data in the Mexican tetra (Astyanax mexicanus), an emerging evolutionary model organism.")
     output$home_text3 <- renderText("CaveCrawler consists of 4 subpages: a Gene Search page for querying data about specific genes, a Transcription page for finding genes whose transcriptional levels differ between samples, a Population Genetics page for investigating statistics on diversity and selection, and a GO Term Info page for identifying and obtaining information on GO terms-of-interest.")
     output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Annabel Perry at annabelperry@tamu.edu")

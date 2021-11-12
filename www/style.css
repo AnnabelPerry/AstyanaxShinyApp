@@ -1,20 +1,16 @@
-/* CSS Document */
-
-
 /*
-* Set color of header to pink
+* Color Palette:
+* Color Picker Link: https://imagecolorpicker.com/
+* Surface Fish Green (Main): #71c596
+* Surface Fish Green (Light): #84dca7
+* Surface Fish Green (Very Light): #c8feca
+* Cave Fish Pink (Main): #e4867e
+* Cave Fish Pink (Light): #ee9f97
+* Cave Fish Pink (Very Light): #e8c4c2
 */
-home_text1 {
-  text-align:center;
-  
-  font-family:Arial;
-  
-  color: red;
 
-  line-height:1.5em;
-  
-  font-size:20px;
-}
+/* Get a fancy font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
 
 body{
 
@@ -34,6 +30,28 @@ font-size:14px;
 
 }
 
+/*
+* Sidebar
+*/
+#sidebar {
+            background-color: #c8feca;
+            border-color: #84dca7;
+        }
+
+        label, input, button, select { 
+          font-family: "Arial";
+          color: #151514;
+        }
+#sidebar2 {
+            background-color: #e8c4c2;
+            border-color: #e4867e;
+        }
+
+        label, input, button, select { 
+          font-family: "Arial";
+          color: #151514;
+        }
+        
 a:link, a:visited{
 
 color:#A8D3E7;
@@ -42,7 +60,7 @@ color:#A8D3E7;
 
 a:hover {
 
-color:#3ebcef;
+color:#e8c4c2;
 
 }
 
@@ -58,102 +76,13 @@ padding-left:1px;
 
 }
 
+/*************************** Header Font Specifications ************************/
 
-/* ......................................Top Nav........................................................... */
-
-
-#nav {
-
-margin-bottom:0;
-	
-padding:0;
-	
-
-}
-
-
-ul#menu{
-
-margin:0;
-	
-padding:0;
-	
-list-style-type:none;
-	
-position:relative;
-	
-display:block;
-
-height:40px;
-	
-font-size:13px;
-	
-font-weight:bold;
-	
-background-color:#333333;
-
-}
-
-
-
-#menu li{
-
-display:block;
-	
-float:left;
-	
-margin:0;
-	
-padding:0;
-	
-}
-	
-	
-
-#menu li a{
-
-display:block;
-	
-float:left;
-	
-color:#FFFFFF;
-	
-text-decoration:none;
-	
-font-weight:bold;
-	
-padding:11px 20px 0 20px;
-	
-height:29px;
-	
-margin:0;
-	
-border-right:1px solid #474646;
-	
-}
-	
-	
-
-#menu li a:hover{
-
-background-color:#e3007a;	
-	
-}
-	
-
-
-/* ......................................Content........................................................... */
-
-
-.line{
-
-border-top: 1px dashed #666666;
-
-}
 
 h1 {
+font-family: 'Special Elite', Arial;
 
-color:#CCCCCC;
+color: #e4867e;
 
 background:url(images/headline_back.jpg) top left no-repeat;
 
@@ -165,19 +94,26 @@ font-size:30px;
 
 letter-spacing:5px;
 
-margin:40px 0 20px 0;
+margin:30px 0 20px 0;
+
 
 }
 
 h2 {
 
-color:#e3007a;
+color: #71c596;
 
-padding-top:25px;
+padding-top:5px;
 
 font-size: 20px;
 
+height: 53px;
+
 letter-spacing:3px;
+
+font-weight: bold;
+
+margin:30px 0 20px 0;
 
 
 }
