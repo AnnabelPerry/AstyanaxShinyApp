@@ -7,9 +7,50 @@ library(WVPlots)
 library(stringr)
 library(tibble)
 library(ggplot2)
+library(gridExtra)
 library(dplyr)
 
 ################################## Load Data ###################################
+# From Terrence Sylvester
+# pradakshanas@gmail.com
+# 4th November 2021
+
+# load libraries
+library(ggplot2)
+library(gridExtra)
+
+# Make dataframe of latitudes and longitudes for all morphs
+# Citation:
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3282648/pdf/1471-2148-12-9.pdf
+Latit_Longit_unedited <- data.frame(
+  Population = c("Pachón","Yerbaniz","Japonés","Arroyo","Tinaja","Curva","Toro",
+                 "Chica","Molino","Caballo Moro","Subterráneo","Río Frío",
+                 "Arroyo Sarco", "Chamal","Río Meco","Río Tantáon","Río Florído",
+                 "RióTampaón","Nacimiento del Río Santa Clara",
+                 "San Rafael Los Castros","Rio Subterráneo Valley"),
+  Latitude = c(22.60,22.20,22.10,22.20,22.08,21.98,21.85,21.85,23.06,22.92,
+               22.10,22.99,22.02,22.84,22.82,22.37,21.98,21.85,22.50,22.75,22.13
+  ),
+  Longitude = c(-99.05,-98.97,-98.95,-98.97,-98.95,-98.93,-98.93,-98.93,-99.16,
+                -99.20,-99.18,-99.15,-99.32,-99.20,-99.31,-98.90,-98.77,-98.94,-98.9,
+                -99.02,-99.17
+  )
+)
+# Rascon and Rio Choy data obtained from google maps
+Latit_Longit <- rbind(Latit_Longit_unedited, data.frame(
+  Population = c("Rascón","Río Choy"),
+  Latitude = c(21.9750,21.9998),
+  Longitude = c(-99.2578,-98.7785)
+))
+# Edit data to include only the populations currently available on the website
+Latit_Longit <- Latit_Longit[
+  Latit_Longit$Population %in% 
+    c("Chica","Molino","Tinaja","Pachón","Rascón","Río Choy"),]
+
+# Get a map of the world
+world_map_1 <- map_data("world")
+# get map of USA, Mexico, Belize, and Guatemala
+world_map <- subset(world_map_1, region %in% c("USA", "Mexico", "Belize","Guatemala"))
 
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 
