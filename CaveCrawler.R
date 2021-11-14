@@ -7,108 +7,6 @@
 #    http://shiny.rstudio.com/
 #
 
-########################### Load Required Libraries ############################
-
-library(shinyWidgets)
-library(shiny)
-library(plotly)
-library(WVPlots)
-library(stringr)
-library(tibble)
-library(ggplot2)
-library(gridExtra)
-library(dplyr)
-
-################################## Load Data ###################################
-
-position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
-
-condition_control <- read.csv("data/Morph_Control_TranscData.csv")
-
-# EDIT: This data is fake. We currently lack between-morph comparisons, so this
-# CSV file is simply used as a filler to ensure the function works
-morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
-
-GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
-
-GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-# When you first read in GoIDToNames, some entire lines are, for whatever reason,
-# combined into a single GO term cell
-
-# This section of the script...
-# 1. Identifies all GO term cells containing information from multiple lines
-messed_cells <- GoIDToNames$GO.Term[grepl("\n", GoIDToNames$GO.Term)]
-
-# 2. Splices the cells into strings based on newline characters and adds strings
-#    to a vector
-newline_strings <- c()
-sites.of.errors <- c()
-for(c in 1:length(messed_cells)){
-  newline_strings <- append(newline_strings, str_split(string = messed_cells[c],
-                                                       pattern = "\n"))
-  sites.of.errors <- append(sites.of.errors, 
-                            which(GoIDToNames$GO.Term == messed_cells[c]))
-}
-
-
-error.replacements <- c()
-for(i in 1:length(newline_strings)){
-  # 3. Records sites at which an erroneous GO term must be replaced with a
-  #    corrected GO term
-  error.replacements <- append(error.replacements, newline_strings[[i]][1])
-  newline_strings[[i]] <- newline_strings[[i]][-1]
-  # 4. Splices the strings of the vector into substrings based on \t and adds 
-  #    substring pairs as columns to a temporary dataframe
-  temp_df <- data.frame(matrix(ncol = 2, nrow = 1))
-  new_rows <- str_split(string = newline_strings[[i]], pattern = "\t")
-  for(r in 1:length(new_rows)){
-    temp_df <- rbind(temp_df, new_rows[[r]])
-  }
-  temp_df <- temp_df[-1,]
-  names(temp_df) <- names(GoIDToNames)
-  # 5. Inserts the temporary data frame into the master data frame
-  GoIDToNames <- rbind(GoIDToNames, temp_df)
-  next
-}
-# 6. Replaces the erroneous GO term with a corrected GO term
-GoIDToNames$GO.Term[sites.of.errors] <- error.replacements
-
-UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
-
-# Read in both outlier and non-outlier datasets and integrate into a single data
-# frame, adding a column describing the publication from which the data came
-outlier_table <- read.csv("data/AMexicanus_Outlier_Stats.csv")
-outlier_table <- outlier_table[,(names(outlier_table) != "X")]
-outlier_table$Publication_Name <- rep("Outlier paper (Provisional)", 
-                                      nrow(outlier_table))
-chica_table <- read.csv("data/AMexicanus_iScienceS4R1_Stats.csv")
-names(chica_table) <- names(outlier_table)
-chica_table$Publication_Name <- rep("Chica paper (Provisional)", 
-                                    nrow(chica_table))
-chica_table <- chica_table[,1:ncol(outlier_table)]
-stat_table <- rbind(outlier_table, chica_table)
-stat_table <- stat_table[((stat_table$Gene_Name != "") & 
-                                      (stat_table$Gene_Name != " ")),]
-
-GO_classes <- read.table("data/GOID_Namespaces.txt", fill = T, sep = "\t", header = T)
-
-# Obtain complete dataframe of all possible genes and corresponding IDs across
-# the statistic and transcription data
-all.genes_IDs <- data.frame(
-  all_genes = c(position_table$Gene_Name, stat_table$Gene_Name,
-                condition_control$Gene_name
-  ),
-  all_IDs = c(position_table$Gene_ID, stat_table$Stable_Gene_ID,
-              condition_control$Gene_stable_ID
-  )
-)
-all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
-all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
-
-# Obtain a complete vector of all GO IDs
-all.GO_IDs <- c(GO_classes$GO_ID)
-all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
-
 ############################### Source Functions ###############################
 source("functions/CaveCrawler_functions.R")
 
@@ -428,9 +326,28 @@ source("functions/CaveCrawler_functions.R")
     output$home_plot <- renderPlot(pop_map)
     # Gene Search Page: Output a table of all statistics associated with the 
     # entered gene
+    GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
+      if(input$Gene_search == ""){
+        data.frame()
+      }else{
+        GeneCentered(input$Gene_search,
+                     stat_table,
+                     GeneToGO,
+                     condition_control,
+                     position_table)
+      }
+    })
+    
     output$GeneCent_table <- renderTable({
       if(typeof(GeneCentOutput()) == "list"){
-        GeneCentOutput()
+        # Format each statistic section to have appropriate number of decimals
+        reformattedGeneCent <- data.frame(
+          GeneCentOutput()[,1:7],
+          format(GeneCentOutput()[,8:37], digits = 5),
+          GeneCentOutput()[,38]
+        )
+        names(reformattedGeneCent) <- names(GeneCentOutput())
+        reformattedGeneCent
       }else if(typeof(GeneCentOutput()) == "character"){
         data.frame()
       }
