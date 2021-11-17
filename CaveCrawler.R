@@ -51,6 +51,8 @@ source("functions/CaveCrawler_functions.R")
                    ),
                  mainPanel(id = "main",
                    textOutput("GeneCent_warnings"),
+                   downloadButton("GeneSearchDL", "Download", class = "download"),
+                   tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
                    tableOutput("GeneCent_table")
                  )
                )
@@ -90,6 +92,7 @@ source("functions/CaveCrawler_functions.R")
 
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
+                                    downloadButton("TranscDL", "Download", class = "download"),
                                     tableOutput("transc_table_out")
                    )
                  )
@@ -120,7 +123,11 @@ source("functions/CaveCrawler_functions.R")
                                     choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
                        checkboxGroupInput("dist_pops",
                                           label = "Population(s) of Interest",
-                                          choices = c("Molino", "Pachon", "Rascon", "Rio Choy", "Tinaja")),
+                                          choices = c("Molino", "Pachon", 
+                                                      "Rascon", "Rio Choy", 
+                                                      "Tinaja", 
+                                                      "Chica 1" = "Chica1",
+                                                      "Chica 2" = "Chica2")),
                        
                        # Only show this panel if the user wants to find the number of genes
                        # with the greatest or smallest values for the stat of interest
@@ -148,6 +155,7 @@ source("functions/CaveCrawler_functions.R")
                      mainPanel(
                        conditionalPanel(
                          condition = "input.type == 'Gene Count'",
+                         downloadButton("GCDistDL", "Download", class = "download"),
                          tableOutput("GCdist_tab"),
                          textOutput("GCdist_wrnings"),
                        ),
@@ -172,8 +180,11 @@ source("functions/CaveCrawler_functions.R")
                                           choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
                        checkboxGroupInput("sbc_pops", 
                                           label = "Population(s) of Interest",
-                                          choices = c("Molino", "Pachon", "Rascon", "Rio Choy", 
-                                                      "Tinaja")),
+                                          choices = c("Molino", "Pachon", 
+                                                      "Rascon", "Rio Choy", 
+                                                      "Tinaja", 
+                                                      "Chica 1" = "Chica1",
+                                                      "Chica 2" = "Chica2")),
                        searchInput(
                          inputId = "GO_search", label = "GO ID or Term",
                          placeholder = "GO:0000001, mitochondrion, etc...",
@@ -198,9 +209,9 @@ source("functions/CaveCrawler_functions.R")
                        actionButton("SBCP_enter","Visualize")
                      ),
                      mainPanel(
+                       plotOutput("SBC_plot"),
                         tableOutput("SBC_table"),
-                        textOutput("SBC_wrnings"),
-                        plotOutput("SBC_plot")
+                        textOutput("SBC_wrnings")
                      )
                    )
                  )
@@ -362,6 +373,30 @@ source("functions/CaveCrawler_functions.R")
       }
     })
 
+    # Gene Search Page: Enable downloading of Gene Search table
+    output$GeneSearchDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-GeneSearch-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        # If a valid table was outputted. enable downloading of that table
+        if(typeof(GeneCentOutput()) == "list"){
+          reformattedGeneCent <- data.frame(
+            GeneCentOutput()[,1:7],
+            format(GeneCentOutput()[,8:37], digits = 5),
+            GeneCentOutput()[,38]
+          )
+          names(reformattedGeneCent) <- names(GeneCentOutput())
+        # If a valid table was not outputted, enable downloading of an empty df
+        }else{
+          reformattedGeneCent <- data.frame()
+        }
+        
+        write.csv(reformattedGeneCent, file)
+      }
+    )
+    
+    
     # Transcription Page: Create a label which changes based on the morphs to be 
     # searched for
     output$dir_label <- renderText({
@@ -396,6 +431,17 @@ source("functions/CaveCrawler_functions.R")
     output$transc_table_out <- renderTable({
       transc_table()
     })
+    
+    # Transcription Page: Enable downloading of Transcription table
+    output$TranscDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-Transcription-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(transc_table(), file)
+      }
+    )
+    
     
     # Population Genetics (Distribution Suppage): If Statistic Value was 
     # specified, output a table of all genes within the specified range of 
@@ -461,6 +507,17 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     output$GCdist_wrnings <- renderText(GCDT()[[1]])
+    
+    # Gene Count SubPage: Enable downloading of Gene Count table
+    output$GCDistDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(GCDT()[[2]], file)
+      }
+    )
+    
     
     # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and 
     # GO term have been entered, output a table of associated genes

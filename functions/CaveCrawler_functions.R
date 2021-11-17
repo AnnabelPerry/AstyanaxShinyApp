@@ -2,11 +2,11 @@
 
 library(shinyWidgets)
 library(shiny)
+library(ggplot2)
 library(plotly)
 library(WVPlots)
 library(stringr)
 library(tibble)
-library(ggplot2)
 library(gridExtra)
 library(dplyr)
 
@@ -45,6 +45,9 @@ world_map_1 <- map_data("world")
 world_map <- subset(world_map_1, region %in% c("USA", "Mexico", "Belize","Guatemala"))
 
 position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
+# Remove duplicates so multiple rows with the same values are not outputted
+position_table$Gene_Name <- tolower(position_table$Gene_Name)
+position_table <- position_table[!duplicated(position_table$Gene_Name),]
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
 
@@ -1410,9 +1413,8 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       ranks <- c()
       for(i in 1:length(pop_strings)){
         rows <- prelim_df[prelim_df$DF_pops == pop_strings[i],]
-        new_rows <- rows[order(stat_vals, decreasing = T),]
-        new_rows <- rows[1:nrow(rows),]
-        # Collect number of genes found above threshhold for THIS population
+        new_rows <- rows[order(rows$stat_vals, decreasing = T),]
+        # Collect number of genes found above threshold for THIS population
         ranks <- append(ranks, 1:nrow(new_rows))
         final_df <- rbind(final_df, new_rows)
       }
@@ -1433,8 +1435,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       ranks <- c()
       for(i in 1:length(pop_strings)){
         rows <- prelim_df[prelim_df$DF_pops == pop_strings[i],]
-        new_rows <- rows[order(stat_vals, decreasing = F),]
-        new_rows <- rows[1:nrow(rows),]
+        new_rows <- rows[order(rows$stat_vals, decreasing = F),]
         # Collect number of genes found above threshhold for THIS population
         ranks <- append(ranks, 1:nrow(new_rows))
         final_df <- rbind(final_df, new_rows)
@@ -1580,9 +1581,11 @@ StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
   for(p in 1:length(pops)){
     if(p == 1){
       pop_string <- pops[p]
-    }else if((p != length(pops)) & (p != 1)){
+    }else if((p == 2) & (p == length(pops))){
+      pop_string <- paste(c(pop_string, " and ", pops[p]), collapse = "")
+    }else if((p != length(pops)) & (p > 2)){
       pop_string <- paste(c(pop_string, ", ", pops[p]), collapse = "")
-    }else if(p == length(pops)){
+    }else if((p == length(pops)) & (p != 2)){
       pop_string <- paste(c(pop_string, pops[p]), collapse = ", and ")
     }
   }
@@ -2122,3 +2125,5 @@ MinMax <- function(mm_pops, mm_stat, stat_table){
   maximum <- num_pool[which.max(num_pool)]
   return(list(minimum,maximum))
 }
+
+
