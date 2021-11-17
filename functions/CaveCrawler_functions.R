@@ -1691,11 +1691,27 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
       next
     }
   }
-  geneGOs <- data.frame(
-    Gene = gene_vec,
-    GO_ID = found_GOs
-  )
-  geneGOs <- geneGOs[!duplicated(geneGOs), ]
+  # If no genes were found corresponding to the current GO ID, return an error
+  if(is.null(gene_vec)){
+    null.df <- data.frame(matrix(nrow = 1, ncol = 9))
+    names(null.df) <- c("Gene",
+                        "Scaffold",
+                        "Start_Position",
+                        "End_Position",
+                        "GO_IDs",
+                        "Statistic_Type",
+                        "Population",
+                        "Statistic_Value",
+                        "Publication_Name")
+    return(list("No genes were found corresponding to any of the input IDs or phrase", 
+           null.df))
+  }else{
+    geneGOs <- data.frame(
+      Gene = gene_vec,
+      GO_ID = found_GOs
+    )
+    geneGOs <- geneGOs[!duplicated(geneGOs), ]
+  }
   
   # Extract all possible combinations of populations from populations of interest
   if(("Fst" %in% stat_vec) | ("Dxy" %in% stat_vec)){
@@ -1913,7 +1929,15 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
   return(list(wrnings, output_df))
 }
 StatByChrGraph <- function(Full_Table, stat_vec){
-  
+  # Check if table is completely empty. If so, yield an error plot
+  if(sum(is.na(Full_Table)) == 9){
+    plist <- vector(mode = "list", length = 1)
+    plist[[1]] <- plot(x = c(.95, .955,  .975,  1, 1.025, 1.05,   1.07,  1.075, 0.99, 1.035), 
+                       y = c( 1, 1.5, 1.75, 2, 2,    1.75,  1.5,   1,    3.5,    3.5), pch = 16, axes = F,
+                       ylab = "",
+                       xlab = "Whoops! Something went wrong. See errors")
+    return(plist)
+  }
   # Count the number of unique scaffolds in the table
   unique_scaffs <- levels(as.factor(Full_Table$Scaffold))
   num_scaff <- length(unique_scaffs)

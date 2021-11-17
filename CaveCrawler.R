@@ -109,13 +109,29 @@ source("functions/CaveCrawler_functions.R")
                      ),
                    ),
                    mainPanel(
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     # Display download button appropriate to specific conditions
                      conditionalPanel(
-                       condition = "input.type == 'Gene Count'",
-                       downloadButton("GCDistDL", "Download", class = "download"),
+                       condition = "input.which_function == 'stat_by_chr_func'",
+                       downloadButton("SBCDL", "Download", class = "download"),
                      ),
                      conditionalPanel(
-                       condition = "input.type == 'Statistic Value'",
-                       downloadButton("SVDistDL", "Download", class = "download"),
+                       condition = "input.which_function == 'distr_func'",
+                       conditionalPanel(
+                         condition = "input.type == 'Gene Count'",
+                         downloadButton("GCDistDL", "Download", class = "download"),
+                       ),
+                       conditionalPanel(
+                         condition = "input.type == 'Statistic Value'",
+                         downloadButton("SVDistDL", "Download", class = "download"),
+                       )
                      )
                    )
                  ),
@@ -218,7 +234,6 @@ source("functions/CaveCrawler_functions.R")
                      ),
                      mainPanel(
                        plotOutput("SBC_plot"),
-                       downloadButton("SBCDL", "Download", class = "download"),
                         tableOutput("SBC_table"),
                         textOutput("SBC_wrnings")
                      )
@@ -258,25 +273,46 @@ source("functions/CaveCrawler_functions.R")
                         choices = transc_morph_choices[transc_morph_choices != input$morph1],
                         selected = tail(transc_morph_choices, 1)
       )
-      # Population Genetics (Stat-By-Chr Suppage): Update widget for selecting 
-      # which statistic to plot
-      updateSelectInput(session = getDefaultReactiveDomain(),
-                        inputId = "stat_PlotSelect",
-                        label = "Visualize statistic...",
-                        choices = input$sbc_statist)
-      # Population Genetics (Stat-By-Chr Suppage): If a table has been created, 
-      # update the widget for selecting which scaffold to plot
+      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been 
+      # created, update widget for selecting which statistic to plot
       if(length(SBCT()) == 2){
-        all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
-        available_scaffs <- c()
-        for(i in 1:length(all_plots)){
-          available_scaffs <- append(available_scaffs,
-                                     str_split(names(all_plots)[[i]], ":")[[1]][2])
-        }
+        if(sum(is.na(SBCT()[[2]])) != 9){
+          updateSelectInput(session = getDefaultReactiveDomain(),
+                            inputId = "stat_PlotSelect",
+                            label = "Visualize statistic...",
+                            choices = input$sbc_statist)
+        }else{
+          updateSelectInput(session = getDefaultReactiveDomain(),
+                            inputId = "stat_PlotSelect",
+                            label = "Visualize statistic...",
+                            choices = "")
+      }
+      }else{
         updateSelectInput(session = getDefaultReactiveDomain(),
-                          inputId = "scaff_PlotSelect",
-                          label = "...plotted along scaffold:",
-                          choices = available_scaffs)
+                          inputId = "stat_PlotSelect",
+                          label = "Visualize statistic...",
+                          choices = "")
+      }
+      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been 
+      # created, update the widget for selecting which scaffold to plot
+      if(length(SBCT()) == 2){
+          if(sum(is.na(SBCT()[[2]])) != 9){
+          all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
+          available_scaffs <- c()
+          for(i in 1:length(all_plots)){
+            available_scaffs <- append(available_scaffs,
+                                       str_split(names(all_plots)[[i]], ":")[[1]][2])
+          }
+          updateSelectInput(session = getDefaultReactiveDomain(),
+                            inputId = "scaff_PlotSelect",
+                            label = "...plotted along scaffold:",
+                            choices = available_scaffs)
+          }else{
+            updateSelectInput(session = getDefaultReactiveDomain(),
+                              inputId = "scaff_PlotSelect",
+                              label = "...plotted along scaffold:",
+                              choices = "")
+          }
       }else{
         updateSelectInput(session = getDefaultReactiveDomain(),
                           inputId = "scaff_PlotSelect",
@@ -573,7 +609,7 @@ source("functions/CaveCrawler_functions.R")
     # input table is NOT full of NAs, output a plot of the appropriate statistic x 
     # scaffold pair
     SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
-      if((!is.na(SBCT()[[2]][1,1])) & (nrow(SBCT()[[2]]) != 1)){
+      if(sum(is.na(SBCT()[[2]])) != 9){
         SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
         for(i in 1:length(SBC_plots)){
           if((str_split(names(SBC_plots)[[i]], ":")[[1]][1] == input$stat_PlotSelect)
@@ -585,14 +621,23 @@ source("functions/CaveCrawler_functions.R")
       }
     })
     output$SBC_table <- renderTable(
+      # First, check if anything has been inputted into function
       if(length(SBCT()) == 2){
-        temp_df <- data.frame(
-          SBCT()[[2]][,1:7],
-          format(SBCT()[[2]][,8], digits = 5),
-          SBCT()[[2]][,9]
-        )
-        names(temp_df) <- names(SBCT()[[2]])
-        temp_df
+        # If function has inputs, check if inputs yielded a valid table
+        if(sum(is.na(SBCT()[[2]])) != 9){
+          # If inputs did yield a valid table, output the table with adjusted 
+          # decimal places
+          temp_df <- data.frame(
+            SBCT()[[2]][,1:7],
+            format(SBCT()[[2]][,8], digits = 5),
+            SBCT()[[2]][,9]
+          )
+          names(temp_df) <- names(SBCT()[[2]])
+          temp_df
+        }else{
+          # If inputs yielded an erroneous table, simply output an empty table
+          data.frame(Data = "NA")
+        }
       }else{
         data.frame(Data = c("No data to display; see explanation below"))
       })
