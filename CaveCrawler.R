@@ -50,8 +50,8 @@ source("functions/CaveCrawler_functions.R")
                    )
                    ),
                  mainPanel(id = "main",
-                   textOutput("GeneCent_warnings"),
                    downloadButton("GeneSearchDL", "Download", class = "download"),
+                   textOutput("GeneCent_warnings"),
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
                    tableOutput("GeneCent_table")
                  )
@@ -103,12 +103,21 @@ source("functions/CaveCrawler_functions.R")
                  sidebarLayout(
                    sidebarPanel(id = "sidebar2",
                      radioButtons("which_function",
-                                  label = "Would you like to search for genes within a range of statistic values or search for genes using GO terms?",
-                                  choices = c("Range of Statistic Values" = "distr_func", 
-                                              "GO Terms" = "stat_by_chr_func")
+                                  label = "Would you like to find genes which are outliers with respect to a statistic-of-interest or find the statistic values for all genes related to a GO-term-of-interest?",
+                                  choices = c("Outliers" = "distr_func", 
+                                              "GO-term-of-interest" = "stat_by_chr_func")
                      ),
                    ),
-                   mainPanel()
+                   mainPanel(
+                     conditionalPanel(
+                       condition = "input.type == 'Gene Count'",
+                       downloadButton("GCDistDL", "Download", class = "download"),
+                     ),
+                     conditionalPanel(
+                       condition = "input.type == 'Statistic Value'",
+                       downloadButton("SVDistDL", "Download", class = "download"),
+                     )
+                   )
                  ),
                  conditionalPanel(
                    condition = "input.which_function == 'distr_func'",
@@ -155,7 +164,6 @@ source("functions/CaveCrawler_functions.R")
                      mainPanel(
                        conditionalPanel(
                          condition = "input.type == 'Gene Count'",
-                         downloadButton("GCDistDL", "Download", class = "download"),
                          tableOutput("GCdist_tab"),
                          textOutput("GCdist_wrnings"),
                        ),
@@ -210,6 +218,7 @@ source("functions/CaveCrawler_functions.R")
                      ),
                      mainPanel(
                        plotOutput("SBC_plot"),
+                       downloadButton("SBCDL", "Download", class = "download"),
                         tableOutput("SBC_table"),
                         textOutput("SBC_wrnings")
                      )
@@ -229,6 +238,7 @@ source("functions/CaveCrawler_functions.R")
                    )
                  ),
                  mainPanel(
+                   downloadButton("GOInfoDL", "Download", class = "download"),
                    tableOutput("GOinfo_table"),
                    textOutput("GOinfo_wrnings")
                  )
@@ -392,7 +402,7 @@ source("functions/CaveCrawler_functions.R")
           reformattedGeneCent <- data.frame()
         }
         
-        write.csv(reformattedGeneCent, file)
+        write.csv(reformattedGeneCent, file, row.names = F)
       }
     )
     
@@ -429,7 +439,14 @@ source("functions/CaveCrawler_functions.R")
                   GOTable = GeneToGO)
     })
     output$transc_table_out <- renderTable({
-      transc_table()
+      # Change log fold changes to have 5 decimal points
+      reformattedTranscT <- data.frame(
+        transc_table()[,1:4],
+        format(transc_table()[,5], digits = 5),
+        transc_table()[,6]
+      )
+      names(reformattedTranscT) <- names(transc_table())
+      reformattedTranscT
     })
     
     # Transcription Page: Enable downloading of Transcription table
@@ -438,7 +455,7 @@ source("functions/CaveCrawler_functions.R")
         paste("CaveCrawler-Transcription-", Sys.Date(), ".csv", sep="")
       },
       content = function(file) {
-        write.csv(transc_table(), file)
+        write.csv(transc_table(), file, row.names = F)
       }
     )
     
@@ -483,7 +500,17 @@ source("functions/CaveCrawler_functions.R")
     output$SVdist_plot_wrnings <- renderText(SVDP()[[1]])
     output$SVdist_plot <- renderPlot(SVDP()[[2]])
 
-    # Population Genetics (Distribution Suppage): If Gene Count was specified,
+    # Statistic Value SubPage: Enable downloading of Statistic Value table
+    output$SVDistDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(SVDT()[[2]], file, row.names = F)
+      }
+    )
+    
+    # Population Genetics (Distribution Subpage): If Gene Count was specified,
     # output the statistics associated with the indicated number of genes
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
       StatDistTable(input$type,
@@ -514,7 +541,7 @@ source("functions/CaveCrawler_functions.R")
         paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
       },
       content = function(file) {
-        write.csv(GCDT()[[2]], file)
+        write.csv(GCDT()[[2]], file, row.names = F)
       }
     )
     
@@ -572,6 +599,17 @@ source("functions/CaveCrawler_functions.R")
     output$SBC_wrnings <- renderText(SBCT()[[1]])
     output$SBC_plot <- renderPlot(SBCP())
     
+    # Statistic-by-Chromosome SubPage: Enable downloading of SBC table
+    output$SBCDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(SBCT()[[2]], file, row.names = F)
+      }
+    )
+    
+    
     # GO Term Info: If GO ID or phrase was inputted, output class, lower-level
     # GO IDs, and GO terms associated with all relevant GO IDs
     GOInfoOutWarnings <- eventReactive(input$GO_info_search, valueExpr = {
@@ -606,7 +644,16 @@ source("functions/CaveCrawler_functions.R")
     output$GOinfo_wrnings <- renderText(
         GOInfoOutWarnings()
     )
-    
+    # GO Info Page: Enable downloading of GO Info table
+    output$GOInfoDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-GOInfo-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        # Do not write row numbers to CSV
+        write.csv(GOInfoOutTable(), file, row.names = F)
+      }
+    )
     
   }
 

@@ -1100,6 +1100,7 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
   }
   return(output.df)
 }
+
 StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
   # Create 2 vectors of the indices corresponding to each population or pop
   # pair's statistic values
