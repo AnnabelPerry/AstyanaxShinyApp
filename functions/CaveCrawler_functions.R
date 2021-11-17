@@ -1764,8 +1764,7 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
               return(list(paste(c("Statistic ",stat_vec[s],
                                   " is not present for the populations ",
                                   all_pops[1, pair]," and ",
-                                  all_pops[2, pair]),collapse = "")), 
-                     null.df)
+                                  all_pops[2, pair]),collapse = ""), null.df))
             }
           }else{
             # Create a row to add to the indices data frame
