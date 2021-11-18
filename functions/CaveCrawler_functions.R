@@ -1003,7 +1003,7 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
       }
     }
     # Output gene names, gene stable IDs, GO terms, morph-of-comparison, logFC,
-    # p-value, and Ensembl family information to a dataframe
+    # p-value, Ensembl family information, and publication name to a dataframe
     output.df <- data.frame(
       tolower(ROIs$Gene_name)[1:n.rows],
       ROIs[1:n.rows,1],
@@ -1011,7 +1011,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
       rep(comp, n.rows)[1:n.rows],
       ROIs$logFC[1:n.rows],
       ROIs$PValue[1:n.rows],
-      ROIs$Ensembl_Family_Description[1:n.rows]
+      ROIs$Ensembl_Family_Description[1:n.rows],
+      ROIs$Publication[1:n.rows]
     )
     names(output.df) <- c(
       "Gene Name",
@@ -1020,7 +1021,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
       "Comparison",
       "logFC",
       "p-value",
-      "Ensembl Family Description"
+      "Ensembl Family Description",
+      "Publication Name"
     )
     
     # If condition is "Between morph"...
@@ -1087,7 +1089,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
       rep(paste(c(direction, " in ", morph1, " vs. ", morph2), collapse = ""),
           n.rows),
       ROIs$delta_FC[1:n.rows],
-      ROIs$EF_IDs[1:n.rows]
+      ROIs$EF_IDs[1:n.rows],
+      ROIs$Publication[1:n.rows]
     )
     names(output.df) <- c(
       "Gene Name",
@@ -1095,7 +1098,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent,
       "GO Term(s)",
       "Comparison",
       "delta(logFC)",
-      "Ensembl Family Description"
+      "Ensembl Family Description",
+      "Publication"
     )
   }
   return(output.df)

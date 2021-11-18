@@ -479,7 +479,8 @@ source("functions/CaveCrawler_functions.R")
       reformattedTranscT <- data.frame(
         transc_table()[,1:4],
         format(transc_table()[,5], digits = 5),
-        transc_table()[,6]
+        format(transc_table()[,6], digits = 5),
+        transc_table()[,7:8]
       )
       names(reformattedTranscT) <- names(transc_table())
       reformattedTranscT
