@@ -50,10 +50,11 @@ position_table$Gene_Name <- tolower(position_table$Gene_Name)
 position_table <- position_table[!duplicated(position_table$Gene_Name),]
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
+condition_control <- condition_control[,-1]
 
-# EDIT: This data is fake. We currently lack between-morph comparisons, so this
-# CSV file is simply used as a filler to ensure the function works
-morph1.morph2 <- read.csv("data/Toy_RioChoyPachon.csv")
+# Currently, we only have morph:morph comparisons from one study
+morph1.morph2 <- read.csv("data/Transcription_Macketal2020.csv")
+morph1.morph2 <- morph1.morph2[,-1]
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 
@@ -143,7 +144,7 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
   comma <- ", "
   
   # Dataframe in which to store inputs and associated values
-  output.df <- data.frame(matrix(ncol = 38))
+  output.df <- data.frame(matrix(ncol = 44))
   
   # If input is a comma-separated string, parse string and separate elements,
   # then determine whether vector contains gene names or gene IDs
@@ -158,13 +159,17 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                              condition_control$Gene_name)){
         # Find number of times this gene occurs in stat_table
         num_stat_copies <- sum(str_count(stat_table$Gene_Name, input_vec[i]))
+        # Start a running vector of publication names for the information found
+        # on this gene. Default pub_names to NA if none are found.
+        pub_names <- c(NA)
+        
         # If number of copies of gene in statistic data is 0, copy the gene at
         # least once so at least one copy is present for transcription data
         if(num_stat_copies == 0){
           num_stat_copies = 1
         }
         # Create temporary dataframe to be appended to final
-        temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 38))
+        temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 44))
         
         temp.df[,1] = rep(input_vec[i], num_stat_copies)
         temp.df[,2] = rep(all.genes_IDs$all_IDs[
@@ -195,6 +200,10 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         # Check if gene is present in stat table. If so, output info. If not,
         # output NAs
         if(input_vec[i] %in% stat_table$Gene_Name){
+          pub_names = append(pub_names, 
+                             stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]])
+          pub_names = pub_names[!is.na(pub_names)]
+          
           temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
           
           temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
@@ -222,64 +231,68 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
           temp.df[,27] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
           temp.df[,28] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
           temp.df[,29] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
-          temp.df[,38] = stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]]
+          
         }else{
           temp.df[,6] = rep(NA, num_stat_copies)
           temp.df[,8:29] = rep(NA, num_stat_copies)
-          temp.df[,38] = rep(NA, num_stat_copies)
         }
         
-        # Check if current gene is found in transcription data. If so, output
-        # associated information. If not, output NAs
+        # Check if current gene is found in sleep deprivation transcription data.
+        # If so, output associated information. If not, output NAs
         if(input_vec[i] %in% condition_control$Gene_name){
+          pub_names = append(pub_names, 
+                             condition_control$Publication[condition_control$Gene_name == input_vec[i]])
+          pub_names = pub_names[!is.na(pub_names)]
+          
           if(length(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-            (grepl("Choy",condition_control$Class))]) != 0){
+            (grepl("Choy",condition_control$Comparison))]) != 0){
+            
             temp.df[,30] = rep(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Choy",condition_control$Class))], num_stat_copies)
+                (grepl("Choy",condition_control$Comparison))], num_stat_copies)
             temp.df[,34] = rep(condition_control$PValue[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Choy",condition_control$Class))], num_stat_copies)
+                (grepl("Choy",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,30] = rep(NA, num_stat_copies)
             temp.df[,34] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-            (grepl("Pachon",condition_control$Class))]) != 0){
+            (grepl("Pachon",condition_control$Comparison))]) != 0){
             temp.df[,31] = rep(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
             temp.df[,35] = rep(condition_control$PValue[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,31] = rep(NA, num_stat_copies)
             temp.df[,35] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-            (grepl("Molino",condition_control$Class))]) != 0){
+            (grepl("Molino",condition_control$Comparison))]) != 0){
             temp.df[,32] = rep(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Molino",condition_control$Class))], num_stat_copies)
+                (grepl("Molino",condition_control$Comparison))], num_stat_copies)
             temp.df[,36] = rep(condition_control$PValue[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Molino",condition_control$Class))], num_stat_copies)
+                (grepl("Molino",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,32] = rep(NA, num_stat_copies)
             temp.df[,36] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-            (grepl("Tinaja",condition_control$Class))]) != 0){
+            (grepl("Tinaja",condition_control$Comparison))]) != 0){
             temp.df[,33] = rep(condition_control$logFC[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
             temp.df[,37] = rep(condition_control$PValue[
               (condition_control$Gene_name == input_vec[i]) &
-                (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,33] = rep(NA, num_stat_copies)
             temp.df[,37] = rep(NA, num_stat_copies)
@@ -288,8 +301,69 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
           temp.df[,30:37] = rep(NA, num_stat_copies)
         }
         
+        # Check if current gene is found in morph:morph transcription data. 
+        # If so, output associated information in columns 38-43 and in pub_names
+        if(input_vec[i] %in% morph1.morph2$Gene_name){
+          pub_names = append(pub_names, 
+                             morph1.morph2$Publication[morph1.morph2$Gene_name == input_vec[i]][1])
+          pub_names = pub_names[!is.na(pub_names)]
+          # Check if the current gene has a Pachon-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+            (morph1.morph2$Comparison == "Pachon-Rio Choy")]) != 0){
+            
+            temp.df[,38] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+            temp.df[,41] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,38] = rep(NA, num_stat_copies)
+            temp.df[,41] = rep(NA, num_stat_copies)
+          }
+          # Check if the current gene has a Molino-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+            (morph1.morph2$Comparison == "Molino-Rio Choy")]) != 0){
+            
+            temp.df[,39] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+            temp.df[,42] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,39] = rep(NA, num_stat_copies)
+            temp.df[,42] = rep(NA, num_stat_copies)
+          }
+          # Check if the current gene has a Tinaja-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+            (morph1.morph2$Comparison == "Tinaja-Rio Choy")]) != 0){
+            
+            temp.df[,40] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+            temp.df[,43] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_name == input_vec[i]) &
+                (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,40] = rep(NA, num_stat_copies)
+            temp.df[,43] = rep(NA, num_stat_copies)
+          }
+        }else{
+          temp.df[,38:43] = rep(NA, num_stat_copies)
+        }
+        
         geneName = T
         geneID = F
+        
+        # Add pubnames to appropriate column
+        temp.df[,44] <- paste(pub_names, collapse = "; ")
         
         # If element is present in all_IDs, consider vector a vector of IDs and
         # output all associated elements to output dataframe
@@ -299,13 +373,18 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         # Find number of times this gene ID occurs in the statistics data
         num_stat_copies <- sum(str_count(stat_table$Stable_Gene_ID, 
                                          input_vec[i]))
+        
+        # Start a running vector of publication names for the information found
+        # on this ID Default pub_names to NA if none are found.
+        pub_names <- c(NA)
+        
         # If number of copies of gene in statistic data is 0, copy the gene at
         # least once so at least one copy is present for transcription data
         if(num_stat_copies == 0){
           num_stat_copies = 1
         }
         # Create temporary dataframe to be appended to final
-        temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 38))
+        temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 44))
         
         temp.df[,1] = rep(all.genes_IDs$all_genes[
           all.genes_IDs$all_IDs == input_vec[i]], num_stat_copies)
@@ -336,6 +415,10 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         # Check if gene is present in stat table. If so, output info. If not,
         # output NAs
         if(input_vec[i] %in% stat_table$Stable_Gene_ID){
+          pub_names = append(pub_names, 
+                             stat_table$Publication_Name[stat_table$Stable_Gene_ID == input_vec[i]])
+          pub_names = pub_names[!is.na(pub_names)]
+          
           temp.df[,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input_vec[i]]
           temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input_vec[i]]
           temp.df[,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input_vec[i]]
@@ -361,64 +444,67 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
           temp.df[,27] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input_vec[i]]
           temp.df[,28] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input_vec[i]]
           temp.df[,29] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input_vec[i]]
-          temp.df[,38] = stat_table$Publication_Name[stat_table$Stable_Gene_ID == input_vec[i]]
+          temp.df[,44] = stat_table$Publication_Name[stat_table$Stable_Gene_ID == input_vec[i]]
         }else{
           temp.df[,6] = rep(NA, num_stat_copies)
           temp.df[,8:29] = rep(NA, num_stat_copies)
-          temp.df[,38] = rep(NA, num_stat_copies)
         }
         
         # Check if current gene is found in transcription data. If so, output
         # associated information. If not, output NAs
         if(input_vec[i] %in% condition_control$Gene_stable_ID){
+          pub_names = append(pub_names, 
+                             condition_control$Publication[condition_control$Gene_stable_ID == input_vec[i]])
+          pub_names = pub_names[!is.na(pub_names)]
+          
           if(length(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-            (grepl("Choy",condition_control$Class))]) != 0){
+            (grepl("Choy",condition_control$Comparison))]) != 0){
             temp.df[,30] = rep(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Choy",condition_control$Class))], num_stat_copies)
+                (grepl("Choy",condition_control$Comparison))], num_stat_copies)
             temp.df[,34] = rep(condition_control$PValue[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Choy",condition_control$Class))], num_stat_copies)
+                (grepl("Choy",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,30] = rep(NA, num_stat_copies)
             temp.df[,34] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-            (grepl("Pachon",condition_control$Class))]) != 0){
+            (grepl("Pachon",condition_control$Comparison))]) != 0){
             temp.df[,31] = rep(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
             temp.df[,35] = rep(condition_control$PValue[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Pachon",condition_control$Class))], num_stat_copies)
+                (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,31] = rep(NA, num_stat_copies)
             temp.df[,35] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-            (grepl("Molino",condition_control$Class))]) != 0){
+            (grepl("Molino",condition_control$Comparison))]) != 0){
             temp.df[,32] = rep(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Molino",condition_control$Class))], num_stat_copies)
+                (grepl("Molino",condition_control$Comparison))], num_stat_copies)
             temp.df[,36] = rep(condition_control$PValue[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Molino",condition_control$Class))], num_stat_copies)
+                (grepl("Molino",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,32] = rep(NA, num_stat_copies)
             temp.df[,36] = rep(NA, num_stat_copies)
           }
           if(length(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-            (grepl("Tinaja",condition_control$Class))]) != 0){
+            (grepl("Tinaja",condition_control$Comparison))]) != 0){
             temp.df[,33] = rep(condition_control$logFC[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
             temp.df[,37] = rep(condition_control$PValue[
               (condition_control$Gene_stable_ID == input_vec[i]) &
-                (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+                (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
           }else{
             temp.df[,33] = rep(NA, num_stat_copies)
             temp.df[,37] = rep(NA, num_stat_copies)
@@ -426,15 +512,78 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         }else{
           temp.df[,30:37] = NA
         }
+        
+        # Check if current ID is found in morph:morph transcription data. 
+        # If so, output associated information in columns 38-43 and in pub_names
+        if(input_vec[i] %in% morph1.morph2$Gene_stable_ID){
+          pub_names = append(pub_names, 
+                             morph1.morph2$Publication[morph1.morph2$Gene_stable_ID == input_vec[i]][1])
+          pub_names = pub_names[!is.na(pub_names)]
+          # Check if the current gene has a Pachon-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+            (morph1.morph2$Comparison == "Pachon-Rio Choy")]) != 0){
+            
+            temp.df[,38] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+            temp.df[,41] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,38] = rep(NA, num_stat_copies)
+            temp.df[,41] = rep(NA, num_stat_copies)
+          }
+          # Check if the current gene has a Molino-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+            (morph1.morph2$Comparison == "Molino-Rio Choy")]) != 0){
+            
+            temp.df[,39] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+            temp.df[,42] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,39] = rep(NA, num_stat_copies)
+            temp.df[,42] = rep(NA, num_stat_copies)
+          }
+          # Check if the current gene has a Tinaja-RC comparison
+          if(length(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+            (morph1.morph2$Comparison == "Tinaja-Rio Choy")]) != 0){
+            
+            temp.df[,40] = rep(morph1.morph2$logFC[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+            temp.df[,43] = rep(morph1.morph2$PValue[
+              (morph1.morph2$Gene_stable_ID == input_vec[i]) &
+                (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+            
+          }else{
+            temp.df[,40] = rep(NA, num_stat_copies)
+            temp.df[,43] = rep(NA, num_stat_copies)
+          }
+        }else{
+          temp.df[,38:43] = rep(NA, num_stat_copies)
+        }
+        
         geneName = T
         geneID = F
+        
+        # Add pubnames to appropriate column
+        temp.df[,44] <- paste(pub_names, collapse = "; ")
+        
         # If element is present in neither, output an error
       }else if(!(input_vec[i] %in% all.genes_IDs$all_genes) &
                !(input_vec[i] %in% all.genes_IDs$all_IDs)){
         return(paste(c("ERROR: No transcription or statistical data present for
                        the gene", input_vec[i], "."), collapse = " "))
       }
-      # Bind temporary datframe to output.df
+      # Bind temporary dataframe to output.df
       output.df <- rbind(output.df, temp.df)
     }
     # If input is NOT a comma-separated string, check whether input is a ID, name,
@@ -444,13 +593,16 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
                     condition_control$Gene_name)){
       # Count how many times this gene occurs in the stat_table
       num_stat_copies <- sum(str_count(stat_table$Gene_Name, input))
+      # Start a running vector of publication names for the information found
+      # on this gene. Default pub_names to NA if none are found.
+      pub_names <- c(NA)
       # If number of copies of gene in statistic data is 0, copy the gene at
       # least once so at least one copy is present for transcription data
       if(num_stat_copies == 0){
         num_stat_copies = 1
       }
       # Create temporary dataframe to be appended to final
-      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 38))
+      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 44))
       # Store input and associated values in appropriate objects and mark input
       # as a gene name
       temp.df[,1] = rep(input, num_stat_copies)
@@ -482,6 +634,10 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       # Check if gene is present in stat table. If so, output info. If not,
       # output NAs
       if(input %in% stat_table$Gene_Name){
+        pub_names = append(pub_names, 
+                           stat_table$Publication_Name[stat_table$Gene_Name == input])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input]
         temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input]
         temp.df[,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input]
@@ -507,65 +663,67 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         temp.df[,27] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input]
         temp.df[,28] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input]
         temp.df[,29] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input]
-        temp.df[,38] = stat_table$Publication_Name[stat_table$Gene_Name == input]
         
       }else{
         temp.df[,6] = rep(NA, num_stat_copies)
         temp.df[,8:29] = rep(NA, num_stat_copies)
-        temp.df[,38] = rep(NA, num_stat_copies)
       }
       
       # Check if current gene is found in transcription data. If so, output
       # associated information. If not, output NAs
       if(input %in% condition_control$Gene_name){
+        pub_names = append(pub_names, 
+                           condition_control$Publication[condition_control$Gene_name == input])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Choy",condition_control$Class))]) != 0){
+          (grepl("Choy",condition_control$Comparison))]) != 0){
           temp.df[,30] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
           temp.df[,34] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,30] = rep(NA, num_stat_copies)
           temp.df[,34] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Pachon",condition_control$Class))]) != 0){
+          (grepl("Pachon",condition_control$Comparison))]) != 0){
           temp.df[,31] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
           temp.df[,35] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,31] = rep(NA, num_stat_copies)
           temp.df[,35] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Molino",condition_control$Class))]) != 0){
+          (grepl("Molino",condition_control$Comparison))]) != 0){
           temp.df[,32] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
           temp.df[,36] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,32] = rep(NA, num_stat_copies)
           temp.df[,36] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Tinaja",condition_control$Class))]) != 0){
+          (grepl("Tinaja",condition_control$Comparison))]) != 0){
           temp.df[,33] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
           temp.df[,37] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,33] = rep(NA, num_stat_copies)
           temp.df[,37] = rep(NA, num_stat_copies)
@@ -574,9 +732,71 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         temp.df[,30:37] = rep(NA, num_stat_copies)
       }
       
+      # Check if current gene is found in morph:morph transcription data. 
+      # If so, output associated information in columns 38-43 and in pub_names
+      if(input %in% morph1.morph2$Gene_name){
+        pub_names = append(pub_names, 
+                           morph1.morph2$Publication[morph1.morph2$Gene_name == input][1])
+        pub_names = pub_names[!is.na(pub_names)]
+        # Check if the current gene has a Pachon-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input) &
+          (morph1.morph2$Comparison == "Pachon-Rio Choy")]) != 0){
+          
+          temp.df[,38] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          temp.df[,41] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,38] = rep(NA, num_stat_copies)
+          temp.df[,41] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Molino-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input) &
+          (morph1.morph2$Comparison == "Molino-Rio Choy")]) != 0){
+          
+          temp.df[,39] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          temp.df[,42] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,39] = rep(NA, num_stat_copies)
+          temp.df[,42] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Tinaja-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input) &
+          (morph1.morph2$Comparison == "Tinaja-Rio Choy")]) != 0){
+          
+          temp.df[,40] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          temp.df[,43] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,40] = rep(NA, num_stat_copies)
+          temp.df[,43] = rep(NA, num_stat_copies)
+        }
+      }else{
+        temp.df[,38:43] = rep(NA, num_stat_copies)
+      }
+      
       geneName = T
       geneID = F
       
+      # Add pubnames to appropriate column
+      temp.df[,44] <- paste(pub_names, collapse = "; ")
+      
+      # Append all information on this gene to final dataframe
       output.df <- rbind(output.df, temp.df)
       
     }else if(input %in% c(position_table$Gene_ID, stat_table$Stable_Gene_ID,
@@ -584,13 +804,18 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       
       # Count how many times this ID occurs in the stat_table
       num_stat_copies <- sum(str_count(stat_table$Stable_Gene_ID, input))
+      
+      # Start a running vector of publication names for the information found
+      # on this ID Default pub_names to NA if none are found.
+      pub_names <- c(NA)
+      
       # If number of copies of gene in statistic data is 0, copy the gene at
       # least once so at least one copy is present for transcription data
       if(num_stat_copies == 0){
         num_stat_copies = 1
       }
       # Create temporary dataframe to later be bound to final df
-      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 38))
+      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 44))
       # Store input and associated values in appropriate objects and mark input
       # as a gene ID
       temp.df[,1] = rep(all.genes_IDs$all_genes[
@@ -622,6 +847,10 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       # Check if gene is present in stat table. If so, output info. If not,
       # output NAs
       if(input %in% stat_table$Stable_Gene_ID){
+        pub_names = append(pub_names, 
+                           stat_table$Publication_Name[stat_table$Stable_Gene_ID == input])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         temp.df[,6] = stat_table$Gene_Description[stat_table$Stable_Gene_ID == input]
         temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Stable_Gene_ID == input]
         temp.df[,9] = stat_table$Pi_Pachon[stat_table$Stable_Gene_ID == input]
@@ -647,64 +876,67 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         temp.df[,27] = stat_table$TajimasD_Molino[stat_table$Stable_Gene_ID == input]
         temp.df[,28] = stat_table$TajimasD_Tinaja[stat_table$Stable_Gene_ID == input]
         temp.df[,29] = stat_table$TajimasD_Rascon[stat_table$Stable_Gene_ID == input]
-        temp.df[,38] = stat_table$Publication_Name[stat_table$Stable_Gene_ID == input]
+        
       }else{
         temp.df[,6] = rep(NA, num_stat_copies)
         temp.df[,8:29] = rep(NA, num_stat_copies)
-        temp.df[,38] = rep(NA, num_stat_copies)
       }
       
-      # Check if current gene is found in transcription data. If so, output
+      # Check if current ID is found in transcription data. If so, output
       # associated information. If not, output NAs
       if(input %in% condition_control$Gene_stable_ID){
+        pub_names = append(pub_names, 
+                           condition_control$Publication[condition_control$Gene_stable_ID == input])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         if(length(condition_control$logFC[
           (condition_control$Gene_stable_ID == input_vec[i]) &
-          (grepl("Choy",condition_control$Class))]) != 0){
+          (grepl("Choy",condition_control$Comparison))]) != 0){
           temp.df[,30] = rep(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
           temp.df[,34] = rep(condition_control$PValue[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,30] = rep(NA, num_stat_copies)
           temp.df[,34] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_stable_ID == input_vec[i]) &
-          (grepl("Pachon",condition_control$Class))]) != 0){
+          (grepl("Pachon",condition_control$Comparison))]) != 0){
           temp.df[,31] = rep(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
           temp.df[,35] = rep(condition_control$PValue[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,31] = rep(NA, num_stat_copies)
           temp.df[,35] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_stable_ID == input_vec[i]) &
-          (grepl("Molino",condition_control$Class))]) != 0){
+          (grepl("Molino",condition_control$Comparison))]) != 0){
           temp.df[,32] = rep(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
           temp.df[,36] = rep(condition_control$PValue[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,32] = rep(NA, num_stat_copies)
           temp.df[,36] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_stable_ID == input_vec[i]) &
-          (grepl("Tinaja",condition_control$Class))]) != 0){
+          (grepl("Tinaja",condition_control$Comparison))]) != 0){
           temp.df[,33] = rep(condition_control$logFC[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
           temp.df[,37] = rep(condition_control$PValue[
             (condition_control$Gene_stable_ID == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,33] = rep(NA, num_stat_copies)
           temp.df[,37] = rep(NA, num_stat_copies)
@@ -712,8 +944,70 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       }else{
         temp.df[,30:37] = rep(NA, num_stat_copies)
       }
+      
+      # Check if current ID is found in morph:morph transcription data. 
+      # If so, output associated information in columns 38-43 and in pub_names
+      if(input %in% morph1.morph2$Gene_stable_ID){
+        pub_names = append(pub_names, 
+                           morph1.morph2$Publication[morph1.morph2$Gene_stable_ID == input][1])
+        pub_names = pub_names[!is.na(pub_names)]
+        # Check if the current gene has a Pachon-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_stable_ID == input) &
+          (morph1.morph2$Comparison == "Pachon-Rio Choy")]) != 0){
+          
+          temp.df[,38] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          temp.df[,41] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,38] = rep(NA, num_stat_copies)
+          temp.df[,41] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Molino-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_stable_ID == input) &
+          (morph1.morph2$Comparison == "Molino-Rio Choy")]) != 0){
+          
+          temp.df[,39] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          temp.df[,42] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,39] = rep(NA, num_stat_copies)
+          temp.df[,42] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Tinaja-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_stable_ID == input) &
+          (morph1.morph2$Comparison == "Tinaja-Rio Choy")]) != 0){
+          
+          temp.df[,40] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          temp.df[,43] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_stable_ID == input) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,40] = rep(NA, num_stat_copies)
+          temp.df[,43] = rep(NA, num_stat_copies)
+        }
+      }else{
+        temp.df[,38:43] = rep(NA, num_stat_copies)
+      }
+      
       geneID = T
       geneName = F
+      
+      # Add pubnames to appropriate column
+      temp.df[,44] <- paste(pub_names, collapse = "; ")
       
       output.df <- rbind(output.df, temp.df)
     }else if(!(input %in% all.genes_IDs$all_genes) &
@@ -781,7 +1075,7 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         num_stat_copies = 1
       }
       # Create temporary dataframe to be appended to final
-      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 38))
+      temp.df <- data.frame(matrix(nrow = num_stat_copies, ncol = 44))
       
       temp.df[,1] = rep(input_vec[i], num_stat_copies)
       if(input_vec[i] %in% all.genes_IDs$all_genes){
@@ -816,6 +1110,10 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       # Check if gene is present in stat table. If so, output info. If not,
       # output NAs
       if(input_vec[i] %in% stat_table$Gene_Name){
+        pub_names = append(pub_names, 
+                           stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         temp.df[,6] = stat_table$Gene_Description[stat_table$Gene_Name == input_vec[i]]
         temp.df[,8] = stat_table$Pi_RioChoy[stat_table$Gene_Name == input_vec[i]]
         temp.df[,9] = stat_table$Pi_Pachon[stat_table$Gene_Name == input_vec[i]]
@@ -841,64 +1139,67 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
         temp.df[,27] = stat_table$TajimasD_Molino[stat_table$Gene_Name == input_vec[i]]
         temp.df[,28] = stat_table$TajimasD_Tinaja[stat_table$Gene_Name == input_vec[i]]
         temp.df[,29] = stat_table$TajimasD_Rascon[stat_table$Gene_Name == input_vec[i]]
-        temp.df[,38] = stat_table$Publication_Name[stat_table$Gene_Name == input_vec[i]]
+        
       }else{
         temp.df[,6] = rep(NA, num_stat_copies)
         temp.df[,8:29] = rep(NA, num_stat_copies)
-        temp.df[,38] = rep(NA, num_stat_copies)
       }
       
       # Check if current gene is found in transcription data. If so, output
       # associated information. If not, output NAs
       if(input_vec[i] %in% condition_control$Gene_name){
+        pub_names = append(pub_names, 
+                           condition_control$Publication[condition_control$Gene_name == input_vec[i]])
+        pub_names = pub_names[!is.na(pub_names)]
+        
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Choy",condition_control$Class))]) != 0){
+          (grepl("Choy",condition_control$Comparison))]) != 0){
           temp.df[,30] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
           temp.df[,34] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Choy",condition_control$Class))], num_stat_copies)
+              (grepl("Choy",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,30] = rep(NA, num_stat_copies)
           temp.df[,34] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Pachon",condition_control$Class))]) != 0){
+          (grepl("Pachon",condition_control$Comparison))]) != 0){
           temp.df[,31] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
           temp.df[,35] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Pachon",condition_control$Class))], num_stat_copies)
+              (grepl("Pachon",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,31] = rep(NA, num_stat_copies)
           temp.df[,35] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Molino",condition_control$Class))]) != 0){
+          (grepl("Molino",condition_control$Comparison))]) != 0){
           temp.df[,32] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
           temp.df[,36] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Molino",condition_control$Class))], num_stat_copies)
+              (grepl("Molino",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,32] = rep(NA, num_stat_copies)
           temp.df[,36] = rep(NA, num_stat_copies)
         }
         if(length(condition_control$logFC[
           (condition_control$Gene_name == input_vec[i]) &
-          (grepl("Tinaja",condition_control$Class))]) != 0){
+          (grepl("Tinaja",condition_control$Comparison))]) != 0){
           temp.df[,33] = rep(condition_control$logFC[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
           temp.df[,37] = rep(condition_control$PValue[
             (condition_control$Gene_name == input_vec[i]) &
-              (grepl("Tinaja",condition_control$Class))], num_stat_copies)
+              (grepl("Tinaja",condition_control$Comparison))], num_stat_copies)
         }else{
           temp.df[,33] = rep(NA, num_stat_copies)
           temp.df[,37] = rep(NA, num_stat_copies)
@@ -906,6 +1207,68 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
       }else{
         temp.df[,30:37] = rep(NA, num_stat_copies)
       }
+      
+      # Check if current gene is found in morph:morph transcription data. 
+      # If so, output associated information in columns 38-43 and in pub_names
+      if(input_vec[i] %in% morph1.morph2$Gene_name){
+        pub_names = append(pub_names, 
+                           morph1.morph2$Publication[morph1.morph2$Gene_name == input_vec[i]][1])
+        pub_names = pub_names[!is.na(pub_names)]
+        # Check if the current gene has a Pachon-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input_vec[i]) &
+          (morph1.morph2$Comparison == "Pachon-Rio Choy")]) != 0){
+          
+          temp.df[,38] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          temp.df[,41] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Pachon-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,38] = rep(NA, num_stat_copies)
+          temp.df[,41] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Molino-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input_vec[i]) &
+          (morph1.morph2$Comparison == "Molino-Rio Choy")]) != 0){
+          
+          temp.df[,39] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          temp.df[,42] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Molino-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,39] = rep(NA, num_stat_copies)
+          temp.df[,42] = rep(NA, num_stat_copies)
+        }
+        # Check if the current gene has a Tinaja-RC comparison
+        if(length(morph1.morph2$logFC[
+          (morph1.morph2$Gene_name == input_vec[i]) &
+          (morph1.morph2$Comparison == "Tinaja-Rio Choy")]) != 0){
+          
+          temp.df[,40] = rep(morph1.morph2$logFC[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          temp.df[,43] = rep(morph1.morph2$PValue[
+            (morph1.morph2$Gene_name == input_vec[i]) &
+              (morph1.morph2$Comparison == "Tinaja-Rio Choy")], num_stat_copies)
+          
+        }else{
+          temp.df[,40] = rep(NA, num_stat_copies)
+          temp.df[,43] = rep(NA, num_stat_copies)
+        }
+      }else{
+        temp.df[,38:43] = rep(NA, num_stat_copies)
+      }
+      
+      # Add pubnames to appropriate column
+      temp.df[,44] <- paste(pub_names, collapse = "; ")
+      
       # Add current temporary dataframe to output dataframe
       output.df <- rbind(output.df, temp.df)
     }
@@ -952,156 +1315,105 @@ GeneCentered <- function(input, stat_table, GeneToGO, condition_control,
     "p-value for SD_log(FC)_Pachon",
     "p-value for SD_log(FC)_Molino",
     "p-value for SD_log(FC)_Tinaja",
-    "Publication Name (Population Genetics Data)"
+    "log(FC)_Pachon-RioChoy",
+    "log(FC)_Molino-RioChoy",
+    "log(FC)_Tinaja-RioChoy",
+    "p-value for log(FC)_Pachon-RioChoy",
+    "p-value for log(FC)_Molino-RioChoy",
+    "p-value for log(FC)_Tinaja-RioChoy",
+    "Publications"
   )
   return(output.df)
 }
-TranscTable <- function(morph1, morph2, condition, direction, percent,
-                        GOTable){
+TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
   # If condition is NOT "Between morph"...
   if(condition != "Between morph"){
     # Use transcription data of morph-control comparisons
     in_table <- condition_control
-    # Store comparison
-    comp <- paste(c(morph1, "Control"), collapse = "-")
-    # If upregulated genes were requested...
-    if(direction == "Upregulated"){
-      # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST
-      # logFC scores AND p-value < 0.05
-      
-      # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
-      # upregulated, condition matches the input specification, and p-value is
-      # less than 0.05
-      ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC > 0) &
-                          (in_table$Condition == condition) & (in_table$PValue < 0.05)), ]
-      # Sort candidate rows with highest logFC values on top
-      ROIs <- ROIs[order(ROIs[,3], decreasing = T),]
-      # Find the number of rows corresponding to the specified percent
-      n.rows <- as.integer((percent/100)*nrow(ROIs))
-      # If downregulated genes were requested...
-    }else if(direction == "Downregulated"){
-      # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST
-      # logFC scores AND p-value < 0.05
-      
-      # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
-      # downregulated, condition matches the input specification, and p-value is
-      # less than 0.05
-      ROIs <- in_table[(grepl(morph1, in_table$Class) & (in_table$logFC < 0) &
-                          (in_table$Condition == condition) & (in_table$PValue < 0.05)), ]
-      # Sort candidate rows with LOWEST logFC values on top
-      ROIs <- ROIs[order(ROIs[,3], decreasing = F),]
-      # Find the number of rows corresponding to the specified percent
-      n.rows <- as.integer((percent/100)*nrow(ROIs))
-    }
-    # Obtain GO terms for ROIs
-    GOTerms <- character(length = n.rows)
-    for(i in 1:n.rows){
-      if(tolower(ROIs$Gene_name)[i] %in% GeneToGO$Gene.names){
-        GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == tolower(ROIs$Gene_name)[i]]
-      }else{
-        GOTerms[i] = NA
-      }
-    }
-    # Output gene names, gene stable IDs, GO terms, morph-of-comparison, logFC,
-    # p-value, Ensembl family information, and publication name to a dataframe
-    output.df <- data.frame(
-      tolower(ROIs$Gene_name)[1:n.rows],
-      ROIs[1:n.rows,1],
-      GOTerms,
-      rep(comp, n.rows)[1:n.rows],
-      ROIs$logFC[1:n.rows],
-      ROIs$PValue[1:n.rows],
-      ROIs$Ensembl_Family_Description[1:n.rows],
-      ROIs$Publication[1:n.rows]
-    )
-    names(output.df) <- c(
-      "Gene Name",
-      "Gene Stable ID",
-      "GO Term(s)",
-      "Comparison",
-      "logFC",
-      "p-value",
-      "Ensembl Family Description",
-      "Publication Name"
-    )
-    
-    # If condition is "Between morph"...
+    # Set morph2 to control
+    morph2 <- "Control"
+    # Set grep pattern to morph1
+    search_cond <- morph1
+  # If searching between morphs, set search condition to morphs-of-comparison
   }else if(condition == "Between morph"){
     # Use transcription data for between-morph comparisons
     in_table <- morph1.morph2
-    
-    # Find rows corresponding to morphs of interest
-    morph1.rows <- in_table[in_table$Class == morph1,]
-    morph2.rows <- in_table[in_table$Class == morph2,]
-    # Find names of all genes present for morph1
-    m1.genes <- morph1.rows$Gene_name[morph1.rows$Gene_name != ""]
-    # Subtract all morph2 logFC values FROM all same-gene morph1 logFC value
-    delta_FC <- c()
-    genes <- c()
-    G_IDs <- c()
-    EF_IDs <- c()
-    for(g in 1:length(m1.genes)){
-      if(m1.genes[g] %in% morph2.rows$Gene_name){
-        diff <- morph1.rows$logFC[morph1.rows$Gene_name == m1.genes[g]] -
-          morph2.rows$logFC[morph2.rows$Gene_name == m1.genes[g]]
-        delta_FC <- append(delta_FC, diff)
-        genes <- append(genes, m1.genes[g])
-        G_IDs <- append(G_IDs, morph1.rows$Gene_stable_ID[
-          morph1.rows$Gene_name == m1.genes[g]])
-        EF_IDs <- append(EF_IDs, morph1.rows$Ensembl_Family_Description[
-          morph1.rows$Gene_name == m1.genes[g]])
-        # If morph1 and morph2 do NOT have matching genes, skip this gene
-      }else{
-        next
-      }
-    }
-    # Create dataframe to easily access the change in log FC values
-    # corresponding to each gene pair
-    ROIs <- data.frame(genes,G_IDs,delta_FC,EF_IDs)
-    # If genes upregulated in morph1 were requested...
-    if(direction == "Upregulated"){
-      # Find genes with greatest POSITIVE change in expression between
-      # morphs
-      ROIs <- ROIs[order(delta_FC, decreasing = T),]
-      n.rows <- as.integer((percent/100)*nrow(ROIs))
-      # If genes downregulated in morph1 were requested...
-    }else if(direction == "Downregulated"){
-      # Find indices of rows with greatest NEGATIVE change in expression between
-      # morphs
-      ROIs <- ROIs[order(delta_FC, decreasing = F),]
-      n.rows <- as.integer((percent/100)*nrow(ROIs))
-    }
-    # Find GO terms for genes-of-interest
-    GOTerms <- character(length = n.rows)
-    for(i in 1:n.rows){
-      if(tolower(ROIs$genes)[i] %in% GeneToGO$Gene.names){
-        GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == tolower(ROIs$genes)[i]]
-      }else{
-        GOTerms[i] = NA
-      }
-    }
-    # Output gene names, gene stable IDs, GO terms, direction, delta(logFC),
-    # and Ensembl family description
-    output.df <- data.frame(
-      tolower(ROIs$genes)[1:n.rows],
-      ROIs$G_IDs[1:n.rows],
-      GOTerms,
-      rep(paste(c(direction, " in ", morph1, " vs. ", morph2), collapse = ""),
-          n.rows),
-      ROIs$delta_FC[1:n.rows],
-      ROIs$EF_IDs[1:n.rows],
-      ROIs$Publication[1:n.rows]
-    )
-    names(output.df) <- c(
-      "Gene Name",
-      "Gene Stable ID",
-      "GO Term(s)",
-      "Comparison",
-      "delta(logFC)",
-      "Ensembl Family Description",
-      "Publication"
-    )
+    # Set grep pattern to comparison
+    search_cond <- paste(c(morph1, morph2), collapse = "-")
   }
+  # Store comparison for output. Note: "morph2" is control if "Between morph" 
+  # was not entered
+  comp <- paste(c(morph1, morph2), collapse = "-")
+    
+  # If upregulated genes were requested...
+  if(direction == "Upregulated"){
+    # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST
+    # logFC scores
+    
+    # Find all rows-of-interest (ROIs) for morph(s)-of-interest where genes are
+    # upregulated, and condition matches the input specification
+    ROIs <- in_table[(grepl(search_cond, in_table$Comparison) 
+                      & (in_table$logFC > 0) &
+                        (in_table$Condition == condition)), ]
+    # Sort candidate rows with highest logFC values on top
+    ROIs <- ROIs[order(ROIs$logFC, decreasing = T),]
+    # Find the number of rows corresponding to the specified percent
+    n.rows <- as.integer((percent/100)*nrow(ROIs))
+    # If downregulated genes were requested...
+  }else if(direction == "Downregulated"){
+    # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST
+    # logFC scores
+    
+    # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
+    # downregulated, condition matches the input specification, and p-value is
+    # less than 0.05
+    ROIs <- in_table[(grepl(search_cond, in_table$Comparison) 
+                      & (in_table$logFC < 0) &
+                        (in_table$Condition == condition)), ]
+    # Sort candidate rows with LOWEST logFC values on top
+    ROIs <- ROIs[order(ROIs$logFC, decreasing = F),]
+    # Find the number of rows corresponding to the specified percent
+    n.rows <- as.integer((percent/100)*nrow(ROIs))
+  }
+  # Obtain GO terms for ROIs
+  GOTerms <- character(length = n.rows)
+  for(i in 1:n.rows){
+    if(tolower(ROIs$Gene_name)[i] %in% GeneToGO$Gene.names){
+      GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == tolower(ROIs$Gene_name)[i]]
+    }else{
+      GOTerms[i] = NA
+    }
+  }
+  # Output gene names, gene stable IDs, GO terms, morph-of-comparison, logFC,
+  # p-value, Ensembl family information (or study specific details, if Between 
+  # morph), and publication name to a dataframe
+  if(condition == "Between morph"){
+    special_info <- ROIs$study_specific_gene_details[1:n.rows]
+    special_name <- "Study-Specific Details"
+  }else{
+    special_info <- ROIs$Ensembl_Family_Description[1:n.rows]
+    special_name <- "Ensembl Family Description"
+  }
+  output.df <- data.frame(
+    tolower(ROIs$Gene_name)[1:n.rows],
+    ROIs$Gene_stable_ID[1:n.rows],
+    GOTerms,
+    rep(comp, n.rows)[1:n.rows],
+    ROIs$logFC[1:n.rows],
+    ROIs$PValue[1:n.rows],
+    special_info,
+    ROIs$Publication[1:n.rows]
+  )
+  names(output.df) <- c(
+    "Gene Name",
+    "Gene Stable ID",
+    "GO Term(s)",
+    "Comparison",
+    "logFC",
+    "p-value",
+    special_name,
+    "Publication"
+  )
   return(output.df)
 }
 

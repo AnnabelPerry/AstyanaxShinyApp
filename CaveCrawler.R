@@ -264,8 +264,7 @@ source("functions/CaveCrawler_functions.R")
 
   server = function(input, output) {
     observe({
-      transc_morph_choices <- c("Control", "Pachon","Molino","Tinaja","Rascon",
-                                "Rio Choy")
+      transc_morph_choices <- c("Control", "Rio Choy")
       # Transcription Page: Update morph-selection widget to only enable 
       # comparisons between current morph and morph which is NOT morph1
       updateSelectInput(session = getDefaultReactiveDomain(),
@@ -400,8 +399,8 @@ source("functions/CaveCrawler_functions.R")
         # Format each statistic section to have appropriate number of decimals
         reformattedGeneCent <- data.frame(
           GeneCentOutput()[,1:7],
-          format(GeneCentOutput()[,8:37], digits = 5),
-          GeneCentOutput()[,38]
+          format(GeneCentOutput()[,8:43], digits = 5),
+          GeneCentOutput()[,44]
         )
         names(reformattedGeneCent) <- names(GeneCentOutput())
         reformattedGeneCent
@@ -429,8 +428,8 @@ source("functions/CaveCrawler_functions.R")
         if(typeof(GeneCentOutput()) == "list"){
           reformattedGeneCent <- data.frame(
             GeneCentOutput()[,1:7],
-            format(GeneCentOutput()[,8:37], digits = 5),
-            GeneCentOutput()[,38]
+            format(GeneCentOutput()[,8:43], digits = 5),
+            GeneCentOutput()[,44]
           )
           names(reformattedGeneCent) <- names(GeneCentOutput())
         # If a valid table was not outputted, enable downloading of an empty df
