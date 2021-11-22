@@ -399,8 +399,8 @@ source("functions/CaveCrawler_functions.R")
         # Format each statistic section to have appropriate number of decimals
         reformattedGeneCent <- data.frame(
           GeneCentOutput()[,1:7],
-          format(GeneCentOutput()[,8:43], digits = 5),
-          GeneCentOutput()[,44]
+          format(GeneCentOutput()[,8:45], digits = 5),
+          GeneCentOutput()[,46]
         )
         names(reformattedGeneCent) <- names(GeneCentOutput())
         reformattedGeneCent
@@ -428,8 +428,8 @@ source("functions/CaveCrawler_functions.R")
         if(typeof(GeneCentOutput()) == "list"){
           reformattedGeneCent <- data.frame(
             GeneCentOutput()[,1:7],
-            format(GeneCentOutput()[,8:43], digits = 5),
-            GeneCentOutput()[,44]
+            format(GeneCentOutput()[,8:45], digits = 5),
+            GeneCentOutput()[,46]
           )
           names(reformattedGeneCent) <- names(GeneCentOutput())
         # If a valid table was not outputted, enable downloading of an empty df
