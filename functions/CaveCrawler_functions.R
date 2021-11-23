@@ -51,10 +51,12 @@ position_table <- position_table[!duplicated(position_table$Gene_Name),]
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
 condition_control <- condition_control[,-1]
+condition_control$Publication <- rep("5", nrow(condition_control))
 
 # Currently, we only have morph:morph comparisons from one study
 morph1.morph2 <- read.csv("data/Transcription_Macketal2020.csv")
 morph1.morph2 <- morph1.morph2[,-1]
+morph1.morph2$Publication <- rep("4", nrow(morph1.morph2))
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 
@@ -2334,6 +2336,7 @@ StatByChrGraph <- function(Full_Table, stat_vec){
         xlab("Locus") +
         ggtitle(paste(c("Scaffold:", unique_scaffs[c]), collapse = " ")) +
         geom_point(aes(shape = Publication_Number)) +
+        guides(shape=guide_legend(title="Publication")) +
         theme_bw()
       #Store the plot in a vector
     }

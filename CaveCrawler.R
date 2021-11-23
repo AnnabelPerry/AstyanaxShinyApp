@@ -11,15 +11,17 @@
 source("functions/CaveCrawler_functions.R")
 
   ui = fluidPage(
+    setBackgroundColor("white"),
     chooseSliderSkin("Flat", color = "#e8c4c2"),
     theme = "style.css",
     tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
     tags$style(type="text/css",
                ".shiny-output-error { visibility: hidden; }",
-               ".shiny-output-error:before { visibility: hidden; }"),
+               ".shiny-output-error:before { visibility: hidden; }",
+               'body {color:black;}'),
     # Change background color of tabs
     tags$style(HTML("
-    .tabbable > .nav > li > a                  {background-color: black; border-color: black;}
+    .tabbable > .nav > li > a                  {background-color: white; border-color: grey;}
     .tabbable > .nav > li[class=active]    > a {background-color: #e8c4c2; border-color: #e4867e}
     .tabbable > .nav > li > a:hover {background-color: #e8c4c2; border-color: #e4867e}
   ")),
@@ -345,8 +347,8 @@ source("functions/CaveCrawler_functions.R")
     # and Astyanax mexicanus
     output$home_text2 <- renderText("CaveCrawler is a reactive web interface for bioinformatic analysis of data in the Mexican tetra (Astyanax mexicanus), an emerging evolutionary model organism.")
     output$home_text3 <- renderText("CaveCrawler consists of 4 subpages: a Gene Search page for querying data about specific genes, a Transcription page for finding genes whose transcriptional levels differ between samples, a Population Genetics page for investigating statistics on diversity and selection, and a GO Term Info page for identifying and obtaining information on GO terms-of-interest.")
-    output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Annabel Perry at annabelperry@tamu.edu")
-    output$home_text5 <- renderText("To cite CaveCrawler, please cite our paper <link>")
+    output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Heath Blackmon at hblackmon@bio.tamu.edu or Alex Keene at akeene@bio.tamu.edu")
+    output$home_text5 <- renderText("To cite CaveCrawler, please cite our paper, currently available on BioRXiv: 'CaveCrawler: An interactive analysis suite for cavefish bioinformatics'")
     
     # Home Page: Plot map of all populations
     # Plot map of Astyanax populations
