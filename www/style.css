@@ -38,7 +38,7 @@ font-size:14px;
             border-color: #84dca7;
         }
 
-        label, input, button, select { 
+        label, input, button, select {
           font-family: "Arial";
           color: #151514;
         }
@@ -47,11 +47,11 @@ font-size:14px;
             border-color: #e4867e;
         }
 
-        label, input, button, select { 
+        label, input, button, select {
           font-family: "Arial";
           color: #151514;
         }
-        
+
 a:link, a:visited{
 
 color:#A8D3E7;
@@ -108,13 +108,13 @@ padding-top:5px;
 
 font-size: 20px;
 
-height: 53px;
+height: 33px;
 
 letter-spacing:3px;
 
 font-weight: bold;
 
-margin:30px 0 20px 0;
+margin:10px 0 10px 0;
 
 
 }
