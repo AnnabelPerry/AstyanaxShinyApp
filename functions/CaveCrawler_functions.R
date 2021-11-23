@@ -1414,8 +1414,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
   # Obtain GO terms for ROIs
   GOTerms <- character(length = n.rows)
   for(i in 1:n.rows){
-    if(tolower(ROIs$Gene_name)[i] %in% GeneToGO$Gene.names){
-      GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == tolower(ROIs$Gene_name)[i]]
+    if(length(grep(ROIs$Gene_stable_ID[i], GeneToGO$Ensembl)) != 0){
+      GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl == ROIs$Gene_stable_ID[i]]
     }else{
       GOTerms[i] = NA
     }
