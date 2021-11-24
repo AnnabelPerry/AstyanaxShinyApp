@@ -260,7 +260,20 @@ source("functions/CaveCrawler_functions.R")
                    textOutput("GOinfo_wrnings")
                  )
                )
-      )
+      ),
+      tabPanel(h2("Data Sources"), fluid = TRUE,
+               h1("CaveCrawler Data Sources"),
+               br(),
+               textOutput("cite1"),
+               br(),
+               textOutput("cite2"),
+               br(),
+               textOutput("cite3"),
+               br(),
+               textOutput("cite4"),
+               br(),
+               textOutput("cite5")
+               )
     )
   )
 
@@ -701,6 +714,13 @@ source("functions/CaveCrawler_functions.R")
         write.csv(GOInfoOutTable(), file, row.names = F)
       }
     )
+    # Citations 
+    output$cite1 <- renderText("1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W.R., Keene, A.C., Kono, T.J., Bilandzija, H., Borowsky, R., Espinasa, L. and O'Quin, K. (2018) The role of gene flow in rapid and repeated evolution of cave related traits in Mexican tetra, Astyanax mexicanus. Molecular ecology, 27, 4397-4416.")
+    output$cite2 <- renderText("2. Moran, R.L., Jaggard, J.B., Roback, E.Y., Rohner, N., Kowalko, J.E., Ornelas-Garcia, P., McGaugh, S.E. and Keene, A.C. (2021) Hybridization underlies localized trait evolution in cavefish. bioRxiv.")
+    output$cite3 <- renderText("3. Bradic, M., Beerli, P., Garcia-de Leon, F.J., Esquivel-Bobadilla, S. and Borowsky, R.L. (2012) Gene flow and population structure in the Mexican blind cavefish complex (Astyanax mexicanus). BMC evolutionary biology, 12, 1-17.")
+    output$cite4 <- renderText("4. Mack, K.L., Jaggard, J.B., Persons, J.L., Roback, E.Y., Passow, C.N., Stanhope, B.A., Ferrufino, E., Tsuchiya, D., Smith, S.E. and Slaughter, B.D. (2021) Repeated evolution of circadian clock dysregulation in cavefish populations. PLoS genetics, 17, e1009642.")
+    output$cite5 <- renderText("5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and Keene, A.C. (2020) Unique transcriptional signatures of sleep loss across independently evolved cavefish populations. Journal of Experimental Zoology Part B: Molecular and Developmental Evolution, 334, 497-510.")
+    
     
   }
 
