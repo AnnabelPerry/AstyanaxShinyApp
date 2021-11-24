@@ -151,7 +151,7 @@ source("functions/CaveCrawler_functions.R")
                        checkboxGroupInput("dist_pops",
                                           label = "Population(s) of Interest",
                                           choices = c("Molino", "Pachon", 
-                                                      "Rascon", "Rio Choy", 
+                                                      "Rascon", "Rio Choy" = "RioChoy", 
                                                       "Tinaja", 
                                                       "Chica 1" = "Chica1",
                                                       "Chica 2" = "Chica2")),

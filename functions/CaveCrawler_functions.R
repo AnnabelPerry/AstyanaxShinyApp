@@ -62,6 +62,7 @@ GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
 names(GeneToGO)[1] <- "Entry"
 GeneToGO$Gene.ontology.IDs <- GeneToGO$Gene.ontology.IDs[!is.na(GeneToGO$Gene.ontology.IDs)]
+GeneToGO <- GeneToGO[!duplicated(GeneToGO$Gene.names),]
 
 GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
 # When you first read in GoIDToNames, some entire lines are, for whatever reason,
