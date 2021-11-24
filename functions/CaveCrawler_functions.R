@@ -59,6 +59,9 @@ morph1.morph2 <- morph1.morph2[,-1]
 morph1.morph2$Publication <- rep("4", nrow(morph1.morph2))
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
+GeneToGO$Gene.names <- tolower(GeneToGO$Gene.names)
+names(GeneToGO)[1] <- "Entry"
+GeneToGO$Gene.ontology.IDs <- GeneToGO$Gene.ontology.IDs[!is.na(GeneToGO$Gene.ontology.IDs)]
 
 GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
 # When you first read in GoIDToNames, some entire lines are, for whatever reason,
@@ -2018,8 +2021,8 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
       next
     }
   }
-  # Find all genes associated with the current GO IDs and add to vector of genes
-  gene_vec <- c()
+  # Find all gene IDs associated with the current GO IDs and add to vector of gene IDs
+  GeneID_vec <- c()
   found_GOs <- c()
   for(g in 1:length(GOs)){
     found = F
@@ -2033,18 +2036,18 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
       }
     }
     if(found){
-      gene_vec <- append(gene_vec, GeneToGO$Gene.names[grepl(GOs[g],
+      GeneID_vec <- append(GeneID_vec, GeneToGO$Ensembl_GeneID[grepl(GOs[g],
                                                              GeneToGO$Gene.ontology.IDs)])
       found_GOs <- append(found_GOs, rep(GOs[g],
-                                         length(GeneToGO$Gene.names[grepl(GOs[g],
+                                         length(GeneToGO$Ensembl_GeneID[grepl(GOs[g],
                                                                           GeneToGO$Gene.ontology.IDs)])))
       # If the GO term does NOT appear in the dataframe of names, skip it
     }else{
       next
     }
   }
-  # If no genes were found corresponding to the current GO ID, return an error
-  if(is.null(gene_vec)){
+  # If no gene IDs were found corresponding to the current GO ID, return an error
+  if(is.null(GeneID_vec)){
     null.df <- data.frame(matrix(nrow = 1, ncol = 9))
     names(null.df) <- c("Gene",
                         "Scaffold",
@@ -2059,7 +2062,7 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
            null.df))
   }else{
     geneGOs <- data.frame(
-      Gene = gene_vec,
+      GeneID = GeneID_vec,
       GO_ID = found_GOs
     )
     geneGOs <- geneGOs[!duplicated(geneGOs), ]
@@ -2201,7 +2204,7 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
   # For each statistic-population pair, iterate through each gene and find the
   # statistic value, scaffold, starting position, and ending position and
   # output to a dataframe
-  Gene <- c()
+  GeneID <- c()
   Scaffold <- c()
   Start_Position <- c()
   End_Position <- c()
@@ -2213,35 +2216,35 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
 
   for(i in 1:nrow(stat_pop_combos)){
     for(g in 1:length(geneGOs$Gene)){
-      # Check if current gene is in stat AND position table
+      # Check if current gene ID is in stat AND position table
       # If so...
-      if((geneGOs$Gene[g] %in% stat_table$Gene_Name) &
-         (geneGOs$Gene[g] %in% position_table$Gene_Name)){
-        # Find the number of copies of the current gene in the statistic
+      if((geneGOs$GeneID[g] %in% stat_table$Stable_Gene_ID) &
+         (geneGOs$GeneID[g] %in% position_table$Gene_ID)){
+        # Find the number of copies of the current gene ID in the statistic
         # table
-        copies <- length(stat_table[stat_table$Gene_Name == geneGOs$Gene[g],
+        copies <- length(stat_table[stat_table$Stable_Gene_ID == geneGOs$GeneID[g],
                                     as.numeric(stat_pop_combos$Col[i])])
         # Output the current gene as many times as there are copies
-        Gene <- append(Gene, rep(geneGOs$Gene[g], copies))
+        GeneID <- append(GeneID, rep(geneGOs$GeneID[g], copies))
         # Output scaffold of current gene as many times as there are copies
         Scaffold <- append(Scaffold,
-                           rep(position_table$Scaffold[position_table$Gene_Name == geneGOs$Gene[g]],
+                           rep(position_table$Scaffold[position_table$Gene_ID == geneGOs$GeneID[g]],
                                copies))
         # Output starting position of the current gene as many times as
         # there are copies of the gene
         Start_Position <- append(Start_Position,
-                                 rep(position_table$Start_Locus[position_table$Gene_Name == geneGOs$Gene[g]],
+                                 rep(position_table$Start_Locus[position_table$Gene_ID == geneGOs$GeneID[g]],
                                      copies))
         # Output the ending position of the current gene as many times as
         # there are copies of the gene
         End_Position <- append(End_Position,
-                               rep(position_table$End_Locus[position_table$Gene_Name == geneGOs$Gene[g]],
+                               rep(position_table$End_Locus[position_table$Gene_ID == geneGOs$GeneID[g]],
                                    copies))
-        # Output ALL GO terms associated with the current gene as many times
+        # Output ALL GO terms associated with the current gene ID as many times
         # as there are copies of the gene
         GO_IDs <- append(GO_IDs,
                          rep(
-                           paste(geneGOs$GO_ID[geneGOs$Gene == geneGOs$Gene[g]], collapse = "; "),
+                           paste(geneGOs$GO_ID[geneGOs$GeneID == geneGOs$GeneID[g]], collapse = "; "),
                            copies))
         # Output the current statistic type as many times as there are copies
         # of the gene
@@ -2255,18 +2258,18 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
         # Output the statistic value. Will automatically output value for
         # each copy of the gene.
         Statistic_Value <- append(Statistic_Value,
-                                  stat_table[stat_table$Gene_Name == geneGOs$Gene[g],
+                                  stat_table[stat_table$Stable_Gene_ID == geneGOs$GeneID[g],
                                              as.numeric(stat_pop_combos$Col[i])])
         # Output the publication from which the statistic was obtained
         Publication_Number <- append(Publication_Number,
-                           stat_table$Publication[stat_table$Gene_Name == geneGOs$Gene[g]])
+                           stat_table$Publication[stat_table$Stable_Gene_ID == geneGOs$GeneID[g]])
         # If not, skip the gene
       }else{
         next
       }
     }
   }
-  output_df <- data.frame(Gene,
+  output_df <- data.frame(GeneID,
                           Scaffold,
                           Start_Position,
                           End_Position,
