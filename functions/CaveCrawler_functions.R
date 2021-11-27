@@ -114,6 +114,7 @@ HS11 <- read.csv("data/Herman_etal_2018_S11.csv")
 names(HS11)[1] <- "Stable_Gene_ID"
 HS11$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS11))
 HS11$Fst_Chica1.Chica2 <- rep(NA, nrow(HS11))
+HS11$Fst_Outliers <- rep(NA, nrow(HS11))
 HS11$Publication <- rep("1", nrow(HS11))
 
 HS13 <- read.csv("data/Herman_etal_2018_S13.csv")
@@ -121,13 +122,15 @@ names(HS13)[1] <- "Stable_Gene_ID"
 HS13$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS13))
 HS13$Fst_Chica1.Chica2 <- rep(NA, nrow(HS13))
 HS13$Publication <- rep("1", nrow(HS13))
+HS13 <- relocate(HS13, "Fst_Outliers", .before = "Publication")
 
 chica_table <- read.csv("data/AMexicanus_iScienceS4R1_Stats.csv")
 # Add columns not present in Chica table
 chica_table$Fst_Rascon.Molino <- rep(NA, nrow(chica_table))
 chica_table$Dxy_Rascon.Molino <- rep(NA, nrow(chica_table))
 # Move columns to match positions in Herman tables
-chica_table <- relocate(chica_table, c(27, 28), .after = "TajimasD_Rascon")
+chica_table <- relocate(chica_table, c(27,28), .after = "TajimasD_Rascon")
+chica_table$Fst_Outliers <- rep(NA, nrow(chica_table))
 chica_table$Publication <- rep("2", nrow(chica_table))
 # Ensure name compatibility before combining
 names(chica_table) <- names(HS11)
@@ -1490,7 +1493,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         # If these populations-of-interest are the only pops which were
         # inputted, return a warning
         if(ncol(two_pops) == 1){
-          null.df <- data.frame(matrix(nrow = 1, ncol = 7))
+          null.df <- data.frame(matrix(nrow = 1, ncol = 8))
           names(null.df) <- c(
             "Rank",
             "Population(s)",
@@ -1498,6 +1501,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
             "Scaffold",
             "Gene Name",
             "GO Term(s)",
+            "Outlier (if Fst)",
             "Publication Name"
           )
           return(list(paste(c("Statistic ",stat,
@@ -1539,11 +1543,12 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     return("ERROR: Invalid statistic name")
   }
 
-  # Initialize vectors of gene names, populations, statistic values, and
-  # publication names
+  # Initialize vectors of gene names, populations, statistic values, outlier 
+  # status, and publication names
   genes <- c()
   DF_pops <- c()
   stat_vals <- c()
+  Fst_outlier <- c()
   pub_names <- c()
 
 
@@ -1565,6 +1570,8 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
                                         stat_table[,indices[i]] >= thresh])))
         stat_vals <- append(stat_vals,stat_table[
           stat_table[,indices[i]] >= thresh,indices[i]])
+        Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[
+          stat_table[,indices[i]] >= thresh])
         pub_names <- append(pub_names,stat_table$Publication[
           stat_table[,indices[i]] >= thresh])
       }
@@ -1582,6 +1589,8 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
                                         stat_table[,indices[i]] <= thresh])))
         stat_vals <- append(stat_vals,stat_table[
           stat_table[,indices[i]] <= thresh,indices[i]])
+        Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[
+          stat_table[,indices[i]] <= thresh])
         pub_names <- append(pub_names,stat_table$Publication[
           stat_table[,indices[i]] <= thresh])
       }
@@ -1607,6 +1616,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           genes <- append(genes,stat_table$Gene_Name[top_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
           stat_vals <- append(stat_vals,stat_table[top_genes,indices[i]])
+          Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[top_genes])
           pub_names <- append(pub_names,stat_table$Publication[
             top_genes])
         }
@@ -1618,6 +1628,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_stats <- c()
         all_pops <- c()
         all_genes <- c()
+        all_outliers <- c()
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
@@ -1625,7 +1636,8 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_stats <- append(all_stats, stat_table[,indices[i]])
           all_pops <- append(all_pops,rep(pop_strings[i],
                                           length(stat_table[,indices[i]])))
-          all_genes <- append(all_genes, stat_table$Gene_Name)
+          all_genes <- append(all_genes, stat_table$Gene_Name[top_genes])
+          all_outliers <- append(all_outliers,stat_table$Fst_Outliers)
           all_pubs <- append(all_genes, stat_table$Publication)
         }
         # Organize vectors into a dataframe
@@ -1633,6 +1645,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_stats,
           all_pops,
           all_genes,
+          all_outliers,
           all_pubs
         )
         # Retrieve the parallel indices for the N highest genes
@@ -1642,6 +1655,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         genes <- append(genes,temp_df$all_genes[par_indices])
         DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
         stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
+        Fst_outlier <- append(Fst_outlier,temp_df$all_outliers[par_indices])
         pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
       }
       # If lower proportion was requested, iterate through each index
@@ -1661,6 +1675,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           genes <- append(genes,stat_table$Gene_Name[bottom_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
           stat_vals <- append(stat_vals,stat_table[bottom_genes,indices[i]])
+          Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[bottom_genes])
           pub_names <- append(pub_names,stat_table$Publication[bottom_genes])
         }
         # If statistic is a one-population statistic, output collect the N genes
@@ -1671,6 +1686,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_stats <- c()
         all_pops <- c()
         all_genes <- c()
+        all_outliers <- c()
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
@@ -1679,6 +1695,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_pops <- append(all_pops,rep(pop_strings[i],
                                           length(stat_table[,indices[i]])))
           all_genes <- append(all_genes, stat_table$Gene_Name)
+          all_outliers <- append(all_outliers, stat_table$Fst_Outliers)
           all_pubs <- append(all_genes, stat_table$Publication)
         }
         # Organize vectors into a dataframe
@@ -1686,6 +1703,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_stats,
           all_pops,
           all_genes,
+          all_outliers,
           all_pubs
         )
         # Retreat the parallel indeices for the N highest genes
@@ -1694,13 +1712,14 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         genes <- append(genes,temp_df$all_genes[par_indices])
         DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
         stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
+        Fst_outlier <- append(Fst_outlier,temp_df$all_outliers[par_indices])
         pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
       }
     }
   }
   # If no population pairs were found, output an error
   if(length(indices) == 0){
-    null.df <- data.frame(matrix(nrow = 1, ncol = 7))
+    null.df <- data.frame(matrix(nrow = 1, ncol = 8))
     names(null.df) <- c(
       "Rank",
       "Population(s)",
@@ -1708,6 +1727,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       "Scaffold",
       "Gene Name",
       "GO Term(s)",
+      "Outlier (if Fst)",
       "Publication Name"
     )
     return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
@@ -1726,7 +1746,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     # terms
     if((genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
       scaffs[g] = position_table$Scaffold[position_table$Gene_Name == genes[g]]
-      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]]
+      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]][1]
       # If gene is present in position table but NOT GO table, output NA for GO
       # term but output real scaffold
     }else if((genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
@@ -1736,7 +1756,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       # term but output real GO
     }else if(!(genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
       scaffs[g] = "Not applicable"
-      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]]
+      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]][1]
       # If gene is present in neither GO nor position tables, output NA for scaff
       # and GO
     }else if(!(genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
@@ -1745,13 +1765,14 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     }
   }
   # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and
-  # stat values
+  # stat values. 
   prelim_df <- data.frame(
     DF_pops,
     stat_vals,
     scaffs,
     genes,
     DF_GOs,
+    Fst_outlier,
     pub_names
   )
   # Sort into a final dataframe
@@ -1815,6 +1836,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     "Scaffold",
     "Gene Name",
     "GO Term(s)",
+    "Outlier (if Fst)",
     "Publication Name"
   )
 

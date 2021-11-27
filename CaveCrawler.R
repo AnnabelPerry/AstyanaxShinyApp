@@ -529,7 +529,7 @@ source("functions/CaveCrawler_functions.R")
         SVtemp_df <- data.frame(
           SVDT()[[2]][,1:2],
           format(SVDT()[[2]][,3], digits = 5),
-          SVDT()[[2]][,4:7]
+          SVDT()[[2]][,4:8]
         )
         names(SVtemp_df) <- names(SVDT()[[2]])
         SVtemp_df
@@ -578,7 +578,7 @@ source("functions/CaveCrawler_functions.R")
         GCtemp_df <- data.frame(
           GCDT()[[2]][,1:2],
           format(GCDT()[[2]][,3], digits = 5),
-          GCDT()[[2]][,4:7]
+          GCDT()[[2]][,4:8]
         )
         names(GCtemp_df) <- names(GCDT()[[2]])
         GCtemp_df
