@@ -26,7 +26,7 @@ source("functions/CaveCrawler_functions.R")
     .tabbable > .nav > li > a:hover {background-color: #e8c4c2; border-color: #e4867e}
   ")),
     tabsetPanel(
-      tabPanel(h1("Home"), fluid = TRUE,
+      tabPanel(h2("Home"), fluid = TRUE,
                h1("Welcome to CaveCrawler"),
                br(),
                textOutput("home_text2"),
@@ -106,7 +106,7 @@ source("functions/CaveCrawler_functions.R")
                    sidebarPanel(id = "sidebar2",
                      radioButtons("which_function",
                                   label = "Would you like to find genes which are outliers with respect to a statistic-of-interest or find the statistic values for all genes related to a GO-term-of-interest?",
-                                  choices = c("Outliers" = "distr_func", 
+                                  choices = c("Outliers" = "distr_func",
                                               "GO-term-of-interest" = "stat_by_chr_func")
                      ),
                    ),
@@ -150,12 +150,12 @@ source("functions/CaveCrawler_functions.R")
                                     choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
                        checkboxGroupInput("dist_pops",
                                           label = "Population(s) of Interest",
-                                          choices = c("Molino", "Pachon", 
-                                                      "Rascon", "Rio Choy" = "RioChoy", 
-                                                      "Tinaja", 
+                                          choices = c("Molino", "Pachon",
+                                                      "Rascon", "Rio Choy" = "RioChoy",
+                                                      "Tinaja",
                                                       "Chica 1" = "Chica1",
                                                       "Chica 2" = "Chica2")),
-                       
+
                        # Only show this panel if the user wants to find the number of genes
                        # with the greatest or smallest values for the stat of interest
                        conditionalPanel(
@@ -201,14 +201,14 @@ source("functions/CaveCrawler_functions.R")
                    condition = "input.which_function == 'stat_by_chr_func'",
                    sidebarLayout(
                      sidebarPanel(id = "sidebar",
-                       checkboxGroupInput("sbc_statist", 
+                       checkboxGroupInput("sbc_statist",
                                           label = "Statistic of Interest",
                                           choices = c("Fst","Dxy","Tajima's D" = "TajimasD","Pi")),
-                       checkboxGroupInput("sbc_pops", 
+                       checkboxGroupInput("sbc_pops",
                                           label = "Population(s) of Interest",
-                                          choices = c("Molino", "Pachon", 
-                                                      "Rascon", "Rio Choy", 
-                                                      "Tinaja", 
+                                          choices = c("Molino", "Pachon",
+                                                      "Rascon", "Rio Choy",
+                                                      "Tinaja",
                                                       "Chica 1" = "Chica1",
                                                       "Chica 2" = "Chica2")),
                        searchInput(
@@ -261,7 +261,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
-      tabPanel(h2("Data Sources"), fluid = TRUE,
+      tabPanel(h2("Data Sources"), fluid = TRUE, align="left",
                h1("CaveCrawler Data Sources"),
                br(),
                textOutput("cite1"),
@@ -280,14 +280,14 @@ source("functions/CaveCrawler_functions.R")
   server = function(input, output) {
     observe({
       transc_morph_choices <- c("Control", "Rio Choy")
-      # Transcription Page: Update morph-selection widget to only enable 
+      # Transcription Page: Update morph-selection widget to only enable
       # comparisons between current morph and morph which is NOT morph1
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "morph2",
                         choices = transc_morph_choices[transc_morph_choices != input$morph1],
                         selected = tail(transc_morph_choices, 1)
       )
-      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been 
+      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been
       # created, update widget for selecting which statistic to plot
       if(length(SBCT()) == 2){
         if(sum(is.na(SBCT()[[2]])) != 9){
@@ -307,7 +307,7 @@ source("functions/CaveCrawler_functions.R")
                           label = "Visualize statistic...",
                           choices = "")
       }
-      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been 
+      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been
       # created, update the widget for selecting which scaffold to plot
       if(length(SBCT()) == 2){
           if(sum(is.na(SBCT()[[2]])) != 9){
@@ -333,50 +333,50 @@ source("functions/CaveCrawler_functions.R")
                           label = "...plotted along scaffold:",
                           choices = "")
       }
-      # Population Genetics (StatDist Subpage): Update min and max values for 
-      # threshold slider 
+      # Population Genetics (StatDist Subpage): Update min and max values for
+      # threshold slider
       output$thrsh_slider <- renderUI({
-        if(((length(input$dist_pops) >= 2) & 
-         ((input$dist_statist == "Fst") | (input$dist_statist == "Dxy"))) | 
-         ((length(input$dist_pops) < 2) & 
+        if(((length(input$dist_pops) >= 2) &
+         ((input$dist_statist == "Fst") | (input$dist_statist == "Dxy"))) |
+         ((length(input$dist_pops) < 2) &
          ((input$dist_statist != "Fst") & (input$dist_statist != "Dxy")))){
         min_max_list <- MinMax(mm_pops = input$dist_pops,
                                mm_stat = input$dist_statist,
                                stat_table)
         sliderInput("thrsh", "Threshhold statistical value: ",
-                    min = round(min_max_list[[1]],2), 
+                    min = round(min_max_list[[1]],2),
                     max = round(min_max_list[[2]],2), value = 0, step = 0.0005)
       }else{
-        sliderInput("thrsh", 
+        sliderInput("thrsh",
                     "Threshold selector will appear here once you have inputted enough populations for the selected statistic.",
-                    min = 0, max = 0, value = 0, 
+                    min = 0, max = 0, value = 0,
                     step = 0.05)
       }
       })
     })
-    
-    
+
+
     # Home Page: Output text describing website, functions, data contribution,
     # and Astyanax mexicanus
     output$home_text2 <- renderText("CaveCrawler is a reactive web interface for bioinformatic analysis of data in the Mexican tetra (Astyanax mexicanus), an emerging evolutionary model organism.")
     output$home_text3 <- renderText("CaveCrawler consists of 4 subpages: a Gene Search page for querying data about specific genes, a Transcription page for finding genes whose transcriptional levels differ between samples, a Population Genetics page for investigating statistics on diversity and selection, and a GO Term Info page for identifying and obtaining information on GO terms-of-interest.")
     output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Heath Blackmon at hblackmon@bio.tamu.edu or Alex Keene at akeene@bio.tamu.edu")
     output$home_text5 <- renderText("To cite CaveCrawler, please cite our paper, currently available on BioRXiv: 'CaveCrawler: An interactive analysis suite for cavefish bioinformatics'")
-    
+
     # Home Page: Plot map of all populations
     # Plot map of Astyanax populations
-    pop_map <- ggplot(data = world_map) + 
+    pop_map <- ggplot(data = world_map) +
       geom_polygon(aes(x = long,
-                       y = lat, 
+                       y = lat,
                        group = group),
                    fill = "antiquewhite",
-                   color = "black") + 
+                   color = "black") +
       # get the portion of the map where your data is located at
       coord_fixed(xlim = c(min(Latit_Longit$Longitude) - 10, max(Latit_Longit$Longitude) + 10),
                   ylim = c(min(Latit_Longit$Latitude) - 5, max(Latit_Longit$Latitude) + 5),
                   ratio = 1.3)+
       # plot your points
-      geom_point(data = Latit_Longit, 
+      geom_point(data = Latit_Longit,
                  aes(y = Latitude,
                      x = Longitude,
                      colour = factor(Population))) +
@@ -391,11 +391,11 @@ source("functions/CaveCrawler_functions.R")
       annotate("text", y = 28, x = -98.5, label = "Texas") +
       annotate("text", y = 28, x = -102.5, label = "Mexico") +
       ggtitle("Geographic Locations of Astyanax mexicanus Populations") +
-      theme_bw() + 
+      theme_bw() +
       theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
-    
+
     output$home_plot <- renderPlot(pop_map)
-    # Gene Search Page: Output a table of all statistics associated with the 
+    # Gene Search Page: Output a table of all statistics associated with the
     # entered gene
     GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
       if(input$Gene_search == ""){
@@ -408,7 +408,7 @@ source("functions/CaveCrawler_functions.R")
                      position_table)
       }
     })
-    
+
     output$GeneCent_table <- renderTable({
       if(typeof(GeneCentOutput()) == "list"){
         # Format each statistic section to have appropriate number of decimals
@@ -423,7 +423,7 @@ source("functions/CaveCrawler_functions.R")
         data.frame()
       }
     })
-    
+
     # Gene Search Page: Output any warnings associated with the searched gene
     output$GeneCent_warnings <- renderText({
       if(typeof(GeneCentOutput()) == "list"){
@@ -451,19 +451,19 @@ source("functions/CaveCrawler_functions.R")
         }else{
           reformattedGeneCent <- data.frame()
         }
-        
+
         write.csv(reformattedGeneCent, file, row.names = F)
       }
     )
-    
-    
-    # Transcription Page: Create a label which changes based on the morphs to be 
+
+
+    # Transcription Page: Create a label which changes based on the morphs to be
     # searched for
     output$dir_label <- renderText({
       paste(c("Search for genes which are UP or DOWNregulated in ",
               input$morph1, " relative to ", input$morph2, "?"), collapse = "")
     })
-    
+
     # Transcription Page: Create a label which changes based on whether up- or
     # downregulation was specified
     output$per_label <- renderText({
@@ -473,7 +473,7 @@ source("functions/CaveCrawler_functions.R")
         "Percent downregulation:"
       }
     })
-    
+
     # Transcription Page: Output a table with specified transcription data
     transc_table <- eventReactive(input$Transc_enter, valueExpr = {
       if(input$morph2 == "Control"){
@@ -499,7 +499,7 @@ source("functions/CaveCrawler_functions.R")
       names(reformattedTranscT) <- names(transc_table())
       reformattedTranscT
     })
-    
+
     # Transcription Page: Enable downloading of Transcription table
     output$TranscDL <- downloadHandler(
       filename = function() {
@@ -509,10 +509,10 @@ source("functions/CaveCrawler_functions.R")
         write.csv(transc_table(), file, row.names = F)
       }
     )
-    
-    
-    # Population Genetics (Distribution Suppage): If Statistic Value was 
-    # specified, output a table of all genes within the specified range of 
+
+
+    # Population Genetics (Distribution Suppage): If Statistic Value was
+    # specified, output a table of all genes within the specified range of
     # statistic values
     SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
       StatDistTable(input$type,
@@ -537,9 +537,9 @@ source("functions/CaveCrawler_functions.R")
     )
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
 
-    # Population Genetics (Distribution Suppage): If Visualize was pressed, 
-    # output a plot of the number of genes with each value of the specified 
-    # statistic 
+    # Population Genetics (Distribution Suppage): If Visualize was pressed,
+    # output a plot of the number of genes with each value of the specified
+    # statistic
     SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
       StatDistPlot(stat = input$dist_statist,
                    UL = input$TB,
@@ -560,7 +560,7 @@ source("functions/CaveCrawler_functions.R")
         write.csv(SVDT()[[2]], file, row.names = F)
       }
     )
-    
+
     # Population Genetics (Distribution Subpage): If Gene Count was specified,
     # output the statistics associated with the indicated number of genes
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
@@ -585,7 +585,7 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     output$GCdist_wrnings <- renderText(GCDT()[[1]])
-    
+
     # Gene Count SubPage: Enable downloading of Gene Count table
     output$GCDistDL <- downloadHandler(
       filename = function() {
@@ -595,9 +595,9 @@ source("functions/CaveCrawler_functions.R")
         write.csv(GCDT()[[2]], file, row.names = F)
       }
     )
-    
-    
-    # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and 
+
+
+    # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and
     # GO term have been entered, output a table of associated genes
     SBCT <- eventReactive(input$GO_search, valueExpr = {
       if((length(input$sbc_statist) == 0) & (length(input$sbc_pops) != 0)){
@@ -609,19 +609,19 @@ source("functions/CaveCrawler_functions.R")
       }else if((length(input$sbc_statist) != 0) & (length(input$sbc_pops) != 0)){
         StatByChrTable(GOTerm = input$GO_search,
                        GeneToGO,
-                       GoIDToNames, 
-                       UpperLower, 
-                       stat_vec = input$sbc_statist, 
-                       position_table, 
-                       stat_table, 
+                       GoIDToNames,
+                       UpperLower,
+                       stat_vec = input$sbc_statist,
+                       position_table,
+                       stat_table,
                        pops = input$sbc_pops
         )
       }
     }
     )
-    
-    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and 
-    # input table is NOT full of NAs, output a plot of the appropriate statistic x 
+
+    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and
+    # input table is NOT full of NAs, output a plot of the appropriate statistic x
     # scaffold pair
     SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
       if(sum(is.na(SBCT()[[2]])) != 9){
@@ -640,7 +640,7 @@ source("functions/CaveCrawler_functions.R")
       if(length(SBCT()) == 2){
         # If function has inputs, check if inputs yielded a valid table
         if(sum(is.na(SBCT()[[2]])) != 9){
-          # If inputs did yield a valid table, output the table with adjusted 
+          # If inputs did yield a valid table, output the table with adjusted
           # decimal places
           temp_df <- data.frame(
             SBCT()[[2]][,1:7],
@@ -658,7 +658,7 @@ source("functions/CaveCrawler_functions.R")
       })
     output$SBC_wrnings <- renderText(SBCT()[[1]])
     output$SBC_plot <- renderPlot(SBCP())
-    
+
     # Statistic-by-Chromosome SubPage: Enable downloading of SBC table
     output$SBCDL <- downloadHandler(
       filename = function() {
@@ -668,8 +668,8 @@ source("functions/CaveCrawler_functions.R")
         write.csv(SBCT()[[2]], file, row.names = F)
       }
     )
-    
-    
+
+
     # GO Term Info: If GO ID or phrase was inputted, output class, lower-level
     # GO IDs, and GO terms associated with all relevant GO IDs
     GOInfoOutWarnings <- eventReactive(input$GO_info_search, valueExpr = {
@@ -677,10 +677,10 @@ source("functions/CaveCrawler_functions.R")
         "Warnings will populate here once GO ID or phrase is inputted."
       }else{
         GOInfo(
-          GO_input = input$GO_info_search, 
-           GO_classes, 
-           GOIDToNames, 
-           UpperLower, 
+          GO_input = input$GO_info_search,
+           GO_classes,
+           GOIDToNames,
+           UpperLower,
            all.GO_IDs
           )[[1]]
       }
@@ -690,10 +690,10 @@ source("functions/CaveCrawler_functions.R")
         data.frame(`Column Name` = "Data will populate here once GO ID or phrase is inputted.")
       }else{
         GOInfo(
-          GO_input = input$GO_info_search, 
-          GO_classes, 
-          GOIDToNames, 
-          UpperLower, 
+          GO_input = input$GO_info_search,
+          GO_classes,
+          GOIDToNames,
+          UpperLower,
           all.GO_IDs
         )[[2]]
       }
@@ -714,14 +714,14 @@ source("functions/CaveCrawler_functions.R")
         write.csv(GOInfoOutTable(), file, row.names = F)
       }
     )
-    # Citations 
+    # Citations
     output$cite1 <- renderText("1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W.R., Keene, A.C., Kono, T.J., Bilandzija, H., Borowsky, R., Espinasa, L. and O'Quin, K. (2018) The role of gene flow in rapid and repeated evolution of cave related traits in Mexican tetra, Astyanax mexicanus. Molecular ecology, 27, 4397-4416.")
     output$cite2 <- renderText("2. Moran, R.L., Jaggard, J.B., Roback, E.Y., Rohner, N., Kowalko, J.E., Ornelas-Garcia, P., McGaugh, S.E. and Keene, A.C. (2021) Hybridization underlies localized trait evolution in cavefish. bioRxiv.")
     output$cite3 <- renderText("3. Bradic, M., Beerli, P., Garcia-de Leon, F.J., Esquivel-Bobadilla, S. and Borowsky, R.L. (2012) Gene flow and population structure in the Mexican blind cavefish complex (Astyanax mexicanus). BMC evolutionary biology, 12, 1-17.")
     output$cite4 <- renderText("4. Mack, K.L., Jaggard, J.B., Persons, J.L., Roback, E.Y., Passow, C.N., Stanhope, B.A., Ferrufino, E., Tsuchiya, D., Smith, S.E. and Slaughter, B.D. (2021) Repeated evolution of circadian clock dysregulation in cavefish populations. PLoS genetics, 17, e1009642.")
     output$cite5 <- renderText("5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and Keene, A.C. (2020) Unique transcriptional signatures of sleep loss across independently evolved cavefish populations. Journal of Experimental Zoology Part B: Molecular and Developmental Evolution, 334, 497-510.")
-    
-    
+
+
   }
 
 
