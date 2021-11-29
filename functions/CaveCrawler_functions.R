@@ -9,6 +9,7 @@ library(stringr)
 library(tibble)
 library(gridExtra)
 library(dplyr)
+library(maps)
 
 ################################## Load Data ###################################
 # Make dataframe of latitudes and longitudes for all morphs
@@ -1543,7 +1544,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     return("ERROR: Invalid statistic name")
   }
 
-  # Initialize vectors of gene names, populations, statistic values, outlier 
+  # Initialize vectors of gene names, populations, statistic values, outlier
   # status, and publication names
   genes <- c()
   DF_pops <- c()
@@ -1765,7 +1766,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     }
   }
   # Create a dataframe of scaffolds, gene names, GO terms, statistic types, and
-  # stat values. 
+  # stat values.
   prelim_df <- data.frame(
     DF_pops,
     stat_vals,
