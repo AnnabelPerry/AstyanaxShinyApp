@@ -61,47 +61,7 @@ morph1.morph2$Publication <- rep("4", nrow(morph1.morph2))
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 
-GoIDToNames <- read.table("data/GOIDs_and_Names.txt", fill = T, sep = "\t", header = T)
-# When you first read in GoIDToNames, some entire lines are, for whatever reason,
-# combined into a single GO term cell
-
-# This section of the script...
-# 1. Identifies all GO term cells containing information from multiple lines
-messed_cells <- GoIDToNames$GO.Term[grepl("\n", GoIDToNames$GO.Term)]
-
-# 2. Splices the cells into strings based on newline characters and adds strings
-#    to a vector
-newline_strings <- c()
-sites.of.errors <- c()
-for(c in 1:length(messed_cells)){
-  newline_strings <- append(newline_strings, str_split(string = messed_cells[c],
-                                                       pattern = "\n"))
-  sites.of.errors <- append(sites.of.errors,
-                            which(GoIDToNames$GO.Term == messed_cells[c]))
-}
-
-
-error.replacements <- c()
-for(i in 1:length(newline_strings)){
-  # 3. Records sites at which an erroneous GO term must be replaced with a
-  #    corrected GO term
-  error.replacements <- append(error.replacements, newline_strings[[i]][1])
-  newline_strings[[i]] <- newline_strings[[i]][-1]
-  # 4. Splices the strings of the vector into substrings based on \t and adds
-  #    substring pairs as columns to a temporary dataframe
-  temp_df <- data.frame(matrix(ncol = 2, nrow = 1))
-  new_rows <- str_split(string = newline_strings[[i]], pattern = "\t")
-  for(r in 1:length(new_rows)){
-    temp_df <- rbind(temp_df, new_rows[[r]])
-  }
-  temp_df <- temp_df[-1,]
-  names(temp_df) <- names(GoIDToNames)
-  # 5. Inserts the temporary data frame into the master data frame
-  GoIDToNames <- rbind(GoIDToNames, temp_df)
-  next
-}
-# 6. Replaces the erroneous GO term with a corrected GO term
-GoIDToNames$GO.Term[sites.of.errors] <- error.replacements
+MasterGO <- read.csv("data/MasterGO.csv", fill = T)
 
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
@@ -139,8 +99,6 @@ stat_table <- stat_table[(!is.na(stat_table$Gene_Name) &
                             (stat_table$Gene_Name != " ")),]
 stat_table$Gene_Name <- tolower(stat_table$Gene_Name)
 
-GO_classes <- read.table("data/GOID_Namespaces.txt", fill = T, sep = "\t", header = T)
-
 # Obtain complete dataframe of all possible genes and corresponding IDs across
 # the statistic and transcription data
 all.genes_IDs <- data.frame(
@@ -154,9 +112,6 @@ all.genes_IDs <- data.frame(
 all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
 all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
 
-# Obtain a complete vector of all GO IDs
-all.GO_IDs <- c(GO_classes$GO_ID)
-all.GO_IDs <- all.GO_IDs[!duplicated(all.GO_IDs)]
 
 ################################## Functions ###################################
 # Gene Search Page: Input a single or comma-separated list of genes or gene IDs
@@ -1984,7 +1939,7 @@ StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
   return(list(wrnings, output_plot))
 }
 
-StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
+StatByChrTable <- function(GOTerm, GeneToGo, MasterGO, UpperLower,
                            stat_vec, position_table, stat_table, pops){
   # Initialize vector for all GO terms of interest
   GOs <- c()
@@ -1994,20 +1949,20 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
   # Check if user inputted a word/phrase or a GO ID. If the user inputted a
   # word/phrase, find the name(s) which contains that word/phrase and set the GO
   # vector equal to the corresponding GO IDs.
-  if(!(GOTerm %in% GoIDToNames$GO.ID)){
-    if(length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term,
+  if(!(GOTerm %in% MasterGO$GO_ID)){
+    if(length(MasterGO$GO_ID[which(grepl(GOTerm, MasterGO$GO_Term,
                                             ignore.case = T))]) != 0){
-      GOs <- GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term,
+      GOs <- MasterGO$GO_ID[which(grepl(GOTerm, MasterGO$GO_Term,
                                            ignore.case = T))]
       # If the input is not found in the GO terms but does have a comma,
       # output both as GO IDs and check whether they are valid GO IDs
-    }else if((length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term,
+    }else if((length(MasterGO$GO_ID[which(grepl(GOTerm, MasterGO$GO_Term,
                                                    ignore.case = T))]) == 0)
              & (grepl(", ", GOTerm, ignore.case = T))){
       GOs <- str_split(GOTerm, ", ")[[1]]
       # If the input is not found in the GO terms and does not have a comma,
       # return an error
-    }else if((length(GoIDToNames$GO.ID[which(grepl(GOTerm, GoIDToNames$GO.Term,
+    }else if((length(MasterGO$GO_ID[which(grepl(GOTerm, MasterGO$GO_Term,
                                                    ignore.case = T))]) == 0)
              & !(grepl(", ", GOTerm, ignore.case = T))){
       null.df <- data.frame(matrix(nrow = 1, ncol = 9))
@@ -2024,7 +1979,7 @@ StatByChrTable <- function(GOTerm, GeneToGo, GoIDToNames, UpperLower,
                   null.df))
     }
     # If user inputted a GO ID, add that ID
-  }else if(GOTerm %in% GoIDToNames$GO.ID){
+  }else if(GOTerm %in% MasterGO$GO_ID){
     GOs <- GOTerm
   }
 
@@ -2371,7 +2326,7 @@ StatByChrGraph <- function(Full_Table, stat_vec){
 # In this function, the user inputs GO ID(s) or a phrase and the function
 # outputs the class, lower-level GO IDs, and GO term associated with each
 # relevant GO ID
-GOInfo <- function(GO_input, GO_classes, GOIDToNames, UpperLower, all.GO_IDs){
+GOInfo <- function(GO_input, MasterGO, UpperLower){
   # Initialize a vector in which to store GO IDs
   GO_ID_vec <- c()
 
@@ -2393,7 +2348,7 @@ GOInfo <- function(GO_input, GO_classes, GOIDToNames, UpperLower, all.GO_IDs){
     temp_GO_ID_vec <- str_split(string = GO_input, pattern = ", ")[[1]]
     # Check to ensure that at least one of the inputted IDs is a real GO ID
     for(i in 1:length(temp_GO_ID_vec)){
-      if(temp_GO_ID_vec[i] %in% all.GO_IDs){
+      if(temp_GO_ID_vec[i] %in% MasterGO$GO_ID){
         GO_ID_vec <- append(GO_ID_vec, temp_GO_ID_vec[i])
         next
       }else{
@@ -2409,13 +2364,13 @@ GOInfo <- function(GO_input, GO_classes, GOIDToNames, UpperLower, all.GO_IDs){
                   error.df))
     }
 
-  }else if(!(grepl(", ", GO_input)) & (GO_input %in% all.GO_IDs)){
+  }else if(!(grepl(", ", GO_input)) & (GO_input %in% MasterGO$GO_ID)){
     # If input is a single GO ID, add it to the vector of GO IDs
     GO_ID_vec <- GO_input
-  }else if(!(grepl(", ", GO_input)) & !(GO_input %in% all.GO_IDs)){
+  }else if(!(grepl(", ", GO_input)) & !(GO_input %in% MasterGO$GO_ID)){
     # If input is a phrase, find all GO terms associated with that phrase
-    if(sum(grepl(GO_input, GoIDToNames$GO.Term, ignore.case = T)) != 0){
-      GO_ID_vec <- GoIDToNames$GO.ID[grepl(GO_input, GoIDToNames$GO.Term,
+    if(sum(grepl(GO_input, MasterGO$GO_Term, ignore.case = T)) != 0){
+      GO_ID_vec <- MasterGO$GO_ID[grepl(GO_input, MasterGO$GO_Term,
                                            ignore.case = T)]
       # If NO GO terms are associated with the phrase, output an error
     }else{
@@ -2437,14 +2392,14 @@ GOInfo <- function(GO_input, GO_classes, GOIDToNames, UpperLower, all.GO_IDs){
     # Output GO ID
     GO_df$`GO ID`[GO] <- GO_ID_vec[GO]
     # Output GO term, if present
-    if(GO_ID_vec[GO] %in% GoIDToNames$GO.ID){
-      GO_df$`GO Term`[GO] <- GoIDToNames$GO.Term[GoIDToNames$GO.ID == GO_ID_vec[GO]]
+    if(GO_ID_vec[GO] %in% MasterGO$GO_ID){
+      GO_df$`GO Term`[GO] <- MasterGO$GO_Term[MasterGO$GO_ID == GO_ID_vec[GO]]
     }else{
       GO_df$`GO Term`[GO] <- "Not applicable"
     }
     # Output class of GO ID
-    if(GO_ID_vec[GO] %in% GO_classes$GO_ID){
-      GO_df$Namespace[GO] <- GO_classes$Namespace[GO_classes$GO_ID == GO_ID_vec[GO]]
+    if(GO_ID_vec[GO] %in% MasterGO$GO_ID){
+      GO_df$Namespace[GO] <- MasterGO$Namespace[MasterGO$GO_ID == GO_ID_vec[GO]]
     }else{
       GO_df$Namespace[GO] <- "Not applicable"
     }

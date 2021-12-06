@@ -139,6 +139,8 @@ source("functions/CaveCrawler_functions.R")
                  ),
                  conditionalPanel(
                    condition = "input.which_function == 'distr_func'",
+                   # EDIT: Remove once you've troubleshooted bug
+                   textOutput("test"),
                    sidebarLayout(
                      sidebarPanel(id = "sidebar",
                        radioButtons("type",
@@ -162,7 +164,7 @@ source("functions/CaveCrawler_functions.R")
                          condition = "input.type == 'Gene Count'",
                          sliderInput("gene_count", "How many genes would you like to see?",
                                      min = 1, max = 1000, value = 10),
-                         radioButtons("TB",
+                         radioButtons("gcTB",
                                       label = "Output genes with largest or smallest values of the desired statistic?",
                                       choices = c("Largest" = "top", "Smallest" ="bottom")),
                          actionButton("GCDistTable_enter","Find Genes"),
@@ -172,7 +174,7 @@ source("functions/CaveCrawler_functions.R")
                        conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
                          uiOutput("thrsh_slider"),
-                         radioButtons("TB",
+                         radioButtons("svTB",
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
                          actionButton("SVDistTable_enter","Find Genes"),
@@ -510,13 +512,15 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-
+    # EDIT: Remove once you know why lower threshold is not working
+    output$test <- renderText(input$svTB)
+    
     # Population Genetics (Distribution Suppage): If Statistic Value was
     # specified, output a table of all genes within the specified range of
     # statistic values
     SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
       StatDistTable(input$type,
-                    input$TB,
+                    input$svTB,
                     input$dist_statist,
                     thresh = input$thrsh,
                     stat_table,
@@ -542,7 +546,7 @@ source("functions/CaveCrawler_functions.R")
     # statistic
     SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
       StatDistPlot(stat = input$dist_statist,
-                   UL = input$TB,
+                   UL = input$svTB,
                    thresh = input$thrsh,
                    stat_table,
                    pops = input$dist_pops)
@@ -565,7 +569,7 @@ source("functions/CaveCrawler_functions.R")
     # output the statistics associated with the indicated number of genes
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
       StatDistTable(input$type,
-                    input$TB,
+                    input$gcTB,
                     input$dist_statist,
                     thresh = input$gene_count,
                     stat_table,
@@ -609,7 +613,7 @@ source("functions/CaveCrawler_functions.R")
       }else if((length(input$sbc_statist) != 0) & (length(input$sbc_pops) != 0)){
         StatByChrTable(GOTerm = input$GO_search,
                        GeneToGO,
-                       GoIDToNames,
+                       MasterGO,
                        UpperLower,
                        stat_vec = input$sbc_statist,
                        position_table,
@@ -678,10 +682,8 @@ source("functions/CaveCrawler_functions.R")
       }else{
         GOInfo(
           GO_input = input$GO_info_search,
-           GO_classes,
-           GOIDToNames,
-           UpperLower,
-           all.GO_IDs
+           MasterGO,
+           UpperLower
           )[[1]]
       }
     })
@@ -691,10 +693,8 @@ source("functions/CaveCrawler_functions.R")
       }else{
         GOInfo(
           GO_input = input$GO_info_search,
-          GO_classes,
-          GOIDToNames,
-          UpperLower,
-          all.GO_IDs
+          MasterGO,
+          UpperLower
         )[[2]]
       }
     })
