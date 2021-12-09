@@ -44,20 +44,47 @@ source("functions/CaveCrawler_functions.R")
                  sidebarPanel(id = "sidebar",
                    searchInput(
                      inputId = "Gene_search",
-                     label = "Gene name, gene stable ID, or phrase",
-                     placeholder = "mtnr1al, ENSAMXG00000010894, melatonin receptor, etc...",
+                     label = "Gene name, gene stable ID, GO ID, or phrase",
+                     placeholder = "mtnr1al, ENSAMXG00000010894, GO:0016021, melatonin receptor, etc...",
                      btnSearch = icon("search"),
                      btnReset = icon("remove"),
                      width = "450px"
-                   )
                    ),
+                   checkboxGroupInput("GSbools",
+                                      label = "What data would you like to see?",
+                                      choices = c("Position", "Transcription",
+                                                  "Population Genetics","GO"))
+                 ),
                  mainPanel(id = "main",
-                   downloadButton("GeneSearchDL", "Download", class = "download"),
-                   textOutput("GeneCent_warnings"),
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
-                   tableOutput("GeneCent_table")
-                 )
+                   textOutput("GSwarnings"),
+                   # If position data is requested, output position data
+                   conditionalPanel(
+                     condition = "input.GSbools.includes('Position')",
+                     downloadButton("GSPosDL", "Download", class = "download"),
+                     tableOutput("GSPos_table")
+                     ),
+                   # If Transcription data is requested, output Transcription data
+                   conditionalPanel(
+                     condition = "input.GSbools.includes('Transcription')",
+                     downloadButton("GSTranscDL", "Download", class = "download"),
+                     tableOutput("GSTransc_table")
+                   ),
+                   # If Population Genetics data is requested, output Population
+                   # Genetics data
+                   conditionalPanel(
+                     condition = "input.GSbools.includes('Population Genetics')",
+                     downloadButton("GSPopgenDL", "Download", class = "download"),
+                     tableOutput("GSPopgen_table")
+                   ),
+                   # If GO data is requested, output GO data
+                   conditionalPanel(
+                     condition = "input.GSbools.includes('GO')",
+                     downloadButton("GSGODL", "Download", class = "download"),
+                     tableOutput("GSGO_table")
+                   )
                )
+          )
       ),
       tabPanel(h2("Transcription"), fluid = TRUE,
                sidebarLayout(
@@ -108,7 +135,7 @@ source("functions/CaveCrawler_functions.R")
                                   label = "Would you like to find genes which are outliers with respect to a statistic-of-interest or find the statistic values for all genes related to a GO-term-of-interest?",
                                   choices = c("Outliers" = "distr_func",
                                               "GO-term-of-interest" = "stat_by_chr_func")
-                     ),
+                     )
                    ),
                    mainPanel(
                      br(),
@@ -122,17 +149,17 @@ source("functions/CaveCrawler_functions.R")
                      # Display download button appropriate to specific conditions
                      conditionalPanel(
                        condition = "input.which_function == 'stat_by_chr_func'",
-                       downloadButton("SBCDL", "Download", class = "download"),
+                       downloadButton("SBCDL", "Download", class = "download")
                      ),
                      conditionalPanel(
                        condition = "input.which_function == 'distr_func'",
                        conditionalPanel(
                          condition = "input.type == 'Gene Count'",
-                         downloadButton("GCDistDL", "Download", class = "download"),
+                         downloadButton("GCDistDL", "Download", class = "download")
                        ),
                        conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
-                         downloadButton("SVDistDL", "Download", class = "download"),
+                         downloadButton("SVDistDL", "Download", class = "download")
                        )
                      )
                    )
@@ -167,7 +194,7 @@ source("functions/CaveCrawler_functions.R")
                          radioButtons("gcTB",
                                       label = "Output genes with largest or smallest values of the desired statistic?",
                                       choices = c("Largest" = "top", "Smallest" ="bottom")),
-                         actionButton("GCDistTable_enter","Find Genes"),
+                         actionButton("GCDistTable_enter","Find Genes")
                        ),
                        # Only show this panel if the user wants to find genes with stat values
                        # above or below a specific threshhold
@@ -178,14 +205,14 @@ source("functions/CaveCrawler_functions.R")
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
                          actionButton("SVDistTable_enter","Find Genes"),
-                         actionButton("SVDistPlot_enter", "Visualize"),
+                         actionButton("SVDistPlot_enter", "Visualize")
                        )
                      ),
                      mainPanel(
                        conditionalPanel(
                          condition = "input.type == 'Gene Count'",
                          tableOutput("GCdist_tab"),
-                         textOutput("GCdist_wrnings"),
+                         textOutput("GCdist_wrnings")
                        ),
                        # Only show this panel if the user wants to find genes with stat values
                        # above or below a specific threshhold
@@ -194,7 +221,7 @@ source("functions/CaveCrawler_functions.R")
                          plotOutput("SVdist_plot"),
                          textOutput("SVdist_plot_wrnings"),
                          tableOutput("SVdist_tab"),
-                         textOutput("SVdist_wrnings"),
+                         textOutput("SVdist_wrnings")
                        )
                      )
                    )
@@ -274,7 +301,11 @@ source("functions/CaveCrawler_functions.R")
                br(),
                textOutput("cite4"),
                br(),
-               textOutput("cite5")
+               textOutput("cite5"),
+               br(),
+               textOutput("cite6"),
+               br(),
+               textOutput("cite7")
                )
     )
   )
@@ -397,67 +428,186 @@ source("functions/CaveCrawler_functions.R")
       theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
 
     output$home_plot <- renderPlot(pop_map)
-    # Gene Search Page: Output a table of all statistics associated with the
-    # entered gene
-    GeneCentOutput <- eventReactive(input$Gene_search, valueExpr = {
+    # Gene Search Page: Output four tables of all data associated with the
+    # entered gene search term
+    GeneSearchOutput <- eventReactive(input$Gene_search, valueExpr = {
+      # Tell function which tables to output based on values of logicals
+      if("Position" %in% input$GSbools){
+        PB <- T
+      }else{
+        PB <- F
+      }
+      if("Transcription" %in% input$GSbools){
+        TB <- T
+      }else{
+        TB <- F
+      }
+      if("Population Genetics" %in% input$GSbools){
+        PGB <- T
+      }else{
+        PGB <- F
+      }
+      if("GO" %in% input$GSbools){
+        GOB <- T
+      }else{
+        GOB <- F
+      }
       if(input$Gene_search == ""){
         data.frame()
       }else{
-        GeneCentered(input$Gene_search,
-                     stat_table,
-                     GeneToGO,
-                     condition_control,
-                     position_table)
+        GeneSearch(input = input$Gene_search, 
+                   posBool = PB, 
+                   transcBool = TB, 
+                   popgenBool = PGB, 
+                   GOBool = GOB, 
+                   position_table = position_table, 
+                   morph1.morph2 = morph1.morph2, 
+                   condition_control = condition_control,
+                   stat_table = stat_table, 
+                   GeneToGO = GeneToGO)
       }
     })
 
-    output$GeneCent_table <- renderTable({
-      if(typeof(GeneCentOutput()) == "list"){
-        # Format each statistic section to have appropriate number of decimals
-        reformattedGeneCent <- data.frame(
-          GeneCentOutput()[,1:7],
-          format(GeneCentOutput()[,8:45], digits = 5),
-          GeneCentOutput()[,46]
-        )
-        names(reformattedGeneCent) <- names(GeneCentOutput())
-        reformattedGeneCent
-      }else if(typeof(GeneCentOutput()) == "character"){
+    output$GSPos_table <- renderTable({
+      if(typeof(GeneSearchOutput()) == "list"){
+        GeneSearchOutput()[[1]]
+      }else if(typeof(GeneSearchOutput()) == "character"){
         data.frame()
       }
     })
-
+  
+  output$GSTransc_table <- renderTable({
+    if(typeof(GeneSearchOutput()) == "list"){
+      unformattedTransc <- GeneSearchOutput()[[2]]
+      reformattedTransc <- data.frame(
+        unformattedTransc[,1:5],
+        format(unformattedTransc[,6], digits = 5),
+        format(unformattedTransc[,7], digits = 5),
+        unformattedTransc[,8:9]
+      )
+      names(reformattedTransc) <- names(unformattedTransc)
+      reformattedTransc
+    }else if(typeof(GeneSearchOutput()) == "character"){
+      data.frame()
+    }
+  })
+  
+  output$GSPopgen_table <- renderTable({
+    if(typeof(GeneSearchOutput()) == "list"){
+      unformattedPopgen <- GeneSearchOutput()[[3]]
+      reformattedPopgen <- data.frame(
+        unformattedPopgen[,1:5],
+        format(unformattedPopgen[,6], digits = 5),
+        unformattedPopgen[,7:8]
+      )
+      names(reformattedPopgen) <- names(unformattedPopgen)
+      reformattedPopgen
+    }else if(typeof(GeneSearchOutput()) == "character"){
+      data.frame()
+    }
+  })
+  
+  output$GSGO_table <- renderTable({
+    if(typeof(GeneSearchOutput()) == "list"){
+      GeneSearchOutput()[[4]]
+    }else if(typeof(GeneSearchOutput()) == "character"){
+      data.frame()
+    }
+  })
     # Gene Search Page: Output any warnings associated with the searched gene
     output$GeneCent_warnings <- renderText({
-      if(typeof(GeneCentOutput()) == "list"){
-        "No warnings or errors"
-      }else if(typeof(GeneCentOutput()) == "character"){
-        GeneCentOutput()
+      if(typeof(GeneSearchOutput()) == "list"){
+        GeneSearchOutput()[[5]]
+        
+      }else if(typeof(GeneSearchOutput()) == "character"){
+        "No data to display yet"
       }
     })
 
-    # Gene Search Page: Enable downloading of Gene Search table
-    output$GeneSearchDL <- downloadHandler(
+    # Gene Search Page: Enable downloading of Gene Search Position table
+    output$GSPosDL <- downloadHandler(
       filename = function() {
-        paste("CaveCrawler-GeneSearch-", Sys.Date(), ".csv", sep="")
+        paste("CaveCrawler-GeneSearch-Position-", Sys.Date(), ".csv", sep="")
       },
       content = function(file) {
         # If a valid table was outputted. enable downloading of that table
-        if(typeof(GeneCentOutput()) == "list"){
-          reformattedGeneCent <- data.frame(
-            GeneCentOutput()[,1:7],
-            format(GeneCentOutput()[,8:45], digits = 5),
-            GeneCentOutput()[,46]
-          )
-          names(reformattedGeneCent) <- names(GeneCentOutput())
+        if(typeof(GeneSearchOutput()) == "list"){
+          GSPosDLTable <- GeneSearchOutput()[[1]]
         # If a valid table was not outputted, enable downloading of an empty df
         }else{
-          reformattedGeneCent <- data.frame()
+          GSPosDLTable <- data.frame()
         }
 
-        write.csv(reformattedGeneCent, file, row.names = F)
+        write.csv(GSPosDLTable, file, row.names = F)
+      }
+    )
+    
+    # Gene Search Page: Enable downloading of Gene Search Transcription table
+    output$GSTranscDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-GeneSearch-Transcription-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        # If a valid table was outputted. enable downloading of that table
+        if(typeof(GeneSearchOutput()) == "list"){
+          unformattedTransc <- GeneSearchOutput()[[2]]
+          GSTranscDLTable <- data.frame(
+            unformattedTransc[,1:5],
+            format(unformattedTransc[,6], digits = 5),
+            format(unformattedTransc[,7], digits = 5),
+            unformattedTransc[,8:9]
+          )
+          names(GSTranscDLTable) <- names(unformattedTransc)
+          # If a valid table was not outputted, enable downloading of an empty df
+        }else{
+          GSTranscDLTable <- data.frame()
+        }
+        
+        write.csv(GSTranscDLTable, file, row.names = F)
+      }
+    )
+    
+    # Gene Search Page: Enable downloading of Gene Search Population Genetics table
+    output$GSPopgenDL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-GeneSearch-Popgen-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        # If a valid table was outputted. enable downloading of that table
+        if(typeof(GeneSearchOutput()) == "list"){
+          unformattedPopgen <- GeneSearchOutput()[[3]]
+          GSPopgenDLTable <- data.frame(
+            unformattedPopgen[,1:5],
+            format(unformattedPopgen[,6], digits = 5),
+            unformattedPopgen[,7:8]
+          )
+          names(GSPopgenDLTable) <- names(unformattedPopgen)
+          # If a valid table was not outputted, enable downloading of an empty df
+        }else{
+          GSPopgenDLTable <- data.frame()
+        }
+        
+        write.csv(GSPopgenDLTable, file, row.names = F)
       }
     )
 
+    # Gene Search Page: Enable downloading of Gene Search GO table
+    output$GSGODL <- downloadHandler(
+      filename = function() {
+        paste("CaveCrawler-GeneSearch-GO-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        # If a valid table was outputted. enable downloading of that table
+        if(typeof(GeneSearchOutput()) == "list"){
+          GSGODLTable <- GeneSearchOutput()[[4]]
+          # If a valid table was not outputted, enable downloading of an empty df
+        }else{
+          GSGODLTable <- data.frame()
+        }
+        
+        write.csv(GSGODLTable, file, row.names = F)
+      }
+    )
 
     # Transcription Page: Create a label which changes based on the morphs to be
     # searched for
@@ -720,9 +870,9 @@ source("functions/CaveCrawler_functions.R")
     output$cite3 <- renderText("3. Bradic, M., Beerli, P., Garcia-de Leon, F.J., Esquivel-Bobadilla, S. and Borowsky, R.L. (2012) Gene flow and population structure in the Mexican blind cavefish complex (Astyanax mexicanus). BMC evolutionary biology, 12, 1-17.")
     output$cite4 <- renderText("4. Mack, K.L., Jaggard, J.B., Persons, J.L., Roback, E.Y., Passow, C.N., Stanhope, B.A., Ferrufino, E., Tsuchiya, D., Smith, S.E. and Slaughter, B.D. (2021) Repeated evolution of circadian clock dysregulation in cavefish populations. PLoS genetics, 17, e1009642.")
     output$cite5 <- renderText("5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and Keene, A.C. (2020) Unique transcriptional signatures of sleep loss across independently evolved cavefish populations. Journal of Experimental Zoology Part B: Molecular and Developmental Evolution, 334, 497-510.")
-
-
-  }
+    output$cite6 <- renderText("6. Warren, W.C., Boggs, T.E., Borowsky, R., Carlson, B.M., Ferrufino, E., Gross, J.B., Hillier, L., Hu, Z., Keene, A.C. and Kenzior, A. (2021) A chromosome-level genome of Astyanax mexicanus surface fish for comparing population-specific genetic differences contributing to trait evolution. Nature communications, 12, 1-12.")
+    output$cite7 <- renderText("7. The UniProt Consortium. (2020) UniProt: the universal protein knowledgebase in 2021. Nucleic Acids Research, 49, D480-D489.")
+    }
 
 
 # Run the application
