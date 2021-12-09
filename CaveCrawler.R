@@ -58,36 +58,43 @@ source("functions/CaveCrawler_functions.R")
                  ),
                  mainPanel(id = "main",
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
-                   textOutput("GSwarnings"),
-                   br(),
                    # If position data is requested, output position data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Position')",
-                     downloadButton("GSPosDL", "Download", class = "download"),
-                     tableOutput("GSPos_table")
+                     h1("Position Data"),
+                     tableOutput("GSPos_table"),
+                     downloadButton("GSPosDL", "Download Position Data", class = "download"),
                      ),
                    br(),
                    # If Transcription data is requested, output Transcription data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Transcription')",
-                     downloadButton("GSTranscDL", "Download", class = "download"),
-                     tableOutput("GSTransc_table")
+                     h1("Transcription Data"),
+                     tableOutput("GSTransc_table"),
+                     downloadButton("GSTranscDL", "Download Transcription Data", class = "download")
                    ),
                    br(),
                    # If Population Genetics data is requested, output Population
                    # Genetics data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Population Genetics')",
-                     downloadButton("GSPopgenDL", "Download", class = "download"),
-                     tableOutput("GSPopgen_table")
+                     h1("Popgen Data"),
+                     tableOutput("GSPopgen_table"),
+                     downloadButton("GSPopgenDL", "Download Popgen Data", class = "download")
                    ),
                    br(),
                    # If GO data is requested, output GO data
                    conditionalPanel(
                      condition = "input.GSbools.includes('GO')",
-                     downloadButton("GSGODL", "Download", class = "download"),
-                     tableOutput("GSGO_table")
-                   )
+                     h1("GO Data"),
+                     tableOutput("GSGO_table"),
+                     downloadButton("GSGODL", "Download GO Data", class = "download")
+                   ),
+                   # Regardless of what was inputted, output warnings
+                   br(),
+                   h1("Warnings:"),
+                   textOutput("GSwarnings")
+                   
                )
           )
       ),
@@ -258,21 +265,9 @@ source("functions/CaveCrawler_functions.R")
                          btnReset = icon("remove"),
                          width = "450px"
                        ),
-                       selectInput(
-                         inputId = "stat_PlotSelect",
-                         label = "Visualize statistic...",
-                         choices = "",
-                         selected = NULL,
-                         multiple = FALSE
-                       ),
-                       selectInput(
-                         inputId = "scaff_PlotSelect",
-                         label = "...plotted along scaffold:",
-                         choices = "",
-                         selected = NULL,
-                         multiple = FALSE
-                       ),
-                       actionButton("SBCP_enter","Visualize"),
+                       uiOutput("stat_PlotSelect"),
+                       uiOutput("scaff_PlotSelect"),
+                       uiOutput("SBCP_enter"),
                        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                         tags$div("Crawling through the data...",id="loadmessage"))
                      ),
@@ -541,9 +536,9 @@ source("functions/CaveCrawler_functions.R")
     })
     # Gene Search Page: Output any warnings associated with the searched gene
     output$GSwarnings <- renderText({
-      if(typeof(GeneSearchOutput()) == "list"){
+      if(input$Gene_search != ""){
         GeneSearchOutput()[[5]]
-      }else if(typeof(GeneSearchOutput()) == "character"){
+      }else if(input$Gene_search == ""){
         "No data to display yet"
       }
     })
@@ -802,6 +797,34 @@ source("functions/CaveCrawler_functions.R")
     }
     )
 
+    # Population Genetics (Stat-By-Chr Subpage): Only enable visualization once
+    # data is entered
+    observeEvent(input$GO_search, {
+      if(input$GO_search != ""){
+        output$stat_PlotSelect <- renderUI({
+          selectInput(
+            inputId = "stat_PlotSelect",
+            label = "Visualize statistic...",
+            choices = "",
+            selected = NULL,
+            multiple = FALSE
+          )
+        })
+        output$scaff_PlotSelect <- renderUI({
+          selectInput(
+            inputId = "scaff_PlotSelect",
+            label = "...plotted along scaffold:",
+            choices = "",
+            selected = NULL,
+            multiple = FALSE
+          )
+        })
+        output$SBCP_enter <- renderUI({
+          actionButton("SBCP_enter","Visualize")
+        })
+      }
+    })
+    
     # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and
     # input table is NOT full of NAs, output a plot of the appropriate statistic x
     # scaffold pair
