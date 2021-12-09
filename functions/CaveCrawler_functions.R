@@ -111,20 +111,6 @@ stat_table <- stat_table[(!is.na(stat_table$Gene_Name) &
                             (stat_table$Gene_Name != " ")),]
 stat_table$Gene_Name <- tolower(stat_table$Gene_Name)
 
-# Obtain complete dataframe of all possible genes and corresponding IDs across
-# the statistic and transcription data
-all.genes_IDs <- data.frame(
-  all_genes = c(position_table$Gene_Name, stat_table$Gene_Name,
-                condition_control$Gene_name
-  ),
-  all_IDs = c(position_table$Gene_ID, stat_table$Stable_Gene_ID,
-              condition_control$Gene_stable_ID
-  )
-)
-all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,2]),]
-all.genes_IDs <- all.genes_IDs[!duplicated(all.genes_IDs[,1]),]
-
-
 ################################## Functions ###################################
 # Gene Search Page: Input a single or comma-separated list of genes, gene IDs,
 # GO terms, or a phrase associated with a gene-of-interest and output all 

@@ -120,7 +120,7 @@ source("functions/CaveCrawler_functions.R")
                    ),
                    sliderInput(inputId = "percent_change",
                                label = textOutput("per_label"),
-                               min = 0, max = 100, value = 50),
+                               min = 1, max = 100, value = 50),
                    actionButton("Transc_enter","Find Genes"),
                    conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                     tags$div("Crawling through the data...",id="loadmessage"))
@@ -175,8 +175,6 @@ source("functions/CaveCrawler_functions.R")
                  ),
                  conditionalPanel(
                    condition = "input.which_function == 'distr_func'",
-                   # EDIT: Remove once you've troubleshooted bug
-                   textOutput("test"),
                    sidebarLayout(
                      sidebarPanel(id = "sidebar",
                        radioButtons("type",
@@ -216,7 +214,7 @@ source("functions/CaveCrawler_functions.R")
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
                          actionButton("SVDistTable_enter","Find Genes"),
-                         actionButton("SVDistPlot_enter", "Visualize"),
+                         uiOutput("SVDistPlot_enter"),
                          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                           tags$div("Crawling through the data...",id="loadmessage"))
                        )
@@ -646,9 +644,9 @@ source("functions/CaveCrawler_functions.R")
     # downregulation was specified
     output$per_label <- renderText({
       if(input$direction == "Upregulated"){
-        "Percent upregulation:"
+        "Display X% of genes which are upregulated:"
       }else{
-        "Percent downregulation:"
+        "Display X% of genes which are downregulated:"
       }
     })
 
@@ -687,9 +685,6 @@ source("functions/CaveCrawler_functions.R")
         write.csv(transc_table(), file, row.names = F)
       }
     )
-
-    # EDIT: Remove once you know why lower threshold is not working
-    output$test <- renderText(input$svTB)
     
     # Population Genetics (Distribution Suppage): If Statistic Value was
     # specified, output a table of all genes within the specified range of
@@ -731,6 +726,13 @@ source("functions/CaveCrawler_functions.R")
     output$SVdist_plot_wrnings <- renderText(SVDP()[[1]])
     output$SVdist_plot <- renderPlot(SVDP()[[2]])
 
+    # Statistic Value SubPage: Output visualize button only if data has been inputted
+    observeEvent(input$SVDistTable_enter, {
+      output$SVDistPlot_enter <- renderUI({
+        actionButton("SVDistPlot_enter", "Visualize")
+      })
+    })
+    
     # Statistic Value SubPage: Enable downloading of Statistic Value table
     output$SVDistDL <- downloadHandler(
       filename = function() {
