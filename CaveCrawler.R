@@ -58,18 +58,21 @@ source("functions/CaveCrawler_functions.R")
                  mainPanel(id = "main",
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
                    textOutput("GSwarnings"),
+                   br(),
                    # If position data is requested, output position data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Position')",
                      downloadButton("GSPosDL", "Download", class = "download"),
                      tableOutput("GSPos_table")
                      ),
+                   br(),
                    # If Transcription data is requested, output Transcription data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Transcription')",
                      downloadButton("GSTranscDL", "Download", class = "download"),
                      tableOutput("GSTransc_table")
                    ),
+                   br(),
                    # If Population Genetics data is requested, output Population
                    # Genetics data
                    conditionalPanel(
@@ -77,6 +80,7 @@ source("functions/CaveCrawler_functions.R")
                      downloadButton("GSPopgenDL", "Download", class = "download"),
                      tableOutput("GSPopgen_table")
                    ),
+                   br(),
                    # If GO data is requested, output GO data
                    conditionalPanel(
                      condition = "input.GSbools.includes('GO')",
@@ -468,57 +472,66 @@ source("functions/CaveCrawler_functions.R")
       }
     })
 
+    # Only output position table if gene search output has stuff AND position
+    # table was requested
     output$GSPos_table <- renderTable({
-      if(typeof(GeneSearchOutput()) == "list"){
+      if(("Position" %in% input$GSbools) & (typeof(GeneSearchOutput()) == "list")){
         GeneSearchOutput()[[1]]
-      }else if(typeof(GeneSearchOutput()) == "character"){
+      }else{
         data.frame()
       }
     })
   
-  output$GSTransc_table <- renderTable({
-    if(typeof(GeneSearchOutput()) == "list"){
-      unformattedTransc <- GeneSearchOutput()[[2]]
-      reformattedTransc <- data.frame(
-        unformattedTransc[,1:5],
-        format(unformattedTransc[,6], digits = 5),
-        format(unformattedTransc[,7], digits = 5),
-        unformattedTransc[,8:9]
-      )
-      names(reformattedTransc) <- names(unformattedTransc)
-      reformattedTransc
-    }else if(typeof(GeneSearchOutput()) == "character"){
-      data.frame()
-    }
-  })
+    # Only output transcription table if gene search output has stuff AND 
+    # transcription table was requested
+    output$GSTransc_table <- renderTable({
+      if(("Transcription" %in% input$GSbools) &
+         (typeof(GeneSearchOutput()) == "list")){
+        unformattedTransc <- GeneSearchOutput()[[2]]
+        reformattedTransc <- data.frame(
+          unformattedTransc[,1:5],
+          format(unformattedTransc[,6], digits = 5),
+          format(unformattedTransc[,7], digits = 5),
+          unformattedTransc[,8:9]
+        )
+        names(reformattedTransc) <- names(unformattedTransc)
+        reformattedTransc
+      }else{
+        data.frame()
+      }
+    })
   
-  output$GSPopgen_table <- renderTable({
-    if(typeof(GeneSearchOutput()) == "list"){
-      unformattedPopgen <- GeneSearchOutput()[[3]]
-      reformattedPopgen <- data.frame(
-        unformattedPopgen[,1:5],
-        format(unformattedPopgen[,6], digits = 5),
-        unformattedPopgen[,7:8]
-      )
-      names(reformattedPopgen) <- names(unformattedPopgen)
-      reformattedPopgen
-    }else if(typeof(GeneSearchOutput()) == "character"){
-      data.frame()
-    }
-  })
+    # Only output population genetics data if gene search output is valid and
+    # popgen data was requested
+    output$GSPopgen_table <- renderTable({
+      if(("Population Genetics" %in% input$GSbools) & 
+         typeof(GeneSearchOutput()) == "list"){
+        unformattedPopgen <- GeneSearchOutput()[[3]]
+        reformattedPopgen <- data.frame(
+          unformattedPopgen[,1:5],
+          format(unformattedPopgen[,6], digits = 5),
+          unformattedPopgen[,7:8]
+        )
+        names(reformattedPopgen) <- names(unformattedPopgen)
+        reformattedPopgen
+      }else{
+        data.frame()
+      }
+    })
   
-  output$GSGO_table <- renderTable({
-    if(typeof(GeneSearchOutput()) == "list"){
-      GeneSearchOutput()[[4]]
-    }else if(typeof(GeneSearchOutput()) == "character"){
-      data.frame()
-    }
-  })
+    # Only output GO data if gene search is valid and GO data was requested
+    output$GSGO_table <- renderTable({
+      if(("GO" %in% input$GSbools) & 
+         typeof(GeneSearchOutput()) == "list"){
+        GeneSearchOutput()[[4]]
+      }else{
+        data.frame()
+      }
+    })
     # Gene Search Page: Output any warnings associated with the searched gene
-    output$GeneCent_warnings <- renderText({
+    output$GSwarnings <- renderText({
       if(typeof(GeneSearchOutput()) == "list"){
         GeneSearchOutput()[[5]]
-        
       }else if(typeof(GeneSearchOutput()) == "character"){
         "No data to display yet"
       }
