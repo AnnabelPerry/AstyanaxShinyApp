@@ -65,10 +65,20 @@ MasterGO <- read.csv("data/MasterGO.csv", fill = T)
 
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
+#################### Building the Population Genetics Table #################### 
 # Integrate all datasets describing Fst, Dxy, Pi, and Tajima's D into a single
 # dataframe, adding a column describing the publication from which the data came
 HS11 <- read.csv("data/Herman_etal_2018_S11.csv")
 names(HS11)[1] <- "Stable_Gene_ID"
+# Add dummy columns to make this dataframe compatible with dataframes from
+# other studies
+HS11$Dxy_Pachon.Molino <- rep(NA, nrow(HS11))
+HS11$Fst_Pachon.Molino <- rep(NA, nrow(HS11))
+HS11$Dxy_Tinaja.Molino <- rep(NA, nrow(HS11))
+HS11$Fst_Tinaja.Molino <- rep(NA, nrow(HS11))
+HS11$Dxy_Tinaja.Pachon <- rep(NA, nrow(HS11))
+HS11$Fst_Tinaja.Pachon <- rep(NA, nrow(HS11))
+
 HS11$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS11))
 HS11$Fst_Chica1.Chica2 <- rep(NA, nrow(HS11))
 HS11$Fst_Outliers <- rep(NA, nrow(HS11))
@@ -76,6 +86,8 @@ HS11$Publication <- rep("1", nrow(HS11))
 
 HS13 <- read.csv("data/Herman_etal_2018_S13.csv")
 names(HS13)[1] <- "Stable_Gene_ID"
+# Add dummy columns to make this dataframe compatible with dataframes from
+# other studies
 HS13$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS13))
 HS13$Fst_Chica1.Chica2 <- rep(NA, nrow(HS13))
 HS13$Publication <- rep("1", nrow(HS13))
@@ -94,11 +106,18 @@ temp <- temp[!is.na(temp$Stable_Gene_ID),]
 HS11 <- temp
 
 chica_table <- read.csv("data/AMexicanus_iScienceS4R1_Stats.csv")
+names(chica_table)[1] <- "Stable_Gene_ID"
 # Add columns not present in Chica table
 chica_table$Fst_Rascon.Molino <- rep(NA, nrow(chica_table))
 chica_table$Dxy_Rascon.Molino <- rep(NA, nrow(chica_table))
+chica_table$Dxy_Pachon.Molino <- rep(NA, nrow(chica_table))
+chica_table$Fst_Pachon.Molino <- rep(NA, nrow(chica_table))
+chica_table$Dxy_Tinaja.Molino <- rep(NA, nrow(chica_table))
+chica_table$Fst_Tinaja.Molino <- rep(NA, nrow(chica_table))
+chica_table$Dxy_Tinaja.Pachon <- rep(NA, nrow(chica_table))
+chica_table$Fst_Tinaja.Pachon <- rep(NA, nrow(chica_table))
 # Move columns to match positions in Herman tables
-chica_table <- relocate(chica_table, c(27,28), .after = "TajimasD_Rascon")
+chica_table <- relocate(chica_table, c(27:34), .after = "TajimasD_Rascon")
 chica_table$Fst_Outliers <- rep(NA, nrow(chica_table))
 chica_table$Publication <- rep("2", nrow(chica_table))
 # Ensure name compatibility before combining
@@ -280,7 +299,6 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                     input), collapse = "\n")
     return(list(finalPos, finalTransc, finalPopgen, tempGO, warn))
   }
-  
   # Iterate through each gene ID in the vector of gene IDs
   for(i in 1:length(geneIDs)){
     # If position data was requested...
@@ -418,34 +436,37 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         # For each row in the subset dataframe, search each STATISTIC column and 
         # dissect the column information into a row of the temporary dataframe
         for(r in 1:nrow(subsetPopgen)){
-          for(c in 4:28){
-            # Ensure the current statistic value is not simply NA
-            if(!is.na(subsetPopgen[r,c])){
-              # Create a temporary dataframe with just a single row
-              tempPopgen <- data.frame(matrix(nrow = 1, ncol = 8))
-              names(tempPopgen) <- c("Gene ID","Gene name","Gene description",
-                                     "Statistic Type","Population(s)","Statistic Value",
-                                     "Study-specific information","Publication")
-              tempPopgen$`Gene ID`[1] <- geneIDs[i]
-              tempPopgen$`Gene name`[1] <- subsetPopgen$Gene_Name[r]
-              tempPopgen$`Gene description`[1] <- subsetPopgen$Gene_Description[r]
-              names_pops <- str_split(names(subsetPopgen)[c], "_")[[1]]
-              tempPopgen$`Statistic Type`[1] <- names_pops[1]
-              tempPopgen$`Population(s)`[1] <- names_pops[2]
-              tempPopgen$`Statistic Value`[1] <- subsetPopgen[r,c]
-              
-              # Only output study specific information if the statistic is Fst
-              if((names_pops[1] == "Fst") & !is.na(subsetPopgen$Fst_Outliers[r])){
-                tempPopgen$`Study-specific information`[1] <- 
-                  paste(c("Fst Outlier Populations: ", 
-                          subsetPopgen$Fst_Outliers[r]), collapse = "")
-              }else{
-                tempPopgen$`Study-specific information`[1] <- "Not available for this study"
+          for(c in 1:ncol(stat_table)){
+            # First, check that this is a statistic column
+            if(typeof(stat_table[,c]) == "double"){
+              # Ensure the current statistic value is not simply NA
+              if(!is.na(subsetPopgen[r,c])){
+                # Create a temporary dataframe with just a single row
+                tempPopgen <- data.frame(matrix(nrow = 1, ncol = 8))
+                names(tempPopgen) <- c("Gene ID","Gene name","Gene description",
+                                       "Statistic Type","Population(s)","Statistic Value",
+                                       "Study-specific information","Publication")
+                tempPopgen$`Gene ID`[1] <- geneIDs[i]
+                tempPopgen$`Gene name`[1] <- subsetPopgen$Gene_Name[r]
+                tempPopgen$`Gene description`[1] <- subsetPopgen$Gene_Description[r]
+                names_pops <- str_split(names(subsetPopgen)[c], "_")[[1]]
+                tempPopgen$`Statistic Type`[1] <- names_pops[1]
+                tempPopgen$`Population(s)`[1] <- names_pops[2]
+                tempPopgen$`Statistic Value`[1] <- subsetPopgen[r,c]
+                
+                # Only output study specific information if the statistic is Fst
+                if((names_pops[1] == "Fst") & !is.na(subsetPopgen$Fst_Outliers[r])){
+                  tempPopgen$`Study-specific information`[1] <- 
+                    paste(c("Fst Outlier Populations: ", 
+                            subsetPopgen$Fst_Outliers[r]), collapse = "")
+                }else{
+                  tempPopgen$`Study-specific information`[1] <- "Not available for this study"
+                }
+                
+                tempPopgen$Publication[1] <- subsetPopgen$Publication[r]
+                
+                finalPopgen <- rbind(finalPopgen, tempPopgen)
               }
-              
-              tempPopgen$Publication[1] <- subsetPopgen$Publication[r]
-              
-              finalPopgen <- rbind(finalPopgen, tempPopgen)
             }
           }
         }
