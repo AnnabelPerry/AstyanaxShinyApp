@@ -42,6 +42,9 @@ source("functions/CaveCrawler_functions.R")
       tabPanel(h2("Gene Search"), fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
+                  checkboxGroupInput("GSbools",
+                     label = "What data would you like to see?",
+                     choices = c("Position", "Transcription","Population Genetics","GO")),
                    searchInput(
                      inputId = "Gene_search",
                      label = "Gene name, gene stable ID, GO ID, or phrase",
@@ -50,10 +53,8 @@ source("functions/CaveCrawler_functions.R")
                      btnReset = icon("remove"),
                      width = "450px"
                    ),
-                   checkboxGroupInput("GSbools",
-                                      label = "What data would you like to see?",
-                                      choices = c("Position", "Transcription",
-                                                  "Population Genetics","GO"))
+                   conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                    tags$div("Crawling through the data...",id="loadmessage"))
                  ),
                  mainPanel(id = "main",
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
@@ -120,7 +121,9 @@ source("functions/CaveCrawler_functions.R")
                    sliderInput(inputId = "percent_change",
                                label = textOutput("per_label"),
                                min = 0, max = 100, value = 50),
-                   actionButton("Transc_enter","Find Genes")
+                   actionButton("Transc_enter","Find Genes"),
+                   conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                    tags$div("Crawling through the data...",id="loadmessage"))
                    ),
 
                  mainPanel(fluidRow(
@@ -139,7 +142,9 @@ source("functions/CaveCrawler_functions.R")
                                   label = "Would you like to find genes which are outliers with respect to a statistic-of-interest or find the statistic values for all genes related to a GO-term-of-interest?",
                                   choices = c("Outliers" = "distr_func",
                                               "GO-term-of-interest" = "stat_by_chr_func")
-                     )
+                     ),
+                     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                      tags$div("Crawling through the data...",id="loadmessage"))
                    ),
                    mainPanel(
                      br(),
@@ -198,7 +203,9 @@ source("functions/CaveCrawler_functions.R")
                          radioButtons("gcTB",
                                       label = "Output genes with largest or smallest values of the desired statistic?",
                                       choices = c("Largest" = "top", "Smallest" ="bottom")),
-                         actionButton("GCDistTable_enter","Find Genes")
+                         actionButton("GCDistTable_enter","Find Genes"),
+                         conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                          tags$div("Crawling through the data...",id="loadmessage"))
                        ),
                        # Only show this panel if the user wants to find genes with stat values
                        # above or below a specific threshhold
@@ -209,7 +216,9 @@ source("functions/CaveCrawler_functions.R")
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
                          actionButton("SVDistTable_enter","Find Genes"),
-                         actionButton("SVDistPlot_enter", "Visualize")
+                         actionButton("SVDistPlot_enter", "Visualize"),
+                         conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                          tags$div("Crawling through the data...",id="loadmessage"))
                        )
                      ),
                      mainPanel(
@@ -265,7 +274,9 @@ source("functions/CaveCrawler_functions.R")
                          selected = NULL,
                          multiple = FALSE
                        ),
-                       actionButton("SBCP_enter","Visualize")
+                       actionButton("SBCP_enter","Visualize"),
+                       conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                        tags$div("Crawling through the data...",id="loadmessage"))
                      ),
                      mainPanel(
                        plotOutput("SBC_plot"),
@@ -285,7 +296,9 @@ source("functions/CaveCrawler_functions.R")
                      btnSearch = icon("search"),
                      btnReset = icon("remove"),
                      width = "450px"
-                   )
+                   ),
+                   conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                    tags$div("Crawling through the data...",id="loadmessage"))
                  ),
                  mainPanel(
                    downloadButton("GOInfoDL", "Download", class = "download"),
