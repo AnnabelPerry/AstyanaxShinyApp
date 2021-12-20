@@ -722,39 +722,39 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     if(UL == "top"){
       for(i in 1:length(indices)){
         # First, remove all NA values for this index
-        stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+        temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
         # For each index, collect all genes, scaffolds, populations, values,
         # and publication names whose stat values fall above the entered value
-        genes <- append(genes,stat_table$Gene_Name[
-          stat_table[,indices[i]] >= thresh])
+        genes <- append(genes,temp_stat_table$Gene_Name[
+          temp_stat_table[,indices[i]] >= thresh])
         DF_pops <- append(DF_pops,rep(pop_strings[i],
-                                      length(stat_table$Gene_Name[
-                                        stat_table[,indices[i]] >= thresh])))
-        stat_vals <- append(stat_vals,stat_table[
-          stat_table[,indices[i]] >= thresh,indices[i]])
-        Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[
-          stat_table[,indices[i]] >= thresh])
-        pub_names <- append(pub_names,stat_table$Publication[
-          stat_table[,indices[i]] >= thresh])
+                                      length(temp_stat_table$Gene_Name[
+                                        temp_stat_table[,indices[i]] >= thresh])))
+        stat_vals <- append(stat_vals,temp_stat_table[
+          temp_stat_table[,indices[i]] >= thresh,indices[i]])
+        Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[
+          temp_stat_table[,indices[i]] >= thresh])
+        pub_names <- append(pub_names,temp_stat_table$Publication[
+          temp_stat_table[,indices[i]] >= thresh])
       }
       # If lower tail was requested, iterate through each index
     }else if(UL == "bottom"){
       for(i in 1:length(indices)){
         # First, remove all NA values for this index
-        stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+        temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
         # For each index, collect all genes, populations, and statistic values
         # whose values fall in lowest tail
-        genes <- append(genes,stat_table$Gene_Name[
-          stat_table[,indices[i]] <= thresh])
+        genes <- append(genes,temp_stat_table$Gene_Name[
+          temp_stat_table[,indices[i]] <= thresh])
         DF_pops <- append(DF_pops,rep(pop_strings[i],
-                                      length(stat_table$Gene_Name[
-                                        stat_table[,indices[i]] <= thresh])))
-        stat_vals <- append(stat_vals,stat_table[
-          stat_table[,indices[i]] <= thresh,indices[i]])
-        Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[
-          stat_table[,indices[i]] <= thresh])
-        pub_names <- append(pub_names,stat_table$Publication[
-          stat_table[,indices[i]] <= thresh])
+                                      length(temp_stat_table$Gene_Name[
+                                        temp_stat_table[,indices[i]] <= thresh])))
+        stat_vals <- append(stat_vals,temp_stat_table[
+          temp_stat_table[,indices[i]] <= thresh,indices[i]])
+        Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[
+          temp_stat_table[,indices[i]] <= thresh])
+        pub_names <- append(pub_names,temp_stat_table$Publication[
+          temp_stat_table[,indices[i]] <= thresh])
       }
     }
     # If count was entered...
@@ -769,17 +769,17 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         # For each index...
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
-          stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
           # Collect positions of top N genes for the current index
           top_genes <- order(
-            stat_table[,indices[i]], decreasing = T)[1:thresh]
+            temp_stat_table[,indices[i]], decreasing = T)[1:thresh]
           # Collect the genes with the highest values, as well as the associated
           # populations and values
-          genes <- append(genes,stat_table$Gene_Name[top_genes])
+          genes <- append(genes,temp_stat_table$Gene_Name[top_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
-          stat_vals <- append(stat_vals,stat_table[top_genes,indices[i]])
-          Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[top_genes])
-          pub_names <- append(pub_names,stat_table$Publication[
+          stat_vals <- append(stat_vals,temp_stat_table[top_genes,indices[i]])
+          Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[top_genes])
+          pub_names <- append(pub_names,temp_stat_table$Publication[
             top_genes])
         }
         # If statistic is a one-population statistic, output collect the N genes
@@ -794,13 +794,13 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
-          stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          all_stats <- append(all_stats, stat_table[,indices[i]])
+          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+          all_stats <- append(all_stats, temp_stat_table[,indices[i]])
           all_pops <- append(all_pops,rep(pop_strings[i],
-                                          length(stat_table[,indices[i]])))
-          all_genes <- append(all_genes, stat_table$Gene_Name[top_genes])
-          all_outliers <- append(all_outliers,stat_table$Fst_Outliers)
-          all_pubs <- append(all_genes, stat_table$Publication)
+                                          length(temp_stat_table[,indices[i]])))
+          all_genes <- append(all_genes, temp_stat_table$Gene_Name[top_genes])
+          all_outliers <- append(all_outliers,temp_stat_table$Fst_Outliers)
+          all_pubs <- append(all_genes, temp_stat_table$Publication)
         }
         # Organize vectors into a dataframe
         temp_df <- data.frame(
@@ -829,16 +829,16 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         # For each index...
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
-          stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
           # Collect positions of bottom N genes for the current index
-          bottom_genes <- order(stat_table[,indices[i]], decreasing = F)[1:thresh]
+          bottom_genes <- order(temp_stat_table[,indices[i]], decreasing = F)[1:thresh]
           # Collect the genes with the highest values, as well as the
           # associated populations, values, and publications
-          genes <- append(genes,stat_table$Gene_Name[bottom_genes])
+          genes <- append(genes,temp_stat_table$Gene_Name[bottom_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
-          stat_vals <- append(stat_vals,stat_table[bottom_genes,indices[i]])
-          Fst_outlier <- append(Fst_outlier,stat_table$Fst_Outliers[bottom_genes])
-          pub_names <- append(pub_names,stat_table$Publication[bottom_genes])
+          stat_vals <- append(stat_vals,temp_stat_table[bottom_genes,indices[i]])
+          Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[bottom_genes])
+          pub_names <- append(pub_names,temp_stat_table$Publication[bottom_genes])
         }
         # If statistic is a one-population statistic, output collect the N genes
         # with the HIGHEST stat value, regardless of pop
@@ -852,13 +852,13 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
-          stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          all_stats <- append(all_stats, stat_table[,indices[i]])
+          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+          all_stats <- append(all_stats, temp_stat_table[,indices[i]])
           all_pops <- append(all_pops,rep(pop_strings[i],
-                                          length(stat_table[,indices[i]])))
-          all_genes <- append(all_genes, stat_table$Gene_Name)
-          all_outliers <- append(all_outliers, stat_table$Fst_Outliers)
-          all_pubs <- append(all_genes, stat_table$Publication)
+                                          length(temp_stat_table[,indices[i]])))
+          all_genes <- append(all_genes, temp_stat_table$Gene_Name)
+          all_outliers <- append(all_outliers, temp_stat_table$Fst_Outliers)
+          all_pubs <- append(all_genes, temp_stat_table$Publication)
         }
         # Organize vectors into a dataframe
         temp_df <- data.frame(
