@@ -239,14 +239,7 @@ source("functions/CaveCrawler_functions.R")
                          plotOutput("SVdist_plot"),
                          textOutput("SVdist_plot_wrnings"),
                          tableOutput("SVdist_tab"),
-                         textOutput("SVdist_wrnings"),
-                         # EDIT: Remove once you know why so many genes are omitted
-                         # from output
-                         textOutput("test1"),
-                         textOutput("test2"),
-                         textOutput("test3"),
-                         textOutput("test4"),
-                         textOutput("test5")
+                         textOutput("SVdist_wrnings")
                        )
                      )
                    )
@@ -713,12 +706,6 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
-    # Edit: Remove once you know why StatDist is omitting so many entries
-    output$test1 <- renderText(input$type)
-    output$test2 <- renderText(input$svTB)
-    output$test3 <- renderText(input$dist_statist)
-    output$test4 <- renderText(input$thrsh)
-    output$test5 <- renderText(input$dist_pops)
     
     # Population Genetics (Distribution Suppage): If Visualize was pressed,
     # output a plot of the number of genes with each value of the specified
