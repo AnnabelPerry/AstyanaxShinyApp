@@ -28,6 +28,8 @@ source("functions/CaveCrawler_functions.R")
     tabsetPanel(
       tabPanel(h2("Home"), fluid = TRUE,
                h1("Welcome to CaveCrawler"),
+               img(src="Astyanax_Evolution_GIF.gif", align = "center",height='250px',width='500px'),
+               br(),
                br(),
                textOutput("home_text2"),
                br(),
