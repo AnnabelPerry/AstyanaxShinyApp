@@ -664,7 +664,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
             "Gene Name",
             "GO Term(s)",
             "Outlier (if Fst)",
-            "Publication Name"
+            "Publication"
           )
           return(list(paste(c("Statistic ",stat,
                               " is not present for the populations ",
@@ -890,7 +890,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       "Gene Name",
       "GO Term(s)",
       "Outlier (if Fst)",
-      "Publication Name"
+      "Publication"
     )
     return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                       collapse = " "), null.df))
@@ -999,7 +999,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     "Gene Name",
     "GO Term(s)",
     "Outlier (if Fst)",
-    "Publication Name"
+    "Publication"
   )
 
   # Output df and warnings
