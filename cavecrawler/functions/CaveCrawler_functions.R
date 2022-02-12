@@ -36,9 +36,9 @@ Latit_Longit <- rbind(Latit_Longit_unedited, data.frame(
   Longitude = c(-99.2578,-98.7785)
 ))
 # Edit data to include only the populations currently available on the website
-Latit_Longit <- Latit_Longit[
-  Latit_Longit$Population %in%
-    c("Chica","Molino","Tinaja","Pachon","Rascon","Rio Choy"),]
+#Latit_Longit <- Latit_Longit[
+#  Latit_Longit$Population %in%
+#    c("Chica","Molino","Tinaja","Pachon","Rascon","Rio Choy"),]
 
 # Get a map of the world
 world_map_1 <- map_data("world")

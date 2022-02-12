@@ -417,26 +417,27 @@ source("functions/CaveCrawler_functions.R")
                    fill = "antiquewhite",
                    color = "black") +
       # get the portion of the map where your data is located at
-      coord_fixed(xlim = c(min(Latit_Longit$Longitude) - 10, max(Latit_Longit$Longitude) + 10),
-                  ylim = c(min(Latit_Longit$Latitude) - 5, max(Latit_Longit$Latitude) + 5),
+      coord_fixed(xlim = c(min(Latit_Longit$Longitude) - 2, max(Latit_Longit$Longitude) + 2),
+                  ylim = c(min(Latit_Longit$Latitude) - 1, max(Latit_Longit$Latitude) + 1),
                   ratio = 1.3)+
       # plot your points
       geom_point(data = Latit_Longit,
                  aes(y = Latitude,
                      x = Longitude,
-                     colour = factor(Population))) +
+                     colour = factor(Population)),
+                 cex = 3) +
       # this will change colour to viridis colour palette
-      scale_color_viridis_d("Population",alpha = .7,) +
+      scale_color_viridis_d("Population",alpha = .7,option = "mako") +
       # change the axis labels
       xlab("Longitude") +
       ylab("Latitude") +
       # change the size of the points in the legend
       guides(colour = guide_legend(override.aes = list(size=5))) +
       # change the theme according to your taste
-      annotate("text", y = 28, x = -98.5, label = "Texas") +
-      annotate("text", y = 28, x = -102.5, label = "Mexico") +
-      ggtitle("Geographic Locations of Astyanax mexicanus Populations") +
-      theme_bw() +
+      # annotate("text", y = 28, x = -98.5, label = "Texas") +
+      # annotate("text", y = 28, x = -100.5, label = "Mexico") +
+      ggtitle("Locations of Astyanax mexicanus Populations in Mexico") +
+      # theme_bw() +
       theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
 
     output$home_plot <- renderPlot(pop_map)
