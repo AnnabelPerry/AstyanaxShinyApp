@@ -318,7 +318,14 @@ source("functions/CaveCrawler_functions.R")
                textOutput("cite6"),
                br(),
                textOutput("cite7")
-               )
+               ),
+      tabPanel(h2("Community Resources"), fluid = TRUE, align="left",
+               h1("Astyanax Mexicanus Community Resources", align = "center"),
+               br(),
+               textOutput("community_summary"),
+               br(),
+               tableOutput("community_table")
+      )
     )
   )
 
@@ -918,6 +925,7 @@ source("functions/CaveCrawler_functions.R")
         write.csv(GOInfoOutTable(), file, row.names = F)
       }
     )
+    
     # Citations
     output$cite1 <- renderText("1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W. R., Keene, A. C., Kono, T., Bilandzija, H., Borowsky, R., Espinasa, L., O'Quin, K., Ornelas-Garcia, C. P., Yoshizawa, M., Carlson, B., Maldonado, E., Gross, J. B., Cartwright, R. A., Rohner, N., Warren, W. C., and McGaugh, S. E. (2018) The role of gene flow in rapid and repeated evolution of cave related traits in Mexican tetra, Astyanax mexicanus. Molecular ecology, 27, 4397-4416.")
     output$cite2 <- renderText("2. Moran, R.L., Jaggard, J.B., Roback, E.Y., Kenzior, A., Rohner, N., Kowalko, J.E., Ornelas-Garcia, P., McGaugh, S.E. and Keene, A.C. (2022) Hybridization underlies localized trait evolution in cavefish. iScience")
@@ -926,6 +934,14 @@ source("functions/CaveCrawler_functions.R")
     output$cite5 <- renderText("5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and Keene, A.C. (2020) Unique transcriptional signatures of sleep loss across independently evolved cavefish populations. Journal of Experimental Zoology Part B: Molecular and Developmental Evolution, 334, 497-510.")
     output$cite6 <- renderText("6. Warren, W.C., Boggs, T.E., Borowsky, R., Carlson, B.M., Ferrufino, E., Gross, J.B., Hillier, L., Hu, Z., Keene, A.C. and Kenzior, A. (2021) A chromosome-level genome of Astyanax mexicanus surface fish for comparing population-specific genetic differences contributing to trait evolution. Nature communications, 12, 1-12.")
     output$cite7 <- renderText("7. The UniProt Consortium. (2020) UniProt: the universal protein knowledgebase in 2021. Nucleic Acids Research, 49, D480-D489.")
+    
+    # Text summary and table for community resources page
+    output$community_summary <- renderText("The table below describes molecular tools, genetic resources, stock populations, etc. available from different labs in the Mexican tetra research community, as well as contact info for each lab")
+    Community_Data <- read.csv("data/CommunityData.csv")
+    # Replace periods with spaces
+    colnames(Community_Data) <- gsub(pattern = ".", replacement = " ", 
+                                     x = colnames(Community_Data), fixed = T)
+    output$community_table <- renderTable(Community_Data, align = 'c')
     }
 
 
