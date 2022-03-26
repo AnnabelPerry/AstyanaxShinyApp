@@ -562,7 +562,7 @@ source("functions/CaveCrawler_functions.R")
         reformattedPopgen <- data.frame(
           unformattedPopgen[,1:5],
           format(unformattedPopgen[,6], digits = 5),
-          unformattedPopgen[,7:8]
+          unformattedPopgen[,7]
         )
         names(reformattedPopgen) <- names(unformattedPopgen)
         reformattedPopgen
@@ -644,7 +644,7 @@ source("functions/CaveCrawler_functions.R")
           GSPopgenDLTable <- data.frame(
             unformattedPopgen[,1:5],
             format(unformattedPopgen[,6], digits = 5),
-            unformattedPopgen[,7:8]
+            unformattedPopgen[,7]
           )
           names(GSPopgenDLTable) <- names(unformattedPopgen)
           # If a valid table was not outputted, enable downloading of an empty df
@@ -746,7 +746,7 @@ source("functions/CaveCrawler_functions.R")
         SVtemp_df <- data.frame(
           SVDT()[[2]][,1:2],
           format(SVDT()[[2]][,3], digits = 5),
-          SVDT()[[2]][,4:8]
+          SVDT()[[2]][,4:7]
         )
         names(SVtemp_df) <- names(SVDT()[[2]])
         SVtemp_df
@@ -802,7 +802,7 @@ source("functions/CaveCrawler_functions.R")
         GCtemp_df <- data.frame(
           GCDT()[[2]][,1:2],
           format(GCDT()[[2]][,3], digits = 5),
-          GCDT()[[2]][,4:8]
+          GCDT()[[2]][,4:7]
         )
         names(GCtemp_df) <- names(GCDT()[[2]])
         GCtemp_df

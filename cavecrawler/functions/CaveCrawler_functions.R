@@ -259,7 +259,7 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
   # Do not give row names for transcription or popgen data because there could
   # be multiple rows per gene
   finalTransc <- data.frame(matrix(ncol = 11))
-  finalPopgen <- data.frame(matrix(ncol = 8))
+  finalPopgen <- data.frame(matrix(ncol = 7))
   
   names(finalPos) <- c("Gene ID",
                        "Gene name",
@@ -284,7 +284,6 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                           "Statistic Type",
                           "Population(s)",
                           "Statistic Value",
-                          "Study-specific information",
                           "Publication")
   names(finalGO) <- c("Gene ID",
                       "Gene name",
@@ -456,10 +455,10 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
               # Ensure the current statistic value is not simply NA
               if(!is.na(subsetPopgen[r,c])){
                 # Create a temporary dataframe with just a single row
-                tempPopgen <- data.frame(matrix(nrow = 1, ncol = 8))
+                tempPopgen <- data.frame(matrix(nrow = 1, ncol = 7))
                 names(tempPopgen) <- c("Gene ID","Gene name","Gene description",
                                        "Statistic Type","Population(s)","Statistic Value",
-                                       "Study-specific information","Publication")
+                                       "Publication")
                 tempPopgen$`Gene ID`[1] <- geneIDs[i]
                 tempPopgen$`Gene name`[1] <- subsetPopgen$Gene_Name[r]
                 tempPopgen$`Gene description`[1] <- subsetPopgen$Gene_Description[r]
@@ -467,15 +466,6 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                 tempPopgen$`Statistic Type`[1] <- names_pops[1]
                 tempPopgen$`Population(s)`[1] <- names_pops[2]
                 tempPopgen$`Statistic Value`[1] <- subsetPopgen[r,c]
-                
-                # Only output study specific information if the statistic is Fst
-                if((names_pops[1] == "Fst") & !is.na(subsetPopgen$Fst_Outliers[r])){
-                  tempPopgen$`Study-specific information`[1] <- 
-                    paste(c("Fst Outlier Populations: ", 
-                            subsetPopgen$Fst_Outliers[r]), collapse = "")
-                }else{
-                  tempPopgen$`Study-specific information`[1] <- "Not available for this study"
-                }
                 
                 tempPopgen$Publication[1] <- subsetPopgen$Publication[r]
                 
@@ -680,7 +670,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         # If these populations-of-interest are the only pops which were
         # inputted, return a warning
         if(ncol(two_pops) == 1){
-          null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+          null.df <- data.frame(matrix(nrow = 1, ncol = 7))
           names(null.df) <- c(
             "Rank",
             "Population(s)",
@@ -688,7 +678,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
             "Scaffold",
             "Gene Name",
             "GO Term(s)",
-            "Outlier (if Fst)",
             "Publication"
           )
           return(list(paste(c("Statistic ",stat,
@@ -730,12 +719,11 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     return("ERROR: Invalid statistic name")
   }
 
-  # Initialize vectors of gene names, populations, statistic values, outlier
-  # status, and publication names
+  # Initialize vectors of gene names, populations, statistic values, and 
+  # publication names
   genes <- c()
   DF_pops <- c()
   stat_vals <- c()
-  Fst_outlier <- c()
   pub_names <- c()
 
 
@@ -757,8 +745,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
                                         temp_stat_table[,indices[i]] >= thresh])))
         stat_vals <- append(stat_vals,temp_stat_table[
           temp_stat_table[,indices[i]] >= thresh,indices[i]])
-        Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[
-          temp_stat_table[,indices[i]] >= thresh])
         pub_names <- append(pub_names,temp_stat_table$Publication[
           temp_stat_table[,indices[i]] >= thresh])
       }
@@ -776,8 +762,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
                                         temp_stat_table[,indices[i]] <= thresh])))
         stat_vals <- append(stat_vals,temp_stat_table[
           temp_stat_table[,indices[i]] <= thresh,indices[i]])
-        Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[
-          temp_stat_table[,indices[i]] <= thresh])
         pub_names <- append(pub_names,temp_stat_table$Publication[
           temp_stat_table[,indices[i]] <= thresh])
       }
@@ -803,7 +787,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           genes <- append(genes,temp_stat_table$Gene_Name[top_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
           stat_vals <- append(stat_vals,temp_stat_table[top_genes,indices[i]])
-          Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[top_genes])
           pub_names <- append(pub_names,temp_stat_table$Publication[
             top_genes])
         }
@@ -815,7 +798,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_stats <- c()
         all_pops <- c()
         all_genes <- c()
-        all_outliers <- c()
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
@@ -824,7 +806,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_pops <- append(all_pops,rep(pop_strings[i],
                                           length(temp_stat_table[,indices[i]])))
           all_genes <- append(all_genes, temp_stat_table$Gene_Name[top_genes])
-          all_outliers <- append(all_outliers,temp_stat_table$Fst_Outliers)
           all_pubs <- append(all_genes, temp_stat_table$Publication)
         }
         # Organize vectors into a dataframe
@@ -832,7 +813,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_stats,
           all_pops,
           all_genes,
-          all_outliers,
           all_pubs
         )
         # Retrieve the parallel indices for the N highest genes
@@ -842,7 +822,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         genes <- append(genes,temp_df$all_genes[par_indices])
         DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
         stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
-        Fst_outlier <- append(Fst_outlier,temp_df$all_outliers[par_indices])
         pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
       }
       # If lower proportion was requested, iterate through each index
@@ -862,7 +841,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           genes <- append(genes,temp_stat_table$Gene_Name[bottom_genes])
           DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
           stat_vals <- append(stat_vals,temp_stat_table[bottom_genes,indices[i]])
-          Fst_outlier <- append(Fst_outlier,temp_stat_table$Fst_Outliers[bottom_genes])
           pub_names <- append(pub_names,temp_stat_table$Publication[bottom_genes])
         }
         # If statistic is a one-population statistic, output collect the N genes
@@ -873,7 +851,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         all_stats <- c()
         all_pops <- c()
         all_genes <- c()
-        all_outliers <- c()
         all_pubs <- c()
         for(i in 1:length(indices)){
           # First, remove all NA values for this index
@@ -882,7 +859,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_pops <- append(all_pops,rep(pop_strings[i],
                                           length(temp_stat_table[,indices[i]])))
           all_genes <- append(all_genes, temp_stat_table$Gene_Name)
-          all_outliers <- append(all_outliers, temp_stat_table$Fst_Outliers)
           all_pubs <- append(all_genes, temp_stat_table$Publication)
         }
         # Organize vectors into a dataframe
@@ -890,7 +866,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           all_stats,
           all_pops,
           all_genes,
-          all_outliers,
           all_pubs
         )
         # Retreat the parallel indeices for the N highest genes
@@ -899,14 +874,13 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         genes <- append(genes,temp_df$all_genes[par_indices])
         DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
         stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
-        Fst_outlier <- append(Fst_outlier,temp_df$all_outliers[par_indices])
         pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
       }
     }
   }
   # If no population pairs were found, output an error
   if(length(indices) == 0){
-    null.df <- data.frame(matrix(nrow = 1, ncol = 8))
+    null.df <- data.frame(matrix(nrow = 1, ncol = 7))
     names(null.df) <- c(
       "Rank",
       "Population(s)",
@@ -914,7 +888,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       "Scaffold",
       "Gene Name",
       "GO Term(s)",
-      "Outlier (if Fst)",
       "Publication"
     )
     return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
@@ -959,7 +932,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     scaffs,
     genes,
     DF_GOs,
-    Fst_outlier,
     pub_names
   )
   # Sort into a final dataframe
@@ -1023,7 +995,6 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     "Scaffold",
     "Gene Name",
     "GO Term(s)",
-    "Outlier (if Fst)",
     "Publication"
   )
 
