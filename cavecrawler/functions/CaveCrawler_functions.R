@@ -51,12 +51,10 @@ position_table$Gene_Name <- tolower(position_table$Gene_Name)
 position_table <- position_table[!duplicated(position_table$Gene_Name),]
 
 condition_control <- read.csv("data/Morph_Control_TranscData.csv")
-condition_control <- condition_control[,-1]
 condition_control$Publication <- rep("5", nrow(condition_control))
 
 # Currently, we only have morph:morph comparisons from one study
 morph1.morph2 <- read.csv("data/Transcription_Macketal2020.csv")
-morph1.morph2 <- morph1.morph2[,-1]
 morph1.morph2$Publication <- rep("4", nrow(morph1.morph2))
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
@@ -260,7 +258,7 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
   finalGO <- data.frame(matrix(nrow = length(geneIDs), ncol = 7))
   # Do not give row names for transcription or popgen data because there could
   # be multiple rows per gene
-  finalTransc <- data.frame(matrix(ncol = 9))
+  finalTransc <- data.frame(matrix(ncol = 11))
   finalPopgen <- data.frame(matrix(ncol = 8))
   
   names(finalPos) <- c("Gene ID",
@@ -277,6 +275,8 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                           "logFC",
                           "p-value",
                           "Condition",
+                          "Age at Sampling",
+                          "Tissue",
                           "Publication")
   names(finalPopgen) <- c("Gene ID",
                           "Gene name",
@@ -342,10 +342,11 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         # data to a temporary dataframe and bind the temp dataframe to the final
         transcAbsent <- F
         tempTransc <- data.frame(matrix(
-          nrow = sum(morph1.morph2$Gene_stable_ID == geneIDs[i]), ncol = 9))
+          nrow = sum(morph1.morph2$Gene_stable_ID == geneIDs[i]), ncol = 11))
         names(tempTransc) <- c("Gene ID","Gene name","Gene description",
                                "Study-specific information","Comparison",
-                               "logFC","p-value","Condition","Publication")
+                               "logFC","p-value","Condition","Age at Sampling",
+                               "Tissue","Publication")
         # Since there may be multiple rows corresponding to a single gene ID,
         # output as many gene IDs as there are copies
         tempTransc$`Gene ID` <- morph1.morph2$Gene_stable_ID[
@@ -370,6 +371,12 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         tempTransc$Condition <- morph1.morph2$Condition[
           morph1.morph2$Gene_stable_ID == geneIDs[i]
         ]
+        tempTransc$`Age at Sampling` <- morph1.morph2$Age_at_Sampling[
+          morph1.morph2$Gene_stable_ID == geneIDs[i]
+        ]
+        tempTransc$Tissue <- morph1.morph2$Tissue[
+          morph1.morph2$Gene_stable_ID == geneIDs[i]
+        ]
         tempTransc$Publication <- morph1.morph2$Publication[
           morph1.morph2$Gene_stable_ID == geneIDs[i]
         ]
@@ -384,10 +391,11 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         # final
         transcAbsent <- F
         tempTransc <- data.frame(matrix(
-          nrow = sum(condition_control$Gene_stable_ID == geneIDs[i]), ncol = 9))
+          nrow = sum(condition_control$Gene_stable_ID == geneIDs[i]), ncol = 11))
         names(tempTransc) <- c("Gene ID","Gene name","Gene description",
                                "Study-specific information","Comparison",
-                               "logFC","p-value","Condition","Publication")
+                               "logFC","p-value","Condition","Age at Sampling",
+                               "Tissue","Publication")
         # Since there may be multiple rows corresponding to a single gene ID,
         # output as many gene IDs as there are copies
         tempTransc$`Gene ID` <- condition_control$Gene_stable_ID[
@@ -410,6 +418,12 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
           condition_control$Gene_stable_ID == geneIDs[i]
         ]
         tempTransc$Condition <- condition_control$Condition[
+          condition_control$Gene_stable_ID == geneIDs[i]
+        ]
+        tempTransc$`Age at Sampling` <- condition_control$Age_at_Sampling[
+          condition_control$Gene_stable_ID == geneIDs[i]
+        ]
+        tempTransc$Tissue <- condition_control$Tissue[
           condition_control$Gene_stable_ID == geneIDs[i]
         ]
         tempTransc$Publication <- condition_control$Publication[
@@ -530,7 +544,7 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
   return(list(finalPos,finalTransc,finalPopgen,finalGO,warn))
 }
 
-TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
+TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh, GOTable){
   # If condition is NOT "Between morph"...
   if(condition != "Between morph"){
     # Use transcription data of morph-control comparisons
@@ -550,41 +564,48 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
   # was not entered
   comp <- paste(c(morph1, morph2), collapse = "-")
 
-  # If upregulated genes were requested...
-  if(direction == "Upregulated"){
-    # Find [percent]% of genes falling on morph(s)-of-interest with HIGHEST
-    # logFC scores
-
-    # Find all rows-of-interest (ROIs) for morph(s)-of-interest where genes are
-    # upregulated, and condition matches the input specification
-    ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
-                      & (in_table$logFC > 0) &
-                        (in_table$Condition == condition)), ]
-    # Sort candidate rows with highest logFC values on top
-    ROIs <- ROIs[order(ROIs$logFC, decreasing = T),]
-    # Find the number of rows corresponding to the specified percent
-    n.rows <- as.integer((percent/100)*nrow(ROIs))
-    # If downregulated genes were requested...
-  }else if(direction == "Downregulated"){
-    # Find [percent]% of genes falling on morph(s)-of-interest with LOWEST
-    # logFC scores
-
-    # Find all rows-of-interest (ROIs) for morph-of-interest where genes are
-    # downregulated, condition matches the input specification, and p-value is
-    # less than 0.05
-    ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
-                      & (in_table$logFC < 0) &
-                        (in_table$Condition == condition)), ]
-    # Sort candidate rows with LOWEST logFC values on top
-    ROIs <- ROIs[order(ROIs$logFC, decreasing = F),]
-    # Find the number of rows corresponding to the specified percent
-    n.rows <- as.integer((percent/100)*nrow(ROIs))
+  # If genes above threshold were requested...
+  if(direction == "Above"){
+    # Find all rows-of-interest (ROIs) for morph(s)-of-interest where logFC is
+    # above specified value, and condition matches the input specification
+    if(tr.stat == "logFC"){
+      ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
+                        & (in_table$logFC > tr.thresh) &
+                          (in_table$Condition == condition)), ]
+      # Sort candidate rows with highest logFC values on top
+      ROIs <- ROIs[order(ROIs$logFC, decreasing = T),]
+    # Find all rows-of-interest (ROIs) for morph(s)-of-interest where logFC is
+    # below specified value, and condition matches the input specification
+    }else{
+      ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
+                        & (in_table$PValue > tr.thresh) &
+                          (in_table$Condition == condition)), ]
+      # Sort candidate rows with highest p values on top
+      ROIs <- ROIs[order(ROIs$PValue, decreasing = T),]
+    }
+    
+  # If genes whose value is below the provided stat were requested...
+  }else if(direction == "Below"){
+    # Find all rows-of-interest (ROIs) for morph(s)-of-interest where logFC is
+    # BELOW specified value, and condition matches the input specification
+    if(tr.stat == "logFC"){
+      ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
+                        & (in_table$logFC < tr.thresh) &
+                          (in_table$Condition == condition)), ]
+      # Sort candidate rows with SMALLEST logFC values on top
+      ROIs <- ROIs[order(ROIs$logFC, decreasing = F),]
+    }else{
+      ROIs <- in_table[(grepl(search_cond, in_table$Comparison)
+                        & (in_table$PValue < tr.thresh) &
+                          (in_table$Condition == condition)), ]
+      ROIs <- ROIs[order(ROIs$PValue, decreasing = F),]
+    }
   }
   # Obtain GO terms for ROIs
-  GOTerms <- character(length = n.rows)
-  for(i in 1:n.rows){
+  GOTerms <- character(length = nrow(ROIs))
+  for(i in 1:length(GOTerms)){
     if(length(grep(ROIs$Gene_stable_ID[i], GeneToGO$Ensembl)) != 0){
-      GOTerms[i] = GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl == ROIs$Gene_stable_ID[i]]
+      GOTerms[i] = paste(GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl == ROIs$Gene_stable_ID[i]], collapse = " ")
     }else{
       GOTerms[i] = NA
     }
@@ -593,21 +614,23 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
   # p-value, Ensembl family information (or study specific details, if Between
   # morph), and publication name to a dataframe
   if(condition == "Between morph"){
-    special_info <- ROIs$study_specific_gene_details[1:n.rows]
+    special_info <- ROIs$study_specific_gene_details
     special_name <- "Study-Specific Details"
   }else{
-    special_info <- ROIs$Ensembl_Family_Description[1:n.rows]
+    special_info <- ROIs$Ensembl_Family_Description
     special_name <- "Ensembl Family Description"
   }
   output.df <- data.frame(
-    tolower(ROIs$Gene_name)[1:n.rows],
-    ROIs$Gene_stable_ID[1:n.rows],
+    tolower(ROIs$Gene_name),
+    ROIs$Gene_stable_ID,
     GOTerms,
-    rep(comp, n.rows)[1:n.rows],
-    ROIs$logFC[1:n.rows],
-    ROIs$PValue[1:n.rows],
+    rep(comp, nrow(ROIs)),
+    ROIs$logFC,
+    ROIs$PValue,
+    ROIs$Age_at_Sampling,
+    ROIs$Tissue,
     special_info,
-    ROIs$Publication[1:n.rows]
+    ROIs$Publication
   )
   names(output.df) <- c(
     "Gene Name",
@@ -616,6 +639,8 @@ TranscTable <- function(morph1, morph2, condition, direction, percent, GOTable){
     "Comparison",
     "logFC",
     "p-value",
+    "Age at Sampling",
+    "Tissue",
     special_name,
     "Publication"
   )
@@ -1645,15 +1670,15 @@ GOInfo <- function(GO_input, MasterGO, UpperLower){
 
 # This function finds the minimum and maximum values for a population-specific
 # statistic in a statistical table
-MinMax <- function(mm_pops, mm_stat, stat_table){
+MinMax <- function(mm_pops, mm_stat, in_table){
   # Create matrix to store all columns which house the morphs-of-interest
   cols.w.morphs <- data.frame(matrix(nrow = length(mm_pops),
-                                     ncol = ncol(stat_table)))
-  colnames(cols.w.morphs) <- colnames(stat_table)
+                                     ncol = ncol(in_table)))
+  colnames(cols.w.morphs) <- colnames(in_table)
 
-  # Find all columns of stat_table which house at least one morph-of-interest
+  # Find all columns of in_table which house at least one morph-of-interest
   for(m in 1:length(mm_pops)){
-    cols.w.morphs[m,] <- grepl(mm_pops[m], names(stat_table),
+    cols.w.morphs[m,] <- grepl(mm_pops[m], names(in_table),
                                ignore.case = T)
   }
   cols.of.interest <- c()
@@ -1662,7 +1687,7 @@ MinMax <- function(mm_pops, mm_stat, stat_table){
       cols.of.interest <- append(cols.of.interest, names(cols.w.morphs)[i])
     }
   }
-  # Of the columns of stat_table which house at least one morph-of-interest,
+  # Of the columns of in_table which house at least one morph-of-interest,
   # exclude the columns which have morphs which are NOT morphs of interest
   bad.morphs <- c("Pachon", "Rascon", "RioChoy", "Molino", "Tinaja")
   for(i in 1:length(mm_pops)){
@@ -1683,7 +1708,7 @@ MinMax <- function(mm_pops, mm_stat, stat_table){
   num_pool <- c()
   for(i in 1:length(cols.of.interest)){
     num_pool <- append(num_pool,
-                       stat_table[,names(stat_table) == cols.of.interest[i]])
+                       in_table[,names(in_table) == cols.of.interest[i]])
   }
 
   # Output the minimum and maximum values in that vector

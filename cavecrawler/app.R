@@ -113,7 +113,15 @@ source("functions/CaveCrawler_functions.R")
                      label = "to...",
                      choices = c("")
                    ),
-
+                   radioButtons("trstat",
+                                label = textOutput("trstat_label"),
+                                choices = c("logFC", "p")
+                   ),
+                   radioButtons("direction",
+                                label = textOutput("dir_label"),
+                                choices = c("Above", "Below")
+                   ),
+                   
                    # If morph2 IS set to control, populate a drop-down of available conditions
                    conditionalPanel(
                      condition = "input.morph2 == 'Control'",
@@ -123,18 +131,22 @@ source("functions/CaveCrawler_functions.R")
                        choices = c("Sleep deprivation","Other")
                      )
                    ),
-                   radioButtons("direction",
-                                label = textOutput("dir_label"),
-                                choices = c("Upregulated", "Downregulated")
+                   
+                   conditionalPanel(
+                     condition = "input.trstat == 'logFC'",
+                     uiOutput("FCthresh_updater")
                    ),
-                   sliderInput(inputId = "percent_change",
-                               label = textOutput("per_label"),
-                               min = 1, max = 100, value = 50),
+                   conditionalPanel(
+                     condition = "input.trstat == 'p'",
+                     sliderInput(inputId = "pthresh",
+                                 label = textOutput("pthresh_label"),
+                                 min = 0, max = 1, value = 0.5, step = 0.000001)
+                     
+                   ),
                    actionButton("Transc_enter","Find Genes"),
                    conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                     tags$div("Crawling through the data...",id="loadmessage"))
                    ),
-
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
                                     downloadButton("TranscDL", "Download", class = "download"),
@@ -339,6 +351,30 @@ source("functions/CaveCrawler_functions.R")
                         choices = transc_morph_choices[transc_morph_choices != input$morph1],
                         selected = tail(transc_morph_choices, 1)
       )
+      # Transcription Page: Update min and max values for logFC based on data
+      output$FCthresh_updater <- renderUI({
+        if((input$trstat == "logFC") & (input$morph2 == "Control")){
+          sec.table <- condition_control$logFC[
+                      (paste(c(input$morph1, "-", input$morph2), collapse = "")
+                       %in% condition_control$Comparison) & 
+                        (condition_control$Condition == input$condition)]
+          sliderInput("FCthresh", "FCthresh_label", min = round(min(sec.table), 2), 
+                      max = round(max(sec.table), 2), value = 0, step = 0.0005)
+          
+        }else if((input$trstat == "logFC") & (input$morph2 != "Control")){
+          sec.table <- morph1.morph2$logFC[
+            grepl(input$morph1, morph1.morph2$Comparison) &
+              grepl(input$morph2, morph1.morph2$Comparison)
+          ]
+          sliderInput("FCthresh", "FCthresh_label", min = round(min(sec.table), 2), 
+                      max = round(max(sec.table), 2), value = 0, step = 0.0005)
+          
+        }else{
+          sliderInput(inputId = "FCthresh",
+                      label = "Threshold selector will appear here once you have inputted enough data to determine min and max possible logFC values",
+                      min = 0, max = 0, value = 0)
+        }
+      })
       # Population Genetics (Stat-By-Chr Suppage): If a valid table has been
       # created, update widget for selecting which statistic to plot
       if(length(SBCT()) == 2){
@@ -394,7 +430,7 @@ source("functions/CaveCrawler_functions.R")
          ((input$dist_statist != "Fst") & (input$dist_statist != "Dxy")))){
         min_max_list <- MinMax(mm_pops = input$dist_pops,
                                mm_stat = input$dist_statist,
-                               stat_table)
+                               in_table = stat_table)
         sliderInput("thrsh", "Threshhold statistical value: ",
                     min = round(min_max_list[[1]],2),
                     max = round(min_max_list[[2]],2), value = 0, step = 0.0005)
@@ -508,7 +544,7 @@ source("functions/CaveCrawler_functions.R")
           unformattedTransc[,1:5],
           format(unformattedTransc[,6], digits = 5),
           format(unformattedTransc[,7], digits = 5),
-          unformattedTransc[,8:9]
+          unformattedTransc[,8:11]
         )
         names(reformattedTransc) <- names(unformattedTransc)
         reformattedTransc
@@ -584,7 +620,7 @@ source("functions/CaveCrawler_functions.R")
             unformattedTransc[,1:5],
             format(unformattedTransc[,6], digits = 5),
             format(unformattedTransc[,7], digits = 5),
-            unformattedTransc[,8:9]
+            unformattedTransc[,8:11]
           )
           names(GSTranscDLTable) <- names(unformattedTransc)
           # If a valid table was not outputted, enable downloading of an empty df
@@ -638,23 +674,12 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-    # Transcription Page: Create a label which changes based on the morphs to be
-    # searched for
-    output$dir_label <- renderText({
-      paste(c("Search for genes which are UP or DOWNregulated in ",
-              input$morph1, " relative to ", input$morph2, "?"), collapse = "")
-    })
-
-    # Transcription Page: Create a label which changes based on whether up- or
-    # downregulation was specified
-    output$per_label <- renderText({
-      if(input$direction == "Upregulated"){
-        "Display X% of genes which are upregulated:"
-      }else{
-        "Display X% of genes which are downregulated:"
-      }
-    })
-
+    # Transcription Page labels
+    output$trstat_label <- renderText("Display genes whose logFC/p-value...")
+    output$dir_label <- renderText("... is above/below....")
+    output$FCthresh_label <- renderText("... the following threshold:")
+    output$pthresh_label <- renderText("... the following threshold:")
+    
     # Transcription Page: Output a table with specified transcription data
     transc_table <- eventReactive(input$Transc_enter, valueExpr = {
       if(input$morph2 == "Control"){
@@ -662,12 +687,24 @@ source("functions/CaveCrawler_functions.R")
       }else{
         condit <- "Between morph"
       }
-      TranscTable(morph1 = input$morph1,
-                  morph2 = input$morph2,
-                  condition = condit,
-                  direction = input$direction,
-                  percent = input$percent_change,
-                  GOTable = GeneToGO)
+      if(input$trstat == "logFC"){
+        TranscTable(morph1 = input$morph1,
+                    morph2 = input$morph2,
+                    condition = condit,
+                    direction = input$direction,
+                    tr.stat = input$trstat,
+                    tr.thresh = input$FCthresh,
+                    GOTable = GeneToGO)
+        
+      }else if(input$trstat == "p"){
+        TranscTable(morph1 = input$morph1,
+                    morph2 = input$morph2,
+                    condition = condit,
+                    direction = input$direction,
+                    tr.stat = input$trstat,
+                    tr.thresh = input$pthresh,
+                    GOTable = GeneToGO)
+      }
     })
     output$transc_table_out <- renderTable({
       # Change log fold changes to have 5 decimal points
@@ -675,7 +712,7 @@ source("functions/CaveCrawler_functions.R")
         transc_table()[,1:4],
         format(transc_table()[,5], digits = 5),
         format(transc_table()[,6], digits = 5),
-        transc_table()[,7:8]
+        transc_table()[,7:10]
       )
       names(reformattedTranscT) <- names(transc_table())
       reformattedTranscT
