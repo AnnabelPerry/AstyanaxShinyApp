@@ -63,39 +63,135 @@ source("functions/CaveCrawler_functions.R")
                    # If position data is requested, output position data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Position')",
-                     h1("Position Data"),
-                     tableOutput("GSPos_table"),
-                     downloadButton("GSPosDL", "Download Position Data", class = "download"),
+                     fluidRow(class = "text-center",
+                              column(width = 4,
+                                     h1("Position Data"),
+                                     radioButtons("GSPwhich_sort",
+                                                  label = "Sort by...",
+                                                  choices = c(
+                                                    "Scaffold" = "GSPsc",
+                                                    "Start Locus" = "GSPsl",
+                                                    "End Locus" = "GSPel"
+                                                  )
+                                     ),
+                                     conditionalPanel(
+                                       condition = "input.GSPwhich_sort == 'GSPsc'",
+                                       radioButtons("GSPsc_dir",
+                                                    label = "... from...",
+                                                    choices = c(
+                                                      "High to Low" = "GSPsc_hl",
+                                                      "Low to High" = "GSPsc_lh"
+                                                    )
+                                       )
+                                     ),
+                                     conditionalPanel(
+                                       condition = "input.GSPwhich_sort == 'GSPsl'",
+                                       radioButtons("GSPsl_dir",
+                                                    label = "",
+                                                    choices = c(
+                                                      "High to Low" = "GSPsl_hl",
+                                                      "Low to High" = "GSPsl_lh"
+                                                    )
+                                       )
+                                     ),
+                                     conditionalPanel(
+                                       condition = "input.GSPwhich_sort == 'GSPel'",
+                                       radioButtons("GSPel_dir",
+                                                    label = "",
+                                                    choices = c(
+                                                      "High to Low" = "GSPel_hl",
+                                                      "Low to High" = "GSPel_lh"
+                                                    )
+                                       )
+                                     ),
+                                     downloadButton("GSPosDL", "Download Position Data", class = "download")   
+                              ),
+                              column(width = 6,
+                                     tableOutput("GSPos_table")
+                              )
+                              )
                      ),
                    br(),
                    # If Transcription data is requested, output Transcription data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Transcription')",
-                     h1("Transcription Data"),
-                     tableOutput("GSTransc_table"),
-                     downloadButton("GSTranscDL", "Download Transcription Data", class = "download")
-                   ),
+                     fluidRow(
+                       column(width = 5,
+                              h1("Transcription Data"),
+                              radioButtons("GSTwhich_sort",
+                                           label = "Sort by...",
+                                           choices = c("logFC", "p")
+                              ),
+                              conditionalPanel(
+                                condition = "input.GSTwhich_sort == 'logFC'",
+                                radioButtons("GSTFC_dir",
+                                             label = "... from...",
+                                             choices = c(
+                                               "High to Low" = "GSTFC_hl",
+                                               "Low to High" = "GSTFC_lh"
+                                             )
+                                )
+                              ),
+                              conditionalPanel(
+                                condition = "input.GSTwhich_sort == 'p'",
+                                radioButtons("GSTp_dir",
+                                             label = "... from...",
+                                             choices = c(
+                                               "High to Low" = "GSTp_hl",
+                                               "Low to High" = "GSTp_lh"
+                                             )
+                                )
+                              ),
+                              downloadButton("GSTranscDL", "Download Transcription Data", class = "download")
+                       ),
+                       column(width = 6,
+                              tableOutput("GSTransc_table")
+                              )
+                     )
+                     ),
                    br(),
                    # If Population Genetics data is requested, output Population
                    # Genetics data
                    conditionalPanel(
                      condition = "input.GSbools.includes('Population Genetics')",
-                     h1("Popgen Data"),
-                     tableOutput("GSPopgen_table"),
-                     downloadButton("GSPopgenDL", "Download Popgen Data", class = "download")
-                   ),
+                     fluidRow(class = "text-center",
+                              column(width = 4,
+                                     h1("Popgen Data"),
+                                     radioButtons("GSPG_dir",
+                                                  label = "Sort statistic values from...",
+                                                  choices = c(
+                                                    "High to Low" = "GSPG_hl",
+                                                    "Low to High" = "GSPG_lh"
+                                                  )
+                                     ),
+                                     downloadButton("GSPopgenDL", "Download Popgen Data", class = "download")
+                                     
+                                     ),
+                              column(width = 6,
+                                     tableOutput("GSPopgen_table")
+                              )
+                          ),
+                     ),
                    br(),
                    # If GO data is requested, output GO data
                    conditionalPanel(
                      condition = "input.GSbools.includes('GO')",
-                     h1("GO Data"),
-                     tableOutput("GSGO_table"),
-                     downloadButton("GSGODL", "Download GO Data", class = "download")
+                     fluidRow(
+                       column(width = 4,
+                              h1("GO Data"),
+                              downloadButton("GSGODL", "Download GO Data", class = "download")
+                       ),
+                       column(width = 6,
+                         tableOutput("GSGO_table")
+                       )
+                     )
                    ),
                    # Regardless of what was inputted, output warnings
                    br(),
-                   h1("Warnings:"),
-                   textOutput("GSwarnings")
+                   fluidRow(
+                     h1("Warnings:"),
+                     textOutput("GSwarnings")
+                   )
                    
                )
           )
@@ -144,9 +240,30 @@ source("functions/CaveCrawler_functions.R")
                      
                    ),
                    actionButton("Transc_enter","Find Genes"),
-                   conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                                    tags$div("Crawling through the data...",id="loadmessage"))
+                   # Change sorting of output table
+                   radioButtons("TRwhich_sort",
+                                label = "Sort by...",
+                                choices = c("logFC", "p")
                    ),
+                   conditionalPanel(
+                     condition = "input.TRwhich_sort == 'p'",
+                     radioButtons("TRsort_p",
+                                  label = "...from...",
+                                  choices = c("High to Low" = "TRp_hl", 
+                                              "Low to High" = "TRp_lh")
+                     )
+                   ),
+                   conditionalPanel(
+                     condition = "input.TRwhich_sort == 'logFC'",
+                     radioButtons("TRsort_FC",
+                                  label = "...from...",
+                                  choices = c("High to Low" = "TRFC_hl", 
+                                              "Low to High" = "TRFC_lh")
+                     )
+                  ),
+                  conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                    tags$div("Crawling through the data...",id="loadmessage"))
+                  ),
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
                                     downloadButton("TranscDL", "Download", class = "download"),
@@ -279,16 +396,48 @@ source("functions/CaveCrawler_functions.R")
                          btnReset = icon("remove"),
                          width = "450px"
                        ),
+                       # If stat-by-chr is checked, enable sorting
+                       radioButtons("SBCwhich_sort",
+                                    label = "Sort table by...",
+                                    choices = c("Start Position" = "SBCsp_sort",
+                                                "End Position" = "SBCep_sort",
+                                                "Statistic Value" = "SBCsv_sort")
+                       ),
+                       # Create ascending or descending sort based on initial input
+                       conditionalPanel(
+                         condition = "input.SBCwhich_sort == 'SBCsp_sort'",
+                         radioButtons("SBCsp_dir", label = "Sort order:",
+                                      choices = c("High to Low" = "sp_asc", 
+                                                  "Low to High" ="sp_desc"))
+                       ),
+                       conditionalPanel(
+                         condition = "input.SBCwhich_sort == 'SBCep_sort'",
+                         radioButtons("SBCep_dir",
+                                      label = "Sort order:",
+                                      choices = c("High to Low" = "ep_asc", 
+                                                  "Low to High" ="ep_desc"))
+                       ),
+                       conditionalPanel(
+                         condition = "input.SBCwhich_sort == 'SBCsv_sort'",
+                         radioButtons("SBCsv_dir",
+                                      label = "Sort order:",
+                                      choices = c("High to Low" = "sv_asc", 
+                                                  "Low to High" ="sv_desc"))
+                       ),
                        uiOutput("stat_PlotSelect"),
                        uiOutput("scaff_PlotSelect"),
                        uiOutput("SBCP_enter"),
                        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                         tags$div("Crawling through the data...",id="loadmessage"))
                      ),
+                     
                      mainPanel(
+                       # EDIT: Remove once fixed
+                       textOutput("test1"),
+                       textOutput("test2"),
                        plotOutput("SBC_plot"),
-                        tableOutput("SBC_table"),
-                        textOutput("SBC_wrnings")
+                      tableOutput("SBC_table"),
+                      textOutput("SBC_wrnings")
                      )
                    )
                  )
@@ -358,7 +507,8 @@ source("functions/CaveCrawler_functions.R")
                       (paste(c(input$morph1, "-", input$morph2), collapse = "")
                        %in% condition_control$Comparison) & 
                         (condition_control$Condition == input$condition)]
-          sliderInput("FCthresh", "FCthresh_label", min = round(min(sec.table), 2), 
+          sliderInput("FCthresh", "...the following threshold:", 
+                      min = round(min(sec.table), 2), 
                       max = round(max(sec.table), 2), value = 0, step = 0.0005)
           
         }else if((input$trstat == "logFC") & (input$morph2 != "Control")){
@@ -366,7 +516,8 @@ source("functions/CaveCrawler_functions.R")
             grepl(input$morph1, morph1.morph2$Comparison) &
               grepl(input$morph2, morph1.morph2$Comparison)
           ]
-          sliderInput("FCthresh", "FCthresh_label", min = round(min(sec.table), 2), 
+          sliderInput("FCthresh", "...the following threshold:", 
+                      min = round(min(sec.table), 2), 
                       max = round(max(sec.table), 2), value = 0, step = 0.0005)
           
         }else{
@@ -527,8 +678,32 @@ source("functions/CaveCrawler_functions.R")
     # Only output position table if gene search output has stuff AND position
     # table was requested
     output$GSPos_table <- renderTable({
-      if(("Position" %in% input$GSbools) & (typeof(GeneSearchOutput()) == "list")){
-        GeneSearchOutput()[[1]]
+      if(("Position" %in% input$GSbools) & (length(GeneSearchOutput()) == 5)){
+        GSPos_sorted <- GeneSearchOutput()[[1]]
+        # Sort table based on inputs
+        if(input$GSPwhich_sort == "GSPsc"){
+          if(input$GSPsc_dir == "GSPsc_hl"){
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$Scaffold, 
+                                               decreasing = T),]
+          }else{
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$Scaffold),]
+          }
+        }else if(input$GSPwhich_sort == "GSPsl"){
+          if(input$GSPsl_dir == "GSPsl_hl"){
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$`Start Locus`, 
+                                               decreasing = T),]
+          }else{
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$`Start Locus`),]
+          }
+        }else if(input$GSPwhich_sort == "GSPel"){
+          if(input$GSPel_dir == "GSPel_hl"){
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$`End Locus`, 
+                                               decreasing = T),]
+          }else{
+            GSPos_sorted <- GSPos_sorted[order(GSPos_sorted$`End Locus`),]
+          }
+        }
+        GSPos_sorted
       }else{
         data.frame()
       }
@@ -538,7 +713,7 @@ source("functions/CaveCrawler_functions.R")
     # transcription table was requested
     output$GSTransc_table <- renderTable({
       if(("Transcription" %in% input$GSbools) &
-         (typeof(GeneSearchOutput()) == "list")){
+         (length(GeneSearchOutput()) == 5)){
         unformattedTransc <- GeneSearchOutput()[[2]]
         reformattedTransc <- data.frame(
           unformattedTransc[,1:5],
@@ -547,6 +722,23 @@ source("functions/CaveCrawler_functions.R")
           unformattedTransc[,8:11]
         )
         names(reformattedTransc) <- names(unformattedTransc)
+        if(input$GSTwhich_sort == "logFC"){
+          if(input$GSTFC_dir == "GSTFC_hl"){
+            reformattedTransc <- reformattedTransc[order(reformattedTransc$logFC, 
+                                               decreasing = T),]
+          }else{
+            reformattedTransc <- reformattedTransc[order(reformattedTransc$logFC),]
+          }
+        }else if(input$GSTwhich_sort == "p"){
+          if(input$GSTp_dir == "GSTp_hl"){
+            reformattedTransc <- reformattedTransc[order(
+              as.numeric(reformattedTransc$`p-value`), 
+                                               decreasing = T),]
+          }else{
+            reformattedTransc <- reformattedTransc[order(
+              as.numeric(reformattedTransc$`p-value`)),]
+          }
+        }
         reformattedTransc
       }else{
         data.frame()
@@ -557,7 +749,7 @@ source("functions/CaveCrawler_functions.R")
     # popgen data was requested
     output$GSPopgen_table <- renderTable({
       if(("Population Genetics" %in% input$GSbools) & 
-         typeof(GeneSearchOutput()) == "list"){
+         (length(GeneSearchOutput()) == 5)){
         unformattedPopgen <- GeneSearchOutput()[[3]]
         reformattedPopgen <- data.frame(
           unformattedPopgen[,1:5],
@@ -565,6 +757,16 @@ source("functions/CaveCrawler_functions.R")
           unformattedPopgen[,7]
         )
         names(reformattedPopgen) <- names(unformattedPopgen)
+        # Sort based on statistic values
+        if(input$GSPG_dir == "GSPG_hl"){
+          reformattedPopgen <- reformattedPopgen[
+            order(reformattedPopgen$`Statistic Type`,
+                  reformattedPopgen$`Statistic Value`, decreasing = T),]
+        }else{
+          reformattedPopgen <- reformattedPopgen[
+            order(reformattedPopgen$`Statistic Type`,
+                  reformattedPopgen$`Statistic Value`),]
+        }
         reformattedPopgen
       }else{
         data.frame()
@@ -574,7 +776,7 @@ source("functions/CaveCrawler_functions.R")
     # Only output GO data if gene search is valid and GO data was requested
     output$GSGO_table <- renderTable({
       if(("GO" %in% input$GSbools) & 
-         typeof(GeneSearchOutput()) == "list"){
+         (length(GeneSearchOutput()) == 5)){
         GeneSearchOutput()[[4]]
       }else{
         data.frame()
@@ -582,9 +784,9 @@ source("functions/CaveCrawler_functions.R")
     })
     # Gene Search Page: Output any warnings associated with the searched gene
     output$GSwarnings <- renderText({
-      if(input$Gene_search != ""){
+      if(("Position" %in% input$GSbools) & (length(GeneSearchOutput()) == 5)){
         GeneSearchOutput()[[5]]
-      }else if(input$Gene_search == ""){
+      }else{
         "No data to display yet"
       }
     })
@@ -677,7 +879,6 @@ source("functions/CaveCrawler_functions.R")
     # Transcription Page labels
     output$trstat_label <- renderText("Display genes whose logFC/p-value...")
     output$dir_label <- renderText("... is above/below....")
-    output$FCthresh_label <- renderText("... the following threshold:")
     output$pthresh_label <- renderText("... the following threshold:")
     
     # Transcription Page: Output a table with specified transcription data
@@ -715,6 +916,24 @@ source("functions/CaveCrawler_functions.R")
         transc_table()[,7:10]
       )
       names(reformattedTranscT) <- names(transc_table())
+      # Sort table based on p or logFC value
+      if(input$TRwhich_sort == "p"){
+        if(input$TRsort_p == "TRp_hl"){
+          reformattedTranscT <- reformattedTranscT[order(
+            as.numeric(reformattedTranscT$`p-value`), decreasing = T),]
+        }else{
+          reformattedTranscT <- reformattedTranscT[order(
+            as.numeric(reformattedTranscT$`p-value`)),]
+        }
+      }else if(input$TRwhich_sort == "logFC"){
+        if(input$TRsort_FC == "TRFC_hl"){
+          reformattedTranscT <- reformattedTranscT[order(reformattedTranscT$logFC, 
+                                                         decreasing = T),]
+        }else{
+          reformattedTranscT <- reformattedTranscT[order(reformattedTranscT$logFC),]
+        }
+      }
+      
       reformattedTranscT
     })
 
@@ -900,6 +1119,39 @@ source("functions/CaveCrawler_functions.R")
             SBCT()[[2]][,9]
           )
           names(temp_df) <- names(SBCT()[[2]])
+          # EDIT: Remove after fixing lack of sorting
+          output$test1 <- renderText(input$SBCwhich_sort)
+          
+          # Order the table based on parameters specified
+          if(input$SBCwhich_sort == "SBCsp_sort"){
+            # EDIT: Remove after fixing lack of sorting
+            output$test2 <- renderText(input$SBCsp_dir)
+            
+            if(input$SBCsp_dir == "sp_asc"){
+              temp_df <- temp_df[order(temp_df$Start_Position, decreasing = T),]
+            }else{
+              temp_df <- temp_df[order(temp_df$Start_Position),]
+            }
+          }else if(input$SBCwhich_sort == "SBCep_sort"){
+            # EDIT: Remove after fixing lack of sorting
+            output$test2 <- renderText(input$SBCep_dir)
+            
+            if(input$SBCep_dir == "ep_asc"){
+              temp_df <- temp_df[order(temp_df$End_Position, decreasing = T),]
+            }else{
+              temp_df <- temp_df[order(temp_df$End_Position),]
+            }
+          }else if(input$SBCwhich_sort == "SBCsv_sort"){
+            # EDIT: Remove after fixing lack of sorting
+            output$test2 <- renderText(input$SBCsv_dir)
+            
+            if(input$SBCsv_dir == "sv_desc"){
+              temp_df <- temp_df[order(temp_df$Statistic_Value),]
+            }else{
+              temp_df <- temp_df[order(temp_df$Statistic_Value, decreasing = T),]
+            }
+          }
+          
           temp_df
         }else{
           # If inputs yielded an erroneous table, simply output an empty table
