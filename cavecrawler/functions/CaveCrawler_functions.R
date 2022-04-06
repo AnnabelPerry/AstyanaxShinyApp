@@ -10,6 +10,7 @@ library(tibble)
 library(gridExtra)
 library(dplyr)
 library(maps)
+library(ggrepel)
 
 ################################## Load Data ###################################
 # Make dataframe of latitudes and longitudes for all morphs
@@ -27,18 +28,16 @@ Latit_Longit_unedited <- data.frame(
   Longitude = c(-99.05,-98.97,-98.95,-98.97,-98.95,-98.93,-98.93,-98.93,-99.16,
                 -99.20,-99.18,-99.15,-99.32,-99.20,-99.31,-98.90,-98.77,-98.94,-98.9,
                 -99.02,-99.17
-  )
+  ),
+  Morph = c(rep("Cave",10), rep("Surface", 11))
 )
 # Rascon and Rio Choy data obtained from google maps
 Latit_Longit <- rbind(Latit_Longit_unedited, data.frame(
   Population = c("Rascon","Rio Choy"),
   Latitude = c(21.9750,21.9998),
-  Longitude = c(-99.2578,-98.7785)
+  Longitude = c(-99.2578,-98.7785),
+  Morph = c("Surface","Surface")
 ))
-# Edit data to include only the populations currently available on the website
-#Latit_Longit <- Latit_Longit[
-#  Latit_Longit$Population %in%
-#    c("Chica","Molino","Tinaja","Pachon","Rascon","Rio Choy"),]
 
 # Get a map of the world
 world_map_1 <- map_data("world")

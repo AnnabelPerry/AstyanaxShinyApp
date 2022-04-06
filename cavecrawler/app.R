@@ -769,20 +769,21 @@ source("functions/CaveCrawler_functions.R")
       geom_point(data = Latit_Longit,
                  aes(y = Latitude,
                      x = Longitude,
-                     colour = factor(Population)),
+                     colour = Morph),
                  cex = 3) +
-      # this will change colour to viridis colour palette
-      scale_color_viridis_d("Population",alpha = .7,option = "mako") +
       # change the axis labels
       xlab("Longitude") +
       ylab("Latitude") +
-      # change the size of the points in the legend
-      guides(colour = guide_legend(override.aes = list(size=5))) +
-      # change the theme according to your taste
-      # annotate("text", y = 28, x = -98.5, label = "Texas") +
-      # annotate("text", y = 28, x = -100.5, label = "Mexico") +
+      # Add lines from points to data labels
+      geom_label_repel(
+        data = Latit_Longit,
+        aes(x = Longitude, y = Latitude, label = Population),
+        color = "black", fill= "white", box.padding = 2,
+        max.overlaps = 50
+      ) +
+      # Plot title
       ggtitle("Locations of Astyanax mexicanus Populations in Mexico") +
-      # theme_bw() +
+      # Adjust title
       theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
 
     output$home_plot <- renderPlot(pop_map)
