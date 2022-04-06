@@ -31,13 +31,30 @@ source("functions/CaveCrawler_functions.R")
                img(src="Astyanax_Evolution_GIF.gif", align = "center",height='250px',width='500px'),
                br(),
                br(),
-               textOutput("home_text2"),
+               "CaveCrawler is a reactive web interface for bioinformatic 
+               analysis of data in the Mexican tetra (Astyanax mexicanus), an 
+               emerging evolutionary model organism.",
                br(),
-               textOutput("home_text3"),
                br(),
-               textOutput("home_text4"),
+               "CaveCrawler consists of 4 modules: a Gene Search page for 
+               querying data about specific genes, a Transcription page for 
+               finding genes whose transcriptional levels differ between samples,
+               a Population Genetics page for investigating statistics on 
+               diversity and selection, and a GO Term Info page for identifying 
+               and obtaining information on GO terms-of-interest.",
                br(),
-               textOutput("home_text5"),
+               br(),
+               "Finally, there is the Data Sources module, which describes the 
+               publications from which each dataset was obtained, as well as the 
+               dates for Ensembl and UniProt-derived information.",
+               br(),
+               br(),
+               "To request that new data be integrated into CaveCrawler, please 
+               email Heath Blackmon at hblackmon@bio.tamu.edu or Alex Keene at 
+               akeene@bio.tamu.edu",
+               br(),
+               br(),
+               "To cite CaveCrawler, please cite our paper, currently available on BioRXiv: 'CaveCrawler: An interactive analysis suite for cavefish bioinformatics'",
                br(),
                plotOutput("home_plot")
       ),
@@ -224,7 +241,7 @@ source("functions/CaveCrawler_functions.R")
                      selectInput(
                        inputId = "condition",
                        label = "Condition?",
-                       choices = c("Sleep deprivation","Other")
+                       choices = c("Sleep deprivation")
                      )
                    ),
                    
@@ -457,36 +474,178 @@ source("functions/CaveCrawler_functions.R")
                                     tags$div("Crawling through the data...",id="loadmessage"))
                  ),
                  mainPanel(
-                   downloadButton("GOInfoDL", "Download", class = "download"),
-                   tableOutput("GOinfo_table"),
-                   textOutput("GOinfo_wrnings")
+                   fluidRow(class = "text-center",
+                     column(width = 4,
+                            h1("GO Data"),
+                            "From Gene Ontology Consortium, 2021-09 release",
+                            br(),
+                            br(),
+                            downloadButton("GOInfoDL", "Download", class = "download"),
+                     ),
+                     column(width = 8,
+                            tableOutput("GOinfo_table"),
+                            br(),
+                            textOutput("GOinfo_wrnings")
+                            )
+                   )
                  )
                )
       ),
       tabPanel(h2("Data Sources"), fluid = TRUE, align="left",
                h1("CaveCrawler Data Sources"),
+               "1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W. R., 
+               Keene, A. C., Kono, T., Bilandzija, H., Borowsky, R., Espinasa, 
+               L., O'Quin, K., Ornelas-Garcia, C. P., Yoshizawa, M., Carlson, B., 
+               Maldonado, E., Gross, J. B., Cartwright, R. A., Rohner, N., 
+               Warren, W. C., and McGaugh, S. E. (2018) The role of gene flow in 
+               rapid and repeated evolution of cave related traits in Mexican 
+               tetra, Astyanax mexicanus. Molecular ecology, 27, 4397-4416.",
                br(),
-               textOutput("cite1"),
                br(),
-               textOutput("cite2"),
+               "Description:",
                br(),
-               textOutput("cite3"),
+               "Fst, Pi, Dxy, and Tajima's D calculated using whole genomes 
+               sequenced from fin clips of wild-caught Pachon (N= 9; collected 
+               in 2013), Tinaja (N = 10; collected in 2002 and 2009), Molino 
+               (N = 9; collected in 1994 and 2004), Rascon (N = 6; collected in 
+               2013), Rio Choy (N = 9; collected in 2013). Filters were appleid 
+               to SNPs and indels to remove low confidence calls. Due to high 
+               heterozygosity in all individuals, the authors excluded all SNP/
+               indel sites where 100% of individuals were heterozygous. See 
+               publication for more details on sequencing and read filtration.
+               All data was mapped to Astyanax mexicanus 1.02 assembly, Ensembl 
+               93 release.",
                br(),
-               textOutput("cite4"),
                br(),
-               textOutput("cite5"),
                br(),
-               textOutput("cite6"),
+               "2. Moran, R.L., Jaggard, J.B., Roback, E.Y., Kenzior, A., 
+               Rohner, N., Kowalko, J.E., Ornelas-Garcia, P., McGaugh, S.E. and 
+               Keene, A.C. (2022) Hybridization underlies localized trait 
+               evolution in cavefish. iScience",
                br(),
-               textOutput("cite7")
-               ),
-      tabPanel(h2("Community Resources"), fluid = TRUE, align="left",
-               h1("Astyanax Mexicanus Community Resources", align = "center"),
                br(),
-               textOutput("community_summary"),
+               "Description:",
                br(),
-               tableOutput("community_table")
-      )
+               "The authors calculated Dxy and Fst for Chica cave fish from two 
+               pools: Pool 1 (n = 5; referred as Chica1 in tables) 91m from entry 
+               to cave and Pool 2 (n = 14; referred as Chica2 in tables) 10m 
+               further into cave relative to Pool 1.",
+               br(),
+               "The authors calculated Dxy for Rascon-Pachon, Rascon-Tinaja. 
+               Pachon, Tinaja, and Rascon short-read files from Herman et. al 
+               2018 were downloaded from SRA. 1 Rascon and 2 Tinaja individuals 
+               were excluded from D-statistic calculations due to recent hybrid 
+               ancestry, and additional samples were added to bring the final 
+               sample sizes up to Tinaja = 10, Pachon = 9, and Rascon = 8.",
+               br(),
+               "Filters were applied to SNPs and indels to remove low confidence 
+               calls. See publication for more details on sequencing and read 
+               filtration, as well as the websites from which gene information 
+               was derived. All data was mapped to Astyanax mexicanus 1.02 
+               assembly, Ensembl 93 release.",
+               br(),
+               br(),
+               br(),
+               "3. Bradic, M., Beerli, P., Garcia-de Leon, F.J., 
+               Esquivel-Bobadilla, S. and Borowsky, R.L. (2012) Gene flow and 
+               population structure in the Mexican blind cavefish complex 
+               (Astyanax mexicanus). BMC evolutionary biology, 12, 1-17.",
+               br(),
+               br(),
+               "Description:",
+               br(),
+               "Geographic coordinates of 11 cave (Pachon, Yerbaniz, Japonis, 
+               Arroyo, Tinaja, Curva, Toro, Chica, Molino, Caballo Moro) and 10 
+               surface populations (Subterraneo, Rio Frio, Arroyo Sarco, Chamal,
+               Rio Meco, Rio Tantaon, Rio Florido, Rio Tampaon, Nacimiento del 
+               Rio Santa Clara, San Rafael Los Castros, Rio Subterraneo Valley)
+               were identified. These coordinates were used, in conjunction with
+               the Google Maps coordinates for the Rascon and Rio Choy surface 
+               populations (accessed December 2021), to generate the map on the 
+               Home module.",
+               br(),
+               br(),
+               br(),
+               "4. Mack, K.L., Jaggard, J.B., Persons, J.L., Roback, E.Y., 
+               Passow, C.N., Stanhope, B.A., Ferrufino, E., Tsuchiya, D., Smith,
+               S.E. and Slaughter, B.D. (2021) Repeated evolution of circadian 
+               clock dysregulation in cavefish populations. PLoS genetics, 17, 
+               e1009642.",
+               br(),
+               br(),
+               "Description:",
+               br(),
+               "Lab-born Molino, Pachon, Tinaja, and Rio Choy fish were reared
+               on a 14:10 light:dark cycle. At 30 dpf, 6 whole organisms from 
+               each population were sampled for RNAseq at 6 time points (144 
+               samples total; average of 14,197,772 reads per sample). Genes 
+               were considered rhythmic if their JTK_cycle 24 hr periodicity was 
+               below an FDR cutoff of 5%. logFC was calculated for 
+               Molino-Rio Choy, Pachon-Rio Choy, and Tinaja-Rio Choy. All data 
+               was mapped to Astyanax mexicanus 1.02 assembly, Ensembl 93 release.",
+               br(),
+               br(),
+               br(),
+               "5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and 
+               Keene, A.C. (2020) Unique transcriptional signatures of sleep 
+               loss across independently evolved cavefish populations. Journal 
+               of Experimental Zoology Part B: Molecular and Developmental 
+               Evolution, 334, 497-510.",
+               br(),
+               br(),
+               "Description:",
+               br(),
+               "Tinaja, Molino, Pachon, and Rio Choy fish were raised on 14:10 hr
+               light-dark cycle.",
+               "At 29 dpf, fry were sleep deprived by shaking in Erlenmeyer 
+               flasks at random intervals < 60 seconds apart throughout a period 
+               of 10 hours during the night. Control fish were housed under 
+               identical conditions but were not shaken.",
+               "At 30 dpf, 6 whole fish per population (Tinaja, Pachon, Molino, 
+               and Rio Choy) and experimental group (sleep-deprived and control) 
+               were sampled for RNA-seq.",
+               "The logFC in response to sleep deprivation was calculated for 
+               17,187 genes in each population. Genes were labeled as 
+               differentially expressed if the Benjamini-Hochberg adjusted 
+               p-value was less than 0.05.",
+               "All data was mapped to Astyanax mexicanus 1.02 assembly, Ensembl
+               93 release.",
+               br(),
+               br(),
+               br(),
+               "6. Warren, W.C., Boggs, T.E., Borowsky, R., Carlson, B.M., 
+               Ferrufino, E., Gross, J.B., Hillier, L., Hu, Z., Keene, A.C. and 
+               Kenzior, A. (2021) A chromosome-level genome of Astyanax mexicanus 
+               surface fish for comparing population-specific genetic differences 
+               contributing to trait evolution. Nature communications, 12, 1-12.",
+               br(),
+               br(),
+               "Description:",
+               br(),
+               "The authors of this study created a fully-annotated surface fish
+               genome assembly. The genome assembly from this study was acquired
+               for CaveCrawler using Ensembl Genome Browser, release 104.",
+               br(),
+               br(),
+               br(),
+               "7. The UniProt Consortium. (2020) UniProt: the universal protein 
+               knowledgebase in 2021. Nucleic Acids Research, 49, D480-D489.",
+               br(),
+               br(),
+               "Description:",
+               br(),
+               "All Mexican tetra Gene Ontology information was obtained from
+               UniProtKB (Feb. 2 2021 release) using the following search phrase: ",
+               br(),
+               "organism:","'Astyanax mexicanus (Blind cave fish) (Astyanax fasciatus mexicanus) [7994]'","AND proteome:up000018467"
+               )#,
+      #tabPanel(h2("Community Resources"), fluid = TRUE, align="left",
+      #         h1("Astyanax Mexicanus Community Resources", align = "center"),
+      #         br(),
+      #         textOutput("community_summary"),
+      #         br(),
+      #         tableOutput("community_table")
+      #)
     )
   )
 
@@ -593,15 +752,7 @@ source("functions/CaveCrawler_functions.R")
       }
       })
     })
-
-
-    # Home Page: Output text describing website, functions, data contribution,
-    # and Astyanax mexicanus
-    output$home_text2 <- renderText("CaveCrawler is a reactive web interface for bioinformatic analysis of data in the Mexican tetra (Astyanax mexicanus), an emerging evolutionary model organism.")
-    output$home_text3 <- renderText("CaveCrawler consists of 4 subpages: a Gene Search page for querying data about specific genes, a Transcription page for finding genes whose transcriptional levels differ between samples, a Population Genetics page for investigating statistics on diversity and selection, and a GO Term Info page for identifying and obtaining information on GO terms-of-interest.")
-    output$home_text4 <- renderText("To request that new data be integrated into CaveCrawler, please email Heath Blackmon at hblackmon@bio.tamu.edu or Alex Keene at akeene@bio.tamu.edu")
-    output$home_text5 <- renderText("To cite CaveCrawler, please cite our paper, currently available on BioRXiv: 'CaveCrawler: An interactive analysis suite for cavefish bioinformatics'")
-
+    
     # Home Page: Plot map of all populations
     # Plot map of Astyanax populations
     pop_map <- ggplot(data = world_map) +
@@ -1215,22 +1366,13 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     
-    # Citations
-    output$cite1 <- renderText("1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W. R., Keene, A. C., Kono, T., Bilandzija, H., Borowsky, R., Espinasa, L., O'Quin, K., Ornelas-Garcia, C. P., Yoshizawa, M., Carlson, B., Maldonado, E., Gross, J. B., Cartwright, R. A., Rohner, N., Warren, W. C., and McGaugh, S. E. (2018) The role of gene flow in rapid and repeated evolution of cave related traits in Mexican tetra, Astyanax mexicanus. Molecular ecology, 27, 4397-4416.")
-    output$cite2 <- renderText("2. Moran, R.L., Jaggard, J.B., Roback, E.Y., Kenzior, A., Rohner, N., Kowalko, J.E., Ornelas-Garcia, P., McGaugh, S.E. and Keene, A.C. (2022) Hybridization underlies localized trait evolution in cavefish. iScience")
-    output$cite3 <- renderText("3. Bradic, M., Beerli, P., Garcia-de Leon, F.J., Esquivel-Bobadilla, S. and Borowsky, R.L. (2012) Gene flow and population structure in the Mexican blind cavefish complex (Astyanax mexicanus). BMC evolutionary biology, 12, 1-17.")
-    output$cite4 <- renderText("4. Mack, K.L., Jaggard, J.B., Persons, J.L., Roback, E.Y., Passow, C.N., Stanhope, B.A., Ferrufino, E., Tsuchiya, D., Smith, S.E. and Slaughter, B.D. (2021) Repeated evolution of circadian clock dysregulation in cavefish populations. PLoS genetics, 17, e1009642.")
-    output$cite5 <- renderText("5. McGaugh, S.E., Passow, C.N., Jaggard, J.B., Stahl, B.A. and Keene, A.C. (2020) Unique transcriptional signatures of sleep loss across independently evolved cavefish populations. Journal of Experimental Zoology Part B: Molecular and Developmental Evolution, 334, 497-510.")
-    output$cite6 <- renderText("6. Warren, W.C., Boggs, T.E., Borowsky, R., Carlson, B.M., Ferrufino, E., Gross, J.B., Hillier, L., Hu, Z., Keene, A.C. and Kenzior, A. (2021) A chromosome-level genome of Astyanax mexicanus surface fish for comparing population-specific genetic differences contributing to trait evolution. Nature communications, 12, 1-12.")
-    output$cite7 <- renderText("7. The UniProt Consortium. (2020) UniProt: the universal protein knowledgebase in 2021. Nucleic Acids Research, 49, D480-D489.")
-    
     # Text summary and table for community resources page
-    output$community_summary <- renderText("The table below describes molecular tools, genetic resources, stock populations, etc. available from different labs in the Mexican tetra research community, as well as contact info for each lab")
-    Community_Data <- read.csv("data/CommunityData.csv")
+    #output$community_summary <- renderText("The table below describes molecular tools, genetic resources, stock populations, etc. available from different labs in the Mexican tetra research community, as well as contact info for each lab")
+    #Community_Data <- read.csv("data/CommunityData.csv")
     # Replace periods with spaces
-    colnames(Community_Data) <- gsub(pattern = ".", replacement = " ", 
-                                     x = colnames(Community_Data), fixed = T)
-    output$community_table <- renderTable(Community_Data, align = 'c')
+    #colnames(Community_Data) <- gsub(pattern = ".", replacement = " ", 
+    #                                 x = colnames(Community_Data), fixed = T)
+    #output$community_table <- renderTable(Community_Data, align = 'c')
     }
 
 
