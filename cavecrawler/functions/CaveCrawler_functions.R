@@ -534,6 +534,7 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
 }
 
 TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh, GOTable){
+  wrnings <- c("Errors: ")
   # If condition is NOT "Between morph"...
   if(condition != "Between morph"){
     # Use transcription data of morph-control comparisons
@@ -590,6 +591,16 @@ TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh
       ROIs <- ROIs[order(ROIs$PValue, decreasing = F),]
     }
   }
+  # Check if any genes were found for specified conditions
+  if(nrow(ROIs) == 0){
+    wrnings <- append(wrnings, "No genes found matching given parameters.")
+    output.df <- as.data.frame(matrix(rep(NA,10), ncol = 10))
+    names(output.df) <- c("Gene Name","Gene Stable ID","GO Term(s)","Comparison",
+      "logFC","p-value","Age at Sampling","Tissue","Ensembl Family Description",
+      "Publication"
+    )
+    return(list(output.df, wrnings))
+  }
   # Obtain GO terms for ROIs
   GOTerms <- character(length = nrow(ROIs))
   for(i in 1:length(GOTerms)){
@@ -633,7 +644,7 @@ TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh
     special_name,
     "Publication"
   )
-  return(output.df)
+  return(list(output.df,wrnings))
 }
 
 StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){

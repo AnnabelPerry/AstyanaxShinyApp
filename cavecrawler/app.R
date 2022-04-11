@@ -284,7 +284,8 @@ source("functions/CaveCrawler_functions.R")
                  mainPanel(fluidRow(
                    conditionalPanel(condition = "Transc_enter",
                                     downloadButton("TranscDL", "Download", class = "download"),
-                                    tableOutput("transc_table_out")
+                                    tableOutput("transc_table_out"),
+                                    textOutput("transc_wrnings_out")
                    )
                  )
                  )
@@ -1062,12 +1063,12 @@ source("functions/CaveCrawler_functions.R")
     output$transc_table_out <- renderTable({
       # Change log fold changes to have 5 decimal points
       reformattedTranscT <- data.frame(
-        transc_table()[,1:4],
-        format(transc_table()[,5], digits = 5),
-        format(transc_table()[,6], digits = 5),
-        transc_table()[,7:10]
+        transc_table()[[1]][,1:4],
+        format(transc_table()[[1]][,5], digits = 5),
+        format(transc_table()[[1]][,6], digits = 5),
+        transc_table()[[1]][,7:10]
       )
-      names(reformattedTranscT) <- names(transc_table())
+      names(reformattedTranscT) <- names(transc_table()[[1]])
       # Sort table based on p or logFC value
       if(input$TRwhich_sort == "p"){
         if(input$TRsort_p == "TRp_hl"){
@@ -1088,6 +1089,7 @@ source("functions/CaveCrawler_functions.R")
       
       reformattedTranscT
     })
+    output$transc_wrnings_out <- renderText({transc_table()[[2]]})
 
     # Transcription Page: Enable downloading of Transcription table
     output$TranscDL <- downloadHandler(
