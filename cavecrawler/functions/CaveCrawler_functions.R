@@ -49,7 +49,7 @@ position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 position_table$Gene_Name <- tolower(position_table$Gene_Name)
 position_table <- position_table[!duplicated(position_table$Gene_Name),]
 
-condition_control <- read.csv("data/Morph_Control_TranscData.csv")
+condition_control <- read.csv("data/Morph_Control_TranscData_SFRemapped.csv")
 condition_control$Publication <- rep("5", nrow(condition_control))
 
 # Currently, we only have morph:morph comparisons from one study
