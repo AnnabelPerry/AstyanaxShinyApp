@@ -69,7 +69,6 @@ source("functions/CaveCrawler_functions.R")
                      label = "Gene name, gene stable ID, GO ID, or phrase",
                      placeholder = "mtnr1al, ENSAMXG00000010894, GO:0016021, melatonin receptor, etc...",
                      btnSearch = icon("search"),
-                     btnReset = icon("remove"),
                      width = "450px"
                    ),
                    conditionalPanel(condition="$('html').hasClass('shiny-busy')",
@@ -411,7 +410,6 @@ source("functions/CaveCrawler_functions.R")
                          inputId = "GO_search", label = "GO ID or Term",
                          placeholder = "GO:0000001, mitochondrion, etc...",
                          btnSearch = icon("search"),
-                         btnReset = icon("remove"),
                          width = "450px"
                        ),
                        # If stat-by-chr is checked, enable sorting
@@ -468,7 +466,6 @@ source("functions/CaveCrawler_functions.R")
                      label = "Phrase or comma-separated list of GO IDs",
                      placeholder = "GO:0000001, mitochondrion, etc...",
                      btnSearch = icon("search"),
-                     btnReset = icon("remove"),
                      width = "450px"
                    ),
                    conditionalPanel(condition="$('html').hasClass('shiny-busy')",
@@ -765,7 +762,7 @@ source("functions/CaveCrawler_functions.R")
       # get the portion of the map where your data is located at
       coord_fixed(xlim = c(min(Latit_Longit$Longitude) - 2, max(Latit_Longit$Longitude) + 2),
                   ylim = c(min(Latit_Longit$Latitude) - 1, max(Latit_Longit$Latitude) + 1),
-                  ratio = 1.3)+
+                  ratio = 1.3) +
       # plot your points
       geom_point(data = Latit_Longit,
                  aes(y = Latitude,

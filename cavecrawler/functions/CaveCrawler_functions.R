@@ -13,31 +13,11 @@ library(maps)
 library(ggrepel)
 
 ################################## Load Data ###################################
-# Make dataframe of latitudes and longitudes for all morphs
+# Dataframe of latitudes and longitudes for all morphs
 # Citation:
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3282648/pdf/1471-2148-12-9.pdf
-Latit_Longit_unedited <- data.frame(
-  Population = c("Pachon","Yerbaniz","Japonis","Arroyo","Tinaja","Curva","Toro",
-                 "Chica","Molino","Caballo Moro","Subterraneo","Rio Frio",
-                 "Arroyo Sarco", "Chamal","Rio Meco","Rio Tantaon","Rio Florido",
-                 "Rio Tampaon","Nacimiento del Rio Santa Clara",
-                 "San Rafael Los Castros","Rio Subterraneo Valley"),
-  Latitude = c(22.60,22.20,22.10,22.20,22.08,21.98,21.85,21.85,23.06,22.92,
-               22.10,22.99,22.02,22.84,22.82,22.37,21.98,21.85,22.50,22.75,22.13
-  ),
-  Longitude = c(-99.05,-98.97,-98.95,-98.97,-98.95,-98.93,-98.93,-98.93,-99.16,
-                -99.20,-99.18,-99.15,-99.32,-99.20,-99.31,-98.90,-98.77,-98.94,-98.9,
-                -99.02,-99.17
-  ),
-  Morph = c(rep("Cave",10), rep("Surface", 11))
-)
 # Rascon and Rio Choy data obtained from google maps
-Latit_Longit <- rbind(Latit_Longit_unedited, data.frame(
-  Population = c("Rascon","Rio Choy"),
-  Latitude = c(21.9750,21.9998),
-  Longitude = c(-99.2578,-98.7785),
-  Morph = c("Surface","Surface")
-))
+Latit_Longit <- read.csv("data/PopulationLocations.csv")
 
 # Get a map of the world
 world_map_1 <- map_data("world")
@@ -1021,10 +1001,14 @@ StatDistPlot <- function(stat, UL, thresh, stat_table, pops){
   # Initialize vector into which notes will be stored
   wrnings <- c("Notes: ")
   # Create an error plot to be returned if an error occurs
-  error_plot <- plot(x = c(.95, .955,  .975,  1, 1.025, 1.05,   1.07,  1.075, 0.99, 1.035),
-                     y = c( 1, 1.5, 1.75, 2, 2,    1.75,  1.5,   1,    3.5,    3.5), pch = 16, axes = F,
-                     ylab = "",
-                     xlab = "Whoops! Something went wrong. See errors")
+  error_df <- data.frame(
+    x = c(.95, .955,  .975,  1, 1.025, 1.05,   1.07,  1.075, 0.99, 1.035),
+    y = c( 1, 1.5, 1.75, 2, 2,    1.75,  1.5,   1,    3.5,    3.5)
+  )
+  error_plot <- ggplot(data = error_df, aes(x = x, y = y)) +
+    geom_point() +
+    ylab("") +
+    xlab("Whoops! Something went wrong. See errors")
   # Initialize vector of indices
   indices <- c()
 
