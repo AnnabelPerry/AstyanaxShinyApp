@@ -76,139 +76,142 @@ source("functions/CaveCrawler_functions.R")
                  ),
                  mainPanel(id = "main",
                    tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
-                   # If position data is requested, output position data
+                   # If search button was pressed, output relevant data
                    conditionalPanel(
-                     condition = "input.GSbools.includes('Position')",
-                     fluidRow(class = "text-center",
-                              column(width = 4,
-                                     h1("Position Data"),
-                                     radioButtons("GSPwhich_sort",
-                                                  label = "Sort by...",
-                                                  choices = c(
-                                                    "Scaffold" = "GSPsc",
-                                                    "Start Locus" = "GSPsl",
-                                                    "End Locus" = "GSPel"
-                                                  )
-                                     ),
-                                     conditionalPanel(
-                                       condition = "input.GSPwhich_sort == 'GSPsc'",
-                                       radioButtons("GSPsc_dir",
-                                                    label = "... from...",
+                     condition = "input.Gene_search",
+                     # If position data is requested, output position data
+                     conditionalPanel(
+                       condition = "input.GSbools.includes('Position')",
+                       fluidRow(class = "text-center",
+                                column(width = 4,
+                                       h1("Position Data"),
+                                       radioButtons("GSPwhich_sort",
+                                                    label = "Sort by...",
                                                     choices = c(
-                                                      "High to Low" = "GSPsc_hl",
-                                                      "Low to High" = "GSPsc_lh"
+                                                      "Scaffold" = "GSPsc",
+                                                      "Start Locus" = "GSPsl",
+                                                      "End Locus" = "GSPel"
                                                     )
-                                       )
-                                     ),
-                                     conditionalPanel(
-                                       condition = "input.GSPwhich_sort == 'GSPsl'",
-                                       radioButtons("GSPsl_dir",
-                                                    label = "",
-                                                    choices = c(
-                                                      "High to Low" = "GSPsl_hl",
-                                                      "Low to High" = "GSPsl_lh"
-                                                    )
-                                       )
-                                     ),
-                                     conditionalPanel(
-                                       condition = "input.GSPwhich_sort == 'GSPel'",
-                                       radioButtons("GSPel_dir",
-                                                    label = "",
-                                                    choices = c(
-                                                      "High to Low" = "GSPel_hl",
-                                                      "Low to High" = "GSPel_lh"
-                                                    )
-                                       )
-                                     ),
-                                     downloadButton("GSPosDL", "Download Position Data", class = "download")   
-                              ),
-                              column(width = 6,
-                                     tableOutput("GSPos_table")
-                              )
-                              )
-                     ),
-                   br(),
-                   # If Transcription data is requested, output Transcription data
-                   conditionalPanel(
-                     condition = "input.GSbools.includes('Transcription')",
-                     fluidRow(
-                       column(width = 5,
-                              h1("Transcription Data"),
-                              radioButtons("GSTwhich_sort",
-                                           label = "Sort by...",
-                                           choices = c("logFC", "p")
-                              ),
-                              conditionalPanel(
-                                condition = "input.GSTwhich_sort == 'logFC'",
-                                radioButtons("GSTFC_dir",
-                                             label = "... from...",
-                                             choices = c(
-                                               "High to Low" = "GSTFC_hl",
-                                               "Low to High" = "GSTFC_lh"
-                                             )
+                                       ),
+                                       conditionalPanel(
+                                         condition = "input.GSPwhich_sort == 'GSPsc'",
+                                         radioButtons("GSPsc_dir",
+                                                      label = "... from...",
+                                                      choices = c(
+                                                        "High to Low" = "GSPsc_hl",
+                                                        "Low to High" = "GSPsc_lh"
+                                                      )
+                                         )
+                                       ),
+                                       conditionalPanel(
+                                         condition = "input.GSPwhich_sort == 'GSPsl'",
+                                         radioButtons("GSPsl_dir",
+                                                      label = "",
+                                                      choices = c(
+                                                        "High to Low" = "GSPsl_hl",
+                                                        "Low to High" = "GSPsl_lh"
+                                                      )
+                                         )
+                                       ),
+                                       conditionalPanel(
+                                         condition = "input.GSPwhich_sort == 'GSPel'",
+                                         radioButtons("GSPel_dir",
+                                                      label = "",
+                                                      choices = c(
+                                                        "High to Low" = "GSPel_hl",
+                                                        "Low to High" = "GSPel_lh"
+                                                      )
+                                         )
+                                       ),
+                                       downloadButton("GSPosDL", "Download Position Data", class = "download")   
+                                ),
+                                column(width = 6,
+                                       tableOutput("GSPos_table")
                                 )
-                              ),
-                              conditionalPanel(
-                                condition = "input.GSTwhich_sort == 'p'",
-                                radioButtons("GSTp_dir",
-                                             label = "... from...",
-                                             choices = c(
-                                               "High to Low" = "GSTp_hl",
-                                               "Low to High" = "GSTp_lh"
-                                             )
                                 )
-                              ),
-                              downloadButton("GSTranscDL", "Download Transcription Data", class = "download")
                        ),
-                       column(width = 6,
-                              tableOutput("GSTransc_table")
-                              )
-                     )
-                     ),
-                   br(),
-                   # If Population Genetics data is requested, output Population
-                   # Genetics data
-                   conditionalPanel(
-                     condition = "input.GSbools.includes('Population Genetics')",
-                     fluidRow(class = "text-center",
-                              column(width = 4,
-                                     h1("Popgen Data"),
-                                     radioButtons("GSPG_dir",
-                                                  label = "Sort statistic values from...",
-                                                  choices = c(
-                                                    "High to Low" = "GSPG_hl",
-                                                    "Low to High" = "GSPG_lh"
-                                                  )
-                                     ),
-                                     downloadButton("GSPopgenDL", "Download Popgen Data", class = "download")
-                                     
-                                     ),
-                              column(width = 6,
-                                     tableOutput("GSPopgen_table")
-                              )
-                          ),
-                     ),
-                   br(),
-                   # If GO data is requested, output GO data
-                   conditionalPanel(
-                     condition = "input.GSbools.includes('GO')",
-                     fluidRow(
-                       column(width = 4,
-                              h1("GO Data"),
-                              downloadButton("GSGODL", "Download GO Data", class = "download")
-                       ),
-                       column(width = 6,
-                         tableOutput("GSGO_table")
+                     br(),
+                     # If Transcription data is requested, output Transcription data
+                     conditionalPanel(
+                       condition = "input.GSbools.includes('Transcription')",
+                       fluidRow(
+                         column(width = 5,
+                                h1("Transcription Data"),
+                                radioButtons("GSTwhich_sort",
+                                             label = "Sort by...",
+                                             choices = c("logFC", "p")
+                                ),
+                                conditionalPanel(
+                                  condition = "input.GSTwhich_sort == 'logFC'",
+                                  radioButtons("GSTFC_dir",
+                                               label = "... from...",
+                                               choices = c(
+                                                 "High to Low" = "GSTFC_hl",
+                                                 "Low to High" = "GSTFC_lh"
+                                               )
+                                  )
+                                ),
+                                conditionalPanel(
+                                  condition = "input.GSTwhich_sort == 'p'",
+                                  radioButtons("GSTp_dir",
+                                               label = "... from...",
+                                               choices = c(
+                                                 "High to Low" = "GSTp_hl",
+                                                 "Low to High" = "GSTp_lh"
+                                               )
+                                  )
+                                ),
+                                downloadButton("GSTranscDL", "Download Transcription Data", class = "download")
+                         ),
+                         column(width = 6,
+                                tableOutput("GSTransc_table")
+                                )
                        )
+                       ),
+                     br(),
+                     # If Population Genetics data is requested, output Population
+                     # Genetics data
+                     conditionalPanel(
+                       condition = "input.GSbools.includes('Population Genetics')",
+                       fluidRow(class = "text-center",
+                                column(width = 4,
+                                       h1("Popgen Data"),
+                                       radioButtons("GSPG_dir",
+                                                    label = "Sort statistic values from...",
+                                                    choices = c(
+                                                      "High to Low" = "GSPG_hl",
+                                                      "Low to High" = "GSPG_lh"
+                                                    )
+                                       ),
+                                       downloadButton("GSPopgenDL", "Download Popgen Data", class = "download")
+                                       
+                                       ),
+                                column(width = 6,
+                                       tableOutput("GSPopgen_table")
+                                )
+                            ),
+                       ),
+                     br(),
+                     # If GO data is requested, output GO data
+                     conditionalPanel(
+                       condition = "input.GSbools.includes('GO')",
+                       fluidRow(
+                         column(width = 4,
+                                h1("GO Data"),
+                                downloadButton("GSGODL", "Download GO Data", class = "download")
+                         ),
+                         column(width = 6,
+                           tableOutput("GSGO_table")
+                         )
+                       )
+                     ),
+                     # Regardless of what was inputted, output warnings
+                     br(),
+                     fluidRow(
+                       h1("Warnings:"),
+                       textOutput("GSwarnings")
                      )
-                   ),
-                   # Regardless of what was inputted, output warnings
-                   br(),
-                   fluidRow(
-                     h1("Warnings:"),
-                     textOutput("GSwarnings")
                    )
-                   
                )
           )
       ),
@@ -281,7 +284,7 @@ source("functions/CaveCrawler_functions.R")
                                     tags$div("Crawling through the data...",id="loadmessage"))
                   ),
                  mainPanel(fluidRow(
-                   conditionalPanel(condition = "Transc_enter",
+                   conditionalPanel(condition = "input.Transc_enter",
                                     downloadButton("TranscDL", "Download", class = "download"),
                                     tableOutput("transc_table_out"),
                                     textOutput("transc_wrnings_out")
@@ -302,28 +305,31 @@ source("functions/CaveCrawler_functions.R")
                                       tags$div("Crawling through the data...",id="loadmessage"))
                    ),
                    mainPanel(
-                     br(),
-                     br(),
-                     br(),
-                     br(),
-                     br(),
-                     br(),
-                     br(),
-                     br(),
-                     # Display download button appropriate to specific conditions
+                     # Display plot appropriate to specific conditions
                      conditionalPanel(
                        condition = "input.which_function == 'stat_by_chr_func'",
-                       downloadButton("SBCDL", "Download", class = "download")
+                       conditionalPanel(
+                         condition = "input.SBCP_enter",
+                         plotOutput("SBC_plot"),
+                         br(),
+                         br(),
+                         br()
+                       )
                      ),
                      conditionalPanel(
                        condition = "input.which_function == 'distr_func'",
                        conditionalPanel(
-                         condition = "input.type == 'Gene Count'",
-                         downloadButton("GCDistDL", "Download", class = "download")
-                       ),
-                       conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
-                         downloadButton("SVDistDL", "Download", class = "download")
+                         conditionalPanel(
+                           condition = "input.SVDistPlot_enter",
+                           plotOutput("SVdist_plot"),
+                           textOutput("SVdist_plot_wrnings"),
+                           br(),
+                           br(),
+                           br(),
+                           br(),
+                           br(),
+                         )
                        )
                      )
                    )
@@ -377,17 +383,23 @@ source("functions/CaveCrawler_functions.R")
                      mainPanel(
                        conditionalPanel(
                          condition = "input.type == 'Gene Count'",
-                         tableOutput("GCdist_tab"),
-                         textOutput("GCdist_wrnings")
+                         conditionalPanel(
+                           condition = "input.GCDistTable_enter",
+                           downloadButton("GCDistDL", "Download", class = "download"),
+                           tableOutput("GCdist_tab"),
+                           textOutput("GCdist_wrnings")
+                         )
                        ),
                        # Only show this panel if the user wants to find genes with stat values
                        # above or below a specific threshhold
                        conditionalPanel(
                          condition = "input.type == 'Statistic Value'",
-                         plotOutput("SVdist_plot"),
-                         textOutput("SVdist_plot_wrnings"),
-                         tableOutput("SVdist_tab"),
-                         textOutput("SVdist_wrnings")
+                         conditionalPanel(
+                           condition = "input.SVDistTable_enter",
+                           downloadButton("SVDistDL", "Download", class = "download"),
+                           tableOutput("SVdist_tab"),
+                           textOutput("SVdist_wrnings")
+                         )
                        )
                      )
                    )
@@ -412,33 +424,37 @@ source("functions/CaveCrawler_functions.R")
                          btnSearch = icon("search"),
                          width = "450px"
                        ),
-                       # If stat-by-chr is checked, enable sorting
-                       radioButtons("SBCwhich_sort",
-                                    label = "Sort table by...",
-                                    choices = c("Start Position" = "SBCsp_sort",
-                                                "End Position" = "SBCep_sort",
-                                                "Statistic Value" = "SBCsv_sort")
-                       ),
-                       # Create ascending or descending sort based on initial input
+                       # If stat-by-chr is checked and action button is pressed,
+                       # enable sorting
                        conditionalPanel(
-                         condition = "input.SBCwhich_sort == 'SBCsp_sort'",
-                         radioButtons("SBCsp_dir", label = "Sort order:",
-                                      choices = c("High to Low" = "sp_asc", 
-                                                  "Low to High" ="sp_desc"))
-                       ),
-                       conditionalPanel(
-                         condition = "input.SBCwhich_sort == 'SBCep_sort'",
-                         radioButtons("SBCep_dir",
-                                      label = "Sort order:",
-                                      choices = c("High to Low" = "ep_asc", 
-                                                  "Low to High" ="ep_desc"))
-                       ),
-                       conditionalPanel(
-                         condition = "input.SBCwhich_sort == 'SBCsv_sort'",
-                         radioButtons("SBCsv_dir",
-                                      label = "Sort order:",
-                                      choices = c("High to Low" = "sv_asc", 
-                                                  "Low to High" ="sv_desc"))
+                         condition = "input.GO_search",
+                         radioButtons("SBCwhich_sort",
+                                      label = "Sort table by...",
+                                      choices = c("Start Position" = "SBCsp_sort",
+                                                  "End Position" = "SBCep_sort",
+                                                  "Statistic Value" = "SBCsv_sort")
+                         ),
+                         # Create ascending or descending sort based on initial input
+                         conditionalPanel(
+                           condition = "input.SBCwhich_sort == 'SBCsp_sort'",
+                           radioButtons("SBCsp_dir", label = "Sort order:",
+                                        choices = c("High to Low" = "sp_asc", 
+                                                    "Low to High" ="sp_desc"))
+                         ),
+                         conditionalPanel(
+                           condition = "input.SBCwhich_sort == 'SBCep_sort'",
+                           radioButtons("SBCep_dir",
+                                        label = "Sort order:",
+                                        choices = c("High to Low" = "ep_asc", 
+                                                    "Low to High" ="ep_desc"))
+                         ),
+                         conditionalPanel(
+                           condition = "input.SBCwhich_sort == 'SBCsv_sort'",
+                           radioButtons("SBCsv_dir",
+                                        label = "Sort order:",
+                                        choices = c("High to Low" = "sv_asc", 
+                                                    "Low to High" ="sv_desc"))
+                         ),
                        ),
                        uiOutput("stat_PlotSelect"),
                        uiOutput("scaff_PlotSelect"),
@@ -448,12 +464,12 @@ source("functions/CaveCrawler_functions.R")
                      ),
                      
                      mainPanel(
-                       # EDIT: Remove once fixed
-                       textOutput("test1"),
-                       textOutput("test2"),
-                       plotOutput("SBC_plot"),
-                      tableOutput("SBC_table"),
-                      textOutput("SBC_wrnings")
+                       conditionalPanel(
+                         condition = "input.GO_search",
+                         downloadButton("SBCDL", "Download", class = "download"),
+                         tableOutput("SBC_table"),
+                         textOutput("SBC_wrnings")
+                       )
                      )
                    )
                  )
@@ -478,12 +494,18 @@ source("functions/CaveCrawler_functions.R")
                             "From Gene Ontology Consortium, 2021-09 release",
                             br(),
                             br(),
-                            downloadButton("GOInfoDL", "Download", class = "download"),
+                            conditionalPanel(
+                              condition = "input.GO_info_search",
+                              downloadButton("GOInfoDL", "Download", class = "download"),
+                            )
                      ),
                      column(width = 8,
-                            tableOutput("GOinfo_table"),
-                            br(),
-                            textOutput("GOinfo_wrnings")
+                            conditionalPanel(
+                              condition = "input.GO_info_search",
+                              tableOutput("GOinfo_table"),
+                              br(),
+                              textOutput("GOinfo_wrnings")
+                            )
                             )
                    )
                  )
