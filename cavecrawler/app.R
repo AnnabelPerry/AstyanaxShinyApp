@@ -75,7 +75,6 @@ source("functions/CaveCrawler_functions.R")
                                     tags$div("Crawling through the data...",id="loadmessage"))
                  ),
                  mainPanel(id = "main",
-                   tags$head(tags$style(".download{background-color:#c8feca;} .download{color: #71c596 !important;} .download{border-color: #71c596 !important;}")),
                    # If search button was pressed, output relevant data
                    conditionalPanel(
                      condition = "input.Gene_search",
@@ -375,7 +374,7 @@ source("functions/CaveCrawler_functions.R")
                                       label = "Output genes whose value is above or below the threshhold?",
                                       choices = c("Above" = "top", "Below" ="bottom")),
                          actionButton("SVDistTable_enter","Find Genes"),
-                         uiOutput("SVDistPlot_enter"),
+                         actionButton("SVDistPlot_enter", "Visualize"),
                          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                           tags$div("Crawling through the data...",id="loadmessage"))
                        )
@@ -455,10 +454,27 @@ source("functions/CaveCrawler_functions.R")
                                         choices = c("High to Low" = "sv_asc", 
                                                     "Low to High" ="sv_desc"))
                          ),
+                         # Enable visualization only if searchbar was pressed
+                         selectInput(
+                           inputId = "stat_PlotSelect",
+                           label = "Visualize statistic...",
+                           choices = "",
+                           selected = NULL,
+                           multiple = FALSE
+                           ),
+                       selectInput(
+                         inputId = "scaff_PlotSelect",
+                         label = "...plotted along scaffold:",
+                         choices = "",
+                         selected = NULL,
+                         multiple = FALSE
+                         ),
+                       actionButton("SBCP_enter","Visualize")
+                     
                        ),
-                       uiOutput("stat_PlotSelect"),
-                       uiOutput("scaff_PlotSelect"),
-                       uiOutput("SBCP_enter"),
+                       #uiOutput("stat_PlotSelect"),
+                       #uiOutput("scaff_PlotSelect"),
+                       #uiOutput("SBCP_enter"),
                        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                         tags$div("Crawling through the data...",id="loadmessage"))
                      ),
@@ -1159,13 +1175,6 @@ source("functions/CaveCrawler_functions.R")
     )
     output$SVdist_plot_wrnings <- renderText(SVDP()[[1]])
     output$SVdist_plot <- renderPlot(SVDP()[[2]])
-
-    # Statistic Value SubPage: Output visualize button only if data has been inputted
-    observeEvent(input$SVDistTable_enter, {
-      output$SVDistPlot_enter <- renderUI({
-        actionButton("SVDistPlot_enter", "Visualize")
-      })
-    })
     
     # Statistic Value SubPage: Enable downloading of Statistic Value table
     output$SVDistDL <- downloadHandler(
@@ -1238,31 +1247,29 @@ source("functions/CaveCrawler_functions.R")
 
     # Population Genetics (Stat-By-Chr Subpage): Only enable visualization once
     # data is entered
-    observeEvent(input$GO_search, {
-      if(input$GO_search != ""){
-        output$stat_PlotSelect <- renderUI({
-          selectInput(
-            inputId = "stat_PlotSelect",
-            label = "Visualize statistic...",
-            choices = "",
-            selected = NULL,
-            multiple = FALSE
-          )
-        })
-        output$scaff_PlotSelect <- renderUI({
-          selectInput(
-            inputId = "scaff_PlotSelect",
-            label = "...plotted along scaffold:",
-            choices = "",
-            selected = NULL,
-            multiple = FALSE
-          )
-        })
-        output$SBCP_enter <- renderUI({
-          actionButton("SBCP_enter","Visualize")
-        })
-      }
-    })
+    #observeEvent(input$GO_search, {
+    #  if(input$GO_search != ""){
+    #    output$stat_PlotSelect <- renderUI({
+    #      selectInput(
+    #        inputId = "stat_PlotSelect",
+    #        label = "Visualize statistic...",
+    #        choices = "",
+    #        selected = NULL,
+    #        multiple = FALSE
+    #      )
+    #    })
+    #    output$scaff_PlotSelect <- renderUI({
+    #      selectInput(
+    #        inputId = "scaff_PlotSelect",
+    #        label = "...plotted along scaffold:",
+    #        choices = "",
+    #        selected = NULL,
+    #        multiple = FALSE
+    #      )
+    #    })
+    ###   })
+      #}
+    #})
     
     # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and
     # input table is NOT full of NAs, output a plot of the appropriate statistic x
