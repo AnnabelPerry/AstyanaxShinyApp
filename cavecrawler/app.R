@@ -20,7 +20,7 @@ source("functions/CaveCrawler_functions.R")
                ".shiny-output-error:before { visibility: hidden; }",
                'body {color:black;}'),
     tabsetPanel(
-      tabPanel(h2("Home"), fluid = TRUE,
+      tabPanel("Home", fluid = TRUE,
                h1("Welcome to CaveCrawler"),
                img(src="Astyanax_Evolution_GIF.gif", align = "center",height='250px',width='500px'),
                br(),
@@ -52,7 +52,7 @@ source("functions/CaveCrawler_functions.R")
                br(),
                plotOutput("home_plot")
       ),
-      tabPanel(h2("Gene Search"), fluid = TRUE,
+      tabPanel("Gene Search", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
                   checkboxGroupInput("GSbools",
@@ -208,7 +208,7 @@ source("functions/CaveCrawler_functions.R")
                )
           )
       ),
-      tabPanel(h2("Transcription"), fluid = TRUE,
+      tabPanel("Transcription", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
                    selectInput(
@@ -286,7 +286,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
-        tabPanel(h2("Population Genetics"), fluid = TRUE,
+        tabPanel("Population Genetics", fluid = TRUE,
                  sidebarLayout(
                    sidebarPanel(id = "sidebar2",
                      radioButtons("which_function",
@@ -481,7 +481,7 @@ source("functions/CaveCrawler_functions.R")
                    )
                  )
         ),
-      tabPanel(h2("GO Term Info"), fluid = TRUE,
+      tabPanel("GO Term Info", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
                    searchInput(
@@ -518,7 +518,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
-      tabPanel(h2("Data Sources"), fluid = TRUE, align="left",
+      tabPanel("Data Sources", fluid = TRUE, align="left",
                h1("CaveCrawler Data Sources"),
                "1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W. R., 
                Keene, A. C., Kono, T., Bilandzija, H., Borowsky, R., Espinasa, 

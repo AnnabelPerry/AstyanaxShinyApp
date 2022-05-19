@@ -34,14 +34,18 @@ font-size:14px;
 .tabbable > .nav > li > a {
         background-color: white; 
         border-color: #71c596;
+        color: #71c596;
 }
 .tabbable > .nav > li[class=active]    > a {
-        background-color: #e8c4c2; 
-        border-color: #e4867e;
+        background-color: #c8feca; 
+        border-color: #71c596;
+        color: #71c596;
+        font-weight: bold;
 }
 .tabbable > .nav > li > a:hover {
-        background-color: #e8c4c2; 
-        border-color: #e4867e;
+        background-color: #c8feca; 
+        border-color: #71c596;
+        color: #71c596;
 }
   
 /****************************  Sidebar Aesthetics *****************************/
