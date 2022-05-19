@@ -1,7 +1,7 @@
 /*
 * Color Palette:
 * Color Picker Link: https://imagecolorpicker.com/
-* Surface Fish Green (Main): #71c596
+* Surface Fish Green (Dark): #71c596
 * Surface Fish Green (Light): #84dca7
 * Surface Fish Green (Very Light): #c8feca
 * Cave Fish Pink (Dark): #e4867e
@@ -30,9 +30,21 @@ font-size:14px;
 
 }
 
-/*
-* Sidebar
-*/
+/******************************  Tab Aesthetics *******************************/
+.tabbable > .nav > li > a {
+        background-color: white; 
+        border-color: #71c596;
+}
+.tabbable > .nav > li[class=active]    > a {
+        background-color: #e8c4c2; 
+        border-color: #e4867e;
+}
+.tabbable > .nav > li > a:hover {
+        background-color: #e8c4c2; 
+        border-color: #e4867e;
+}
+  
+/****************************  Sidebar Aesthetics *****************************/
 #sidebar {
             background-color: #c8feca;
             border-color: #84dca7;
@@ -51,17 +63,6 @@ font-size:14px;
           color: #151514;
         }
 
-a:link, a:visited{
-
-color:#A8D3E7;
-
-}
-
-a:hover {
-
-color:#e8c4c2;
-
-}
 
 #wrapper{
 
@@ -139,13 +140,7 @@ text-align:left;
 /* Download button styling */
 .download {
         background-color:#c8feca;
-        
-} 
-
-.download{
         color: #71c596 !important;
-        } 
-.download{
         border-color: #71c596 !important;
         }
 
@@ -175,3 +170,4 @@ text-align:left;
         border-color: #e4867e;
         color: maroon;
 }
+

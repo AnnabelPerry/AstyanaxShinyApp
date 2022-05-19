@@ -19,12 +19,6 @@ source("functions/CaveCrawler_functions.R")
                ".shiny-output-error { visibility: hidden; }",
                ".shiny-output-error:before { visibility: hidden; }",
                'body {color:black;}'),
-    # Change background color of tabs
-    tags$style(HTML("
-    .tabbable > .nav > li > a                  {background-color: white; border-color: grey;}
-    .tabbable > .nav > li[class=active]    > a {background-color: #e8c4c2; border-color: #e4867e}
-    .tabbable > .nav > li > a:hover {background-color: #e8c4c2; border-color: #e4867e}
-  ")),
     tabsetPanel(
       tabPanel(h2("Home"), fluid = TRUE,
                h1("Welcome to CaveCrawler"),
@@ -472,9 +466,6 @@ source("functions/CaveCrawler_functions.R")
                        actionButton("SBCP_enter","Visualize")
                      
                        ),
-                       #uiOutput("stat_PlotSelect"),
-                       #uiOutput("scaff_PlotSelect"),
-                       #uiOutput("SBCP_enter"),
                        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                         tags$div("Crawling through the data...",id="loadmessage"))
                      ),
@@ -1245,32 +1236,6 @@ source("functions/CaveCrawler_functions.R")
     }
     )
 
-    # Population Genetics (Stat-By-Chr Subpage): Only enable visualization once
-    # data is entered
-    #observeEvent(input$GO_search, {
-    #  if(input$GO_search != ""){
-    #    output$stat_PlotSelect <- renderUI({
-    #      selectInput(
-    #        inputId = "stat_PlotSelect",
-    #        label = "Visualize statistic...",
-    #        choices = "",
-    #        selected = NULL,
-    #        multiple = FALSE
-    #      )
-    #    })
-    #    output$scaff_PlotSelect <- renderUI({
-    #      selectInput(
-    #        inputId = "scaff_PlotSelect",
-    #        label = "...plotted along scaffold:",
-    #        choices = "",
-    #        selected = NULL,
-    #        multiple = FALSE
-    #      )
-    #    })
-    ###   })
-      #}
-    #})
-    
     # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and
     # input table is NOT full of NAs, output a plot of the appropriate statistic x
     # scaffold pair
