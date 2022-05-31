@@ -42,70 +42,10 @@ MasterGO <- read.csv("data/MasterGO.csv", fill = T)
 
 UpperLower <- read.table("data/GOTermAssociations.txt", fill = T, sep = "\t", header = T)
 
-#################### Building the Population Genetics Table #################### 
-# Integrate all datasets describing Fst, Dxy, Pi, and Tajima's D into a single
-# dataframe, adding a column describing the publication from which the data came
-HS11 <- read.csv("data/Herman_etal_2018_S11.csv")
-names(HS11)[1] <- "Stable_Gene_ID"
-# Add dummy columns to make this dataframe compatible with dataframes from
-# other studies
-HS11$Dxy_Pachon.Molino <- rep(NA, nrow(HS11))
-HS11$Fst_Pachon.Molino <- rep(NA, nrow(HS11))
-HS11$Dxy_Tinaja.Molino <- rep(NA, nrow(HS11))
-HS11$Fst_Tinaja.Molino <- rep(NA, nrow(HS11))
-HS11$Dxy_Tinaja.Pachon <- rep(NA, nrow(HS11))
-HS11$Fst_Tinaja.Pachon <- rep(NA, nrow(HS11))
-
-HS11$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS11))
-HS11$Fst_Chica1.Chica2 <- rep(NA, nrow(HS11))
-HS11$Fst_Outliers <- rep(NA, nrow(HS11))
-HS11$Publication <- rep("1", nrow(HS11))
-
-HS13 <- read.csv("data/Herman_etal_2018_S13.csv")
-names(HS13)[1] <- "Stable_Gene_ID"
-# Add dummy columns to make this dataframe compatible with dataframes from
-# other studies
-HS13$Dxy_Chica1.Chica2 <- rep(NA, nrow(HS13))
-HS13$Fst_Chica1.Chica2 <- rep(NA, nrow(HS13))
-HS13$Publication <- rep("1", nrow(HS13))
-HS13 <- relocate(HS13, "Fst_Outliers", .before = "Publication")
-
-# HS11 has some of the exact same measurements as HS13, but lacks the Fst outlier
-# data. Before binding, remove all HS11 rows where the gene ID is found in HS13
-temp <- data.frame(matrix(ncol = ncol(HS11)))
-names(temp) <- names(HS11)
-for(i in 1:nrow(HS11)){
-  if(!(HS11$Stable_Gene_ID[i] %in% HS13$Stable_Gene_ID)){
-    temp <- rbind(temp, HS11[HS11$Stable_Gene_ID == HS11$Stable_Gene_ID[i],])
-  }
-}
-temp <- temp[!is.na(temp$Stable_Gene_ID),]
-HS11 <- temp
-
-chica_table <- read.csv("data/AMexicanus_iScienceS4R1_Stats.csv")
-names(chica_table)[1] <- "Stable_Gene_ID"
-# Add columns not present in Chica table
-chica_table$Fst_Rascon.Molino <- rep(NA, nrow(chica_table))
-chica_table$Dxy_Rascon.Molino <- rep(NA, nrow(chica_table))
-chica_table$Dxy_Pachon.Molino <- rep(NA, nrow(chica_table))
-chica_table$Fst_Pachon.Molino <- rep(NA, nrow(chica_table))
-chica_table$Dxy_Tinaja.Molino <- rep(NA, nrow(chica_table))
-chica_table$Fst_Tinaja.Molino <- rep(NA, nrow(chica_table))
-chica_table$Dxy_Tinaja.Pachon <- rep(NA, nrow(chica_table))
-chica_table$Fst_Tinaja.Pachon <- rep(NA, nrow(chica_table))
-# Move columns to match positions in Herman tables
-chica_table <- relocate(chica_table, c(27:34), .after = "TajimasD_Rascon")
-chica_table$Fst_Outliers <- rep(NA, nrow(chica_table))
-chica_table$Publication <- rep("2", nrow(chica_table))
-# Ensure name compatibility before combining
-names(chica_table) <- names(HS11)
-stat_table <- rbind(HS11, HS13)
-stat_table <- rbind(stat_table, chica_table)
-
-stat_table <- stat_table[(!is.na(stat_table$Gene_Name) &
-                            (stat_table$Gene_Name != "") &
-                            (stat_table$Gene_Name != " ")),]
-stat_table$Gene_Name <- tolower(stat_table$Gene_Name)
+# Read in population genetics table and change publication names
+stat_table <- read.csv("data/PopulationGenetics.csv")
+stat_table$Publication[stat_table$Publication == "Herman_et_al_2018"] <- "1"
+stat_table$Publication[stat_table$Publication == "Moran_et_al_2022"] <- "2"
 
 ################################## Functions ###################################
 # Gene Search Page: Input a single or comma-separated list of genes, gene IDs,

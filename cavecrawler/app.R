@@ -535,7 +535,7 @@ source("functions/CaveCrawler_functions.R")
                sequenced from fin clips of wild-caught Pachon (N= 9; collected 
                in 2013), Tinaja (N = 10; collected in 2002 and 2009), Molino 
                (N = 9; collected in 1994 and 2004), Rascon (N = 6; collected in 
-               2013), Rio Choy (N = 9; collected in 2013). Filters were appleid 
+               2013), Rio Choy (N = 9; collected in 2013). Filters were applied 
                to SNPs and indels to remove low confidence calls. Due to high 
                heterozygosity in all individuals, the authors excluded all SNP/
                indel sites where 100% of individuals were heterozygous. See 
