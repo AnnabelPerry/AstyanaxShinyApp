@@ -635,8 +635,7 @@ source("functions/CaveCrawler_functions.R")
                17,187 genes in each population. Genes were labeled as 
                differentially expressed if the Benjamini-Hochberg adjusted 
                p-value was less than 0.05.",
-               "All data was mapped to Astyanax mexicanus 1.02 assembly, Ensembl
-               93 release.",
+               "All data was re-mapped to Astyanax mexicanus 3 assembly (GCA_023375975.1)",
                br(),
                br(),
                br(),
