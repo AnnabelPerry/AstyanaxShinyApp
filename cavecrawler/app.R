@@ -779,7 +779,7 @@ source("functions/CaveCrawler_functions.R")
       })
     })
     
-    # Home Page: Plot map of all populations
+    # Home Page: Plot a map of all populations
     # Plot map of Astyanax populations
     pop_map <- ggplot(data = world_map) +
       geom_polygon(aes(x = long,
@@ -1263,13 +1263,9 @@ source("functions/CaveCrawler_functions.R")
             SBCT()[[2]][,9]
           )
           names(temp_df) <- names(SBCT()[[2]])
-          # EDIT: Remove after fixing lack of sorting
-          output$test1 <- renderText(input$SBCwhich_sort)
           
           # Order the table based on parameters specified
           if(input$SBCwhich_sort == "SBCsp_sort"){
-            # EDIT: Remove after fixing lack of sorting
-            output$test2 <- renderText(input$SBCsp_dir)
             
             if(input$SBCsp_dir == "sp_asc"){
               temp_df <- temp_df[order(temp_df$Start_Position, decreasing = T),]
@@ -1277,18 +1273,12 @@ source("functions/CaveCrawler_functions.R")
               temp_df <- temp_df[order(temp_df$Start_Position),]
             }
           }else if(input$SBCwhich_sort == "SBCep_sort"){
-            # EDIT: Remove after fixing lack of sorting
-            output$test2 <- renderText(input$SBCep_dir)
-            
             if(input$SBCep_dir == "ep_asc"){
               temp_df <- temp_df[order(temp_df$End_Position, decreasing = T),]
             }else{
               temp_df <- temp_df[order(temp_df$End_Position),]
             }
           }else if(input$SBCwhich_sort == "SBCsv_sort"){
-            # EDIT: Remove after fixing lack of sorting
-            output$test2 <- renderText(input$SBCsv_dir)
-            
             if(input$SBCsv_dir == "sv_desc"){
               temp_df <- temp_df[order(temp_df$Statistic_Value),]
             }else{
