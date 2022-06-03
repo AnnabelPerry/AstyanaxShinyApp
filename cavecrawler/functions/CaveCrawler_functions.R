@@ -525,8 +525,8 @@ TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh
   # Obtain GO terms for ROIs
   GOTerms <- character(length = nrow(ROIs))
   for(i in 1:length(GOTerms)){
-    if(length(grep(ROIs$Gene_stable_ID[i], GeneToGO$Ensembl)) != 0){
-      GOTerms[i] = paste(GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl == ROIs$Gene_stable_ID[i]], collapse = " ")
+    if(length(grep(ROIs$Gene_stable_ID[i], GOTable$Ensembl)) != 0){
+      GOTerms[i] = paste(GOTable$Gene.ontology.IDs[GOTable$Ensembl == ROIs$Gene_stable_ID[i]], collapse = " ")
     }else{
       GOTerms[i] = NA
     }
