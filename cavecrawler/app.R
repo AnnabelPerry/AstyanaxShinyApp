@@ -607,9 +607,10 @@ source("functions/CaveCrawler_functions.R")
                each population were sampled for RNAseq at 6 time points (144 
                samples total; average of 14,197,772 reads per sample). Genes 
                were considered rhythmic if their JTK_cycle 24 hr periodicity was 
-               below an FDR cutoff of 5%. logFC was calculated for 
-               Molino-Rio Choy, Pachon-Rio Choy, and Tinaja-Rio Choy. All data 
-               was mapped to Astyanax mexicanus 1.02 assembly, Ensembl 93 release.",
+               below an FDR cutoff of 5%. logFC (calculated for Molino-Rio Choy, 
+               Pachon-Rio Choy, and Tinaja-Rio Choy) reflects the average change
+               in expression across all 6 timepoints. All data was mapped to 
+               Astyanax mexicanus 1.02 assembly, Ensembl 93 release.",
                br(),
                br(),
                br(),
