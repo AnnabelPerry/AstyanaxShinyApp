@@ -26,10 +26,9 @@ world_map <- subset(world_map_1, region %in% c("USA", "Mexico", "Belize","Guatem
 
 
 # Read in gene position data
-position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
+position_table <- read.csv("data/PositionTable.csv", fill = TRUE)
 # Remove duplicates so multiple rows with the same values are not outputted
-position_table$Gene_Name <- tolower(position_table$Gene_Name)
-position_table <- position_table[!duplicated(position_table$Gene_Name),]
+position_table <- position_table[!duplicated(position_table$Gene_ID),]
 
 condition_control <- read.csv("data/Transcription_Morph-Control_Remapped2022.csv")
 condition_control$Publication[condition_control$Publication == "McGaugh_et_al_2020"] <- rep("5", sum(condition_control$Publication == "McGaugh_et_al_2020"))

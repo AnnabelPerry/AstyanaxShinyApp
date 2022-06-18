@@ -651,7 +651,7 @@ source("functions/CaveCrawler_functions.R")
                br(),
                "The authors of this study created a fully-annotated surface fish
                genome assembly. The genome assembly from this study was acquired
-               for CaveCrawler using Ensembl Genome Browser, release 104.",
+               for CaveCrawler using Ensembl Genome Browser, release 106.",
                br(),
                br(),
                br(),

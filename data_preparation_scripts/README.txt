@@ -1,0 +1,1 @@
+This folder contains scripts to aid people who are using Cave Crawler code as a guide in designing their own model organism data repository
