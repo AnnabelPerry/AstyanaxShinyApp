@@ -26,7 +26,7 @@ world_map <- subset(world_map_1, region %in% c("USA", "Mexico", "Belize","Guatem
 
 
 # Read in gene position data
-position_table <- read.csv("data/PositionTable.csv", fill = TRUE)
+position_table <- read.csv("data/AmexPositionTable.csv", fill = TRUE)
 # Remove duplicates so multiple rows with the same values are not outputted
 position_table <- position_table[!duplicated(position_table$Gene_ID),]
 
