@@ -34,7 +34,10 @@ condition_control <- read.csv("data/Transcription_Morph-Control_Remapped2022.csv
 condition_control$Publication[condition_control$Publication == "McGaugh_et_al_2020"] <- rep("5", sum(condition_control$Publication == "McGaugh_et_al_2020"))
 
 morph1.morph2 <- read.csv("data/Transcription_Morph-Morph.csv")
+
 morph1.morph2$Publication[morph1.morph2$Publication == "Mack_et_al_2020"] <- rep("4", sum(morph1.morph2$Publication == "Mack_et_al_2020"))
+
+morph1.morph2$Publication[morph1.morph2$Publication == "McGaugh_et_al_2020"] <- rep("5", sum(morph1.morph2$Publication == "McGaugh_et_al_2020"))
 
 GeneToGO <- read.csv("data/AMexGOTerms.csv", fill = T)
 
