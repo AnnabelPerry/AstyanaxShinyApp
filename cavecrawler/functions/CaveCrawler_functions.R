@@ -704,12 +704,8 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     # Check whether top or bottom proportion was requested
     # If top count was requested, iterate through each index
     if(UL == "top"){
-      # Check if statistic is a one or a two population statistic
-      # If statistic is a two-population statistic, output the top N genes for ALL
-      # possible population pairs
-      if(stat_type == "Two Pop"){
-        # For each index...
-        for(i in 1:length(indices)){
+      # For each index...
+      for(i in 1:length(indices)){
           # First, remove all NA values for this index
           temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
           # Collect positions of top N genes for the current index
@@ -723,91 +719,20 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
           pub_names <- append(pub_names,temp_stat_table$Publication[
             top_genes])
         }
-        # If statistic is a one-population statistic, output collect the N genes
-        # with the HIGHEST stat value, regardless of pop
-      }else if(stat_type == "One Pop"){
-        # Collect stat values for ALL indices into a 3 vectors: row
-        # in one column, population name in another,and stat value in the other
-        all_stats <- c()
-        all_pops <- c()
-        all_genes <- c()
-        all_pubs <- c()
-        for(i in 1:length(indices)){
-          # First, remove all NA values for this index
-          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          all_stats <- append(all_stats, temp_stat_table[,indices[i]])
-          all_pops <- append(all_pops,rep(pop_strings[i],
-                                          length(temp_stat_table[,indices[i]])))
-          all_genes <- append(all_genes, temp_stat_table$Gene_Name[top_genes])
-          all_pubs <- append(all_genes, temp_stat_table$Publication)
-        }
-        # Organize vectors into a dataframe
-        temp_df <- data.frame(
-          all_stats,
-          all_pops,
-          all_genes,
-          all_pubs
-        )
-        # Retrieve the parallel indices for the N highest genes
-        par_indices <- order(temp_df$all_stats, decreasing = T)[1:thresh]
-        # Retrieve the gene names, population names, stat values, and
-        # publication names
-        genes <- append(genes,temp_df$all_genes[par_indices])
-        DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
-        stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
-        pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
-      }
       # If lower proportion was requested, iterate through each index
     }else if(UL == "bottom"){
-      # Check if statistic is a one or a two population statistic
-      # If statistic is a two-population statistic, output the bottom N genes for ALL
-      # possible population pairs
-      if(stat_type == "Two Pop"){
-        # For each index...
-        for(i in 1:length(indices)){
-          # First, remove all NA values for this index
-          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          # Collect positions of bottom N genes for the current index
-          bottom_genes <- order(temp_stat_table[,indices[i]], decreasing = F)[1:thresh]
-          # Collect the genes with the highest values, as well as the
-          # associated populations, values, and publications
-          genes <- append(genes,temp_stat_table$Gene_Name[bottom_genes])
-          DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
-          stat_vals <- append(stat_vals,temp_stat_table[bottom_genes,indices[i]])
-          pub_names <- append(pub_names,temp_stat_table$Publication[bottom_genes])
-        }
-        # If statistic is a one-population statistic, output collect the N genes
-        # with the HIGHEST stat value, regardless of pop
-      }else if(stat_type == "One Pop"){
-        # Collect stat values for ALL indices into a 3 vectors: row
-        # in one column, population name in another,and stat value in the other
-        all_stats <- c()
-        all_pops <- c()
-        all_genes <- c()
-        all_pubs <- c()
-        for(i in 1:length(indices)){
-          # First, remove all NA values for this index
-          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          all_stats <- append(all_stats, temp_stat_table[,indices[i]])
-          all_pops <- append(all_pops,rep(pop_strings[i],
-                                          length(temp_stat_table[,indices[i]])))
-          all_genes <- append(all_genes, temp_stat_table$Gene_Name)
-          all_pubs <- append(all_genes, temp_stat_table$Publication)
-        }
-        # Organize vectors into a dataframe
-        temp_df <- data.frame(
-          all_stats,
-          all_pops,
-          all_genes,
-          all_pubs
-        )
-        # Retreat the parallel indeices for the N highest genes
-        par_indices <- order(temp_df$all_stats, decreasing = F)[1:thresh]
-        # Retrieve the gene names, population names
-        genes <- append(genes,temp_df$all_genes[par_indices])
-        DF_pops <- append(DF_pops,temp_df$all_pops[par_indices])
-        stat_vals <- append(stat_vals,temp_df$all_stats[par_indices])
-        pub_names <- append(pub_names,temp_df$all_pubs[par_indices])
+      # For each index...
+      for(i in 1:length(indices)){
+        # First, remove all NA values for this index
+        temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+        # Collect positions of bottom N genes for the current index
+        bottom_genes <- order(temp_stat_table[,indices[i]], decreasing = F)[1:thresh]
+        # Collect the genes with the highest values, as well as the
+        # associated populations, values, and publications
+        genes <- append(genes,temp_stat_table$Gene_Name[bottom_genes])
+        DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
+        stat_vals <- append(stat_vals,temp_stat_table[bottom_genes,indices[i]])
+        pub_names <- append(pub_names,temp_stat_table$Publication[bottom_genes])
       }
     }
   }
