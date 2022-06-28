@@ -571,8 +571,8 @@ TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh
 }
 
 StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
-  # "indices" stores the column numbers corresponding to the relevant statistics
-  # (in "stat") for each population (or pair of populations) stored in "pops"
+  # indices stores the stat_table column numbers corresponding to the relevant 
+  # statistics (in "stat") for each population/pair of populations) stored in "pops"
   indices <- c()
   pop_strings <- c()
 
