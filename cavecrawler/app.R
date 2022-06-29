@@ -11,6 +11,7 @@
 source("functions/CaveCrawler_functions.R")
 
   ui = fluidPage(
+    tags$head(includeHTML(("google-analytics.html"))),
     setBackgroundColor("white"),
     chooseSliderSkin("Flat", color = "#e8c4c2"),
     theme = "style.css",
