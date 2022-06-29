@@ -571,14 +571,14 @@ TranscTable <- function(morph1, morph2, condition, direction, tr.stat, tr.thresh
 }
 
 StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
-  # indices stores the stat_table column numbers corresponding to the relevant 
-  # statistics (in "stat") for each population/pair of populations) stored in "pops"
+  # "indices" stores the column numbers corresponding to the relevant statistics
+  # (in "stat") for each population (or pair of populations) stored in "pops"
   indices <- c()
   pop_strings <- c()
-
+  
   # Create vector into which warnings will be stored for later output
   wrnings <- c("Notes:\n")
-
+  
   # Check if statistic of interest makes comparisons between TWO populations
   if((stat == "Fst") | (stat == "Dxy")){
     # Tell the program that a two-population statistic was entered so the
@@ -651,15 +651,15 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
   }else{
     return("ERROR: Invalid statistic name")
   }
-
+  
   # Initialize vectors of gene names, populations, statistic values, and 
   # publication names
-  genes <- c()
+  gene_ids <- c()
   DF_pops <- c()
   stat_vals <- c()
   pub_names <- c()
-
-
+  
+  
   # Check if statistic value or gene count was entered
   # If value was entered...
   if(in_type == "Statistic Value"){
@@ -671,7 +671,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
         # For each index, collect all genes, scaffolds, populations, values,
         # and publication names whose stat values fall above the entered value
-        genes <- append(genes,temp_stat_table$Gene_Name[
+        gene_ids <- append(gene_ids,temp_stat_table$Stable_Gene_ID[
           temp_stat_table[,indices[i]] >= thresh])
         DF_pops <- append(DF_pops,rep(pop_strings[i],
                                       length(temp_stat_table$Gene_Name[
@@ -688,7 +688,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
         # For each index, collect all genes, populations, and statistic values
         # whose values fall in lowest tail
-        genes <- append(genes,temp_stat_table$Gene_Name[
+        gene_ids <- append(gene_ids,temp_stat_table$Stable_Gene_ID[
           temp_stat_table[,indices[i]] <= thresh])
         DF_pops <- append(DF_pops,rep(pop_strings[i],
                                       length(temp_stat_table$Gene_Name[
@@ -706,19 +706,19 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     if(UL == "top"){
       # For each index...
       for(i in 1:length(indices)){
-          # First, remove all NA values for this index
-          temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
-          # Collect positions of top N genes for the current index
-          top_genes <- order(
-            temp_stat_table[,indices[i]], decreasing = T)[1:thresh]
-          # Collect the genes with the highest values, as well as the associated
-          # populations and values
-          genes <- append(genes,temp_stat_table$Gene_Name[top_genes])
-          DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
-          stat_vals <- append(stat_vals,temp_stat_table[top_genes,indices[i]])
-          pub_names <- append(pub_names,temp_stat_table$Publication[
-            top_genes])
-        }
+        # First, remove all NA values for this index
+        temp_stat_table <- stat_table[!is.na(stat_table[,indices[i]]),]
+        # Collect positions of top N genes for the current index
+        top_genes <- order(
+          temp_stat_table[,indices[i]], decreasing = T)[1:thresh]
+        # Collect the genes with the highest values, as well as the associated
+        # populations and values
+        gene_ids <- append(gene_ids,temp_stat_table$Stable_Gene_ID[top_genes])
+        DF_pops <- append(DF_pops,rep(pop_strings[i],length(top_genes)))
+        stat_vals <- append(stat_vals,temp_stat_table[top_genes,indices[i]])
+        pub_names <- append(pub_names,temp_stat_table$Publication[
+          top_genes])
+      }
       # If lower proportion was requested, iterate through each index
     }else if(UL == "bottom"){
       # For each index...
@@ -729,7 +729,7 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
         bottom_genes <- order(temp_stat_table[,indices[i]], decreasing = F)[1:thresh]
         # Collect the genes with the highest values, as well as the
         # associated populations, values, and publications
-        genes <- append(genes,temp_stat_table$Gene_Name[bottom_genes])
+        gene_ids <- append(gene_ids,temp_stat_table$Stable_Gene_ID[bottom_genes])
         DF_pops <- append(DF_pops,rep(pop_strings[i],length(bottom_genes)))
         stat_vals <- append(stat_vals,temp_stat_table[bottom_genes,indices[i]])
         pub_names <- append(pub_names,temp_stat_table$Publication[bottom_genes])
@@ -744,40 +744,40 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
       "Population(s)",
       stat,
       "Scaffold",
-      "Gene Name",
+      "Gene ID",
       "GO Term(s)",
       "Publication"
     )
     return(list(paste(c("Statistic",stat,"not present for the selected population(s)"),
                       collapse = " "), null.df))
   }
-
+  
   # Initialize a vector of GO terms and a vector of scaffolds
-  scaffs <- character(length = length(genes))
-  DF_GOs <- character(length = length(genes))
-
+  scaffs <- character(length = length(gene_ids))
+  DF_GOs <- character(length = length(gene_ids))
+  
   # For each gene in the gene vector, output the associated scaffolds to the
   # vector of scaffolds and output the associated GO terms to the vector of GO
   # terms
-  for(g in 1:length(genes)){
+  for(g in 1:length(gene_ids)){
     # If gene is present in positions table and GO table, obtain scaffold and GO
     # terms
-    if((genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
-      scaffs[g] = position_table$Scaffold[position_table$Gene_Name == genes[g]]
-      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]][1]
+    if((gene_ids[g] %in% position_table$Gene_ID) & (gene_ids[g] %in% GeneToGO$Ensembl_GeneID)){
+      scaffs[g] = position_table$Scaffold[position_table$Gene_ID == gene_ids[g]]
+      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl_GeneID == gene_ids[g]][1]
       # If gene is present in position table but NOT GO table, output NA for GO
       # term but output real scaffold
-    }else if((genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
-      scaffs[g] = position_table$Scaffold[position_table$Gene_Name == genes[g]]
+    }else if((gene_ids[g] %in% position_table$Gene_ID) & !(gene_ids[g] %in% GeneToGO$Ensembl_GeneID)){
+      scaffs[g] = position_table$Scaffold[position_table$Gene_ID == gene_ids[g]]
       DF_GOs[g] = "Not applicable"
       # If gene is present in GO table but NOT position table, output NA for scaffold
       # term but output real GO
-    }else if(!(genes[g] %in% position_table$Gene_Name) & (genes[g] %in% GeneToGO$Gene.names)){
+    }else if(!(gene_ids[g] %in% position_table$Gene_ID) & (gene_ids[g] %in% GeneToGO$Ensembl_GeneID)){
       scaffs[g] = "Not applicable"
-      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Gene.names == genes[g]][1]
+      DF_GOs[g] = GeneToGO$Gene.ontology.IDs[GeneToGO$Ensembl_GeneID == gene_ids[g]][1]
       # If gene is present in neither GO nor position tables, output NA for scaff
       # and GO
-    }else if(!(genes[g] %in% position_table$Gene_Name) & !(genes[g] %in% GeneToGO$Gene.names)){
+    }else if(!(gene_ids[g] %in% position_table$Gene_ID) & !(gene_ids[g] %in% GeneToGO$Ensembl_GeneID)){
       scaffs[g] = "Not applicable"
       DF_GOs[g] = "Not applicable"
     }
@@ -788,14 +788,14 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
     DF_pops,
     stat_vals,
     scaffs,
-    genes,
+    gene_ids,
     DF_GOs,
     pub_names
   )
   # Sort into a final dataframe
   final_df <- data.frame()
-
-
+  
+  
   # Sort df based on statistic values
   # If "top" was checked, sort dataframe in DESCENDING order from top to bottom
   # but retain population groups
@@ -844,18 +844,18 @@ StatDistTable <- function(in_type, UL, stat, thresh, stat_table, pops){
                              .before = T)
     }
   }
-
+  
   # Rename df stat type and stat value columns with specific statistic's name
   names(final_df) <- c(
     "Rank",
     "Population(s)",
     stat,
     "Scaffold",
-    "Gene Name",
+    "Gene ID",
     "GO Term(s)",
     "Publication"
   )
-
+  
   # Output df and warnings
   if(is.na(final_df[1,2])){
     final_df <- final_df[-1,]
