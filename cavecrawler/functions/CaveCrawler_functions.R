@@ -54,9 +54,9 @@ stat_table$Publication[stat_table$Publication == "Moran_et_al_2022"] <- "2"
 # Gene Search Page: Input a single or comma-separated list of genes, gene IDs,
 # GO terms, or a phrase associated with a gene-of-interest and output all 
 # available data into distinct tables based on data type
-GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool, 
-                       position_table, morph1.morph2, condition_control,
-                       stat_table, GeneToGO){
+GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
+                       case_sensitive, position_table, morph1.morph2, 
+                       condition_control, stat_table, GeneToGO){
   # Initialize warnings
   warn <- c("Notes: ")
   
@@ -76,110 +76,158 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
   }
   # Define a comma
   comma <- ", "
-  
-  
   # Define a vector in which to store all inputs
   input_vec <- c()
-  
-  # Check if comma occurs in input string
+  # If comma occurs in input string, split the input string and add each 
+  # individual input to the input vector
   if(grepl(comma, input)){
-    # If so, split the input string and add each individual input to the input
-    # vector
     input_vec <- str_split(input, pattern = comma)[[1]]
+    # If no comma is present, add the whole string to the input vector
   }else{
-    # If not, add the whole string to the input vector
     input_vec <- input
   }
   
   # Define a vector in which to store gene IDs
   geneIDs <- c()
   
-  # Iterate through each entry in vector of inputs to find the IDs corresponding
-  # to these inputs
+  # Iterate through each entry in vector of inputs and scrounge all available
+  # files to find the IDs relevant to each input
   for(i in 1:length(input_vec)){
-    # Check if current entry is a gene ID
+    # If current entry is already a gene ID, simply append to vector of IDs
     if(grepl("ENSAMXG", input_vec[i])){
-      # If current entry IS a gene ID, simply append to vector of IDs
       geneIDs <- append(geneIDs, input_vec[i])
+      # If current entry is NOT a gene ID...
     }else{
-      # If current entry is NOT a gene ID, convert to lowercase and grep all
-      # lower-case gene name and gene info columns for this string.
-      searchTerm <- tolower(input_vec[i])
+      # Create vector of IDs relevant to the search term
       tempIDs <- c()
       
-      # grep every gene name in position table (use grep instead of %in% for 
-      # partial gene name matching)
-      for(g in 1:nrow(position_table)){
-        if(grepl(searchTerm, tolower(position_table$Gene_Name[g]))){
-          tempIDs <- append(tempIDs, position_table$Gene_ID[g])
+      # If case-sensitivity WAS specified, grep ALL gene name and gene info
+      # columns in ALL files for EXACT MATCHES to this string
+      if(case_sensitive){
+        searchTerm <- input_vec[i]
+        # grep every gene name in position table (use grep instead of %in% for 
+        # partial gene name matching)
+        for(g in 1:nrow(position_table)){
+          if(grepl(searchTerm, position_table$Gene_Name[g])){
+            tempIDs <- append(tempIDs, position_table$Gene_ID[g])
+          }
         }
+        
+        # statistic table
+        for(s in 1:nrow(stat_table)){
+          # If current entry is part of the description OR GO terms, add the ID 
+          # to the vector of IDs
+          if((grepl(searchTerm, stat_table$Gene_Description[s])) |
+             (grepl(searchTerm, stat_table$GO_Terms[s]))){
+            tempIDs <- append(tempIDs, stat_table$Stable_Gene_ID[s])
+          }
+        }
+        
+        # transcription tables
+        for(t in 1:nrow(morph1.morph2)){
+          # If current entry is part of the study-specific details,  add the ID 
+          # to the vector of IDs
+          if(grepl(searchTerm, morph1.morph2$study_specific_gene_details[t])){
+            tempIDs <- append(tempIDs, morph1.morph2$Gene_stable_ID[t])
+          }
+        }  
+        
+        for(t in 1:nrow(condition_control)){
+          # If current entry is part of the gene description or Ensembl
+          # description, add the ID to the vector of IDs
+          if((grepl(searchTerm, condition_control$Gene_description[t])) |
+             (grepl(searchTerm, condition_control$Ensembl_Family_Description[t]))){
+            tempIDs <- append(tempIDs, condition_control$Gene_stable_ID[t])
+          }
+        }
+        
+        # GO table
+        for(go in 1:nrow(GeneToGO)){
+          # If current entry is found in the GO info, add the ID corresponding 
+          # to this information to the vector of gene IDs
+          if((grepl(searchTerm, GeneToGO$Gene.ontology..biological.process.[go])) |
+             (grepl(searchTerm, GeneToGO$Gene.ontology..cellular.component.[go])) |
+             (grepl(searchTerm, GeneToGO$Gene.ontology..molecular.function.[go])) |
+             (grepl(searchTerm, GeneToGO$Gene.ontology.IDs[go]))){
+            tempIDs <- append(tempIDs, GeneToGO$Ensembl_GeneID[go])
+          }
+        }
+        # If case-sensitivity was NOT specified, convert input to lowercase and 
+        # grep all lower-case gene name and gene info columns for this string.
+      }else{
+        searchTerm <- tolower(input_vec[i])
+        
+        # grep every gene name in position table (use grep instead of %in% for 
+        # partial gene name matching)
+        for(g in 1:nrow(position_table)){
+          if(grepl(searchTerm, tolower(position_table$Gene_Name[g]))){
+            tempIDs <- append(tempIDs, position_table$Gene_ID[g])
+          }
+        }
+        
+        # statistic table
+        for(s in 1:nrow(stat_table)){
+          # If current entry is part of the description OR GO terms,
+          # add the ID to the vector of IDs
+          if((grepl(searchTerm, tolower(stat_table$Gene_Description[s]))) |
+             (grepl(searchTerm, tolower(stat_table$GO_Terms[s])))){
+            tempIDs <- append(tempIDs, stat_table$Stable_Gene_ID[s])
+          }
+        }
+        
+        # transcription tables
+        for(t in 1:nrow(morph1.morph2)){
+          # If current entry is part of the study-specific details, add the ID 
+          # to the vector of IDs
+          if(grepl(searchTerm, tolower(morph1.morph2$study_specific_gene_details[t]))){
+            tempIDs <- append(tempIDs, morph1.morph2$Gene_stable_ID[t])
+          }
+        }  
+        
+        for(t in 1:nrow(condition_control)){
+          # If current entry is part of the gene description or Ensembl
+          # description, add the ID to the vector of IDs
+          if((grepl(searchTerm, tolower(condition_control$Gene_description[t]))) |
+             (grepl(searchTerm, tolower(condition_control$Ensembl_Family_Description[t])))){
+            tempIDs <- append(tempIDs, condition_control$Gene_stable_ID[t])
+          }
+        }
+        
+        # GO table
+        for(go in 1:nrow(GeneToGO)){
+          # If current entry is found in the GO info, add the ID corresponding 
+          # to this information to the vector of gene IDs
+          if((grepl(searchTerm, tolower(GeneToGO$Gene.ontology..biological.process.[go]))) |
+             (grepl(searchTerm, tolower(GeneToGO$Gene.ontology..cellular.component.[go]))) |
+             (grepl(searchTerm, tolower(GeneToGO$Gene.ontology..molecular.function.[go]))) |
+             (grepl(searchTerm, tolower(GeneToGO$Gene.ontology.IDs[go])))){
+            tempIDs <- append(tempIDs, GeneToGO$Ensembl_GeneID[go])
+          }
+        }
+        
       }
-      
-      # statistic table
-      for(s in 1:nrow(stat_table)){
-        # If current entry is part of the gene name, description, OR GO terms,
-        # add the ID to the vector of IDs
-        if((grepl(searchTerm, tolower(stat_table$Gene_Name[s]))) |
-           (grepl(searchTerm, tolower(stat_table$Gene_Description[s]))) |
-           (grepl(searchTerm, tolower(stat_table$GO_Terms[s])))){
-          tempIDs <- append(tempIDs, stat_table$Stable_Gene_ID[s])
-        }
-      }
-      
-      # transcription tables
-      for(t in 1:nrow(morph1.morph2)){
-        # If current entry is part of the gene name or study-specific details,
-        # add the ID to the vector of IDs
-        if((grepl(searchTerm, tolower(morph1.morph2$Gene_name[t]))) |
-           (grepl(searchTerm, tolower(morph1.morph2$study_specific_gene_details[t])))){
-          tempIDs <- append(tempIDs, morph1.morph2$Gene_stable_ID[t])
-        }
-      }  
-      
-      for(t in 1:nrow(condition_control)){
-        # If current entry is part of the gene name, gene description, or Ensembl
-        # description, add the ID to the vector of IDs
-        if((grepl(searchTerm, tolower(condition_control$Gene_name[t]))) |
-           (grepl(searchTerm, tolower(condition_control$Gene_description[t]))) |
-           (grepl(searchTerm, tolower(condition_control$Ensembl_Family_Description[t])))){
-          tempIDs <- append(tempIDs, condition_control$Gene_stable_ID[t])
-        }
-      }
-      
-      # GO table
-      for(go in 1:nrow(GeneToGO)){
-        # If current entry is found in the gene name or any of the GO info, add
-        # the ID corresponding to this information to the vector of gene IDs
-        if((grepl(searchTerm, tolower(GeneToGO$Gene.names[go]))) |
-           (grepl(searchTerm, tolower(GeneToGO$Gene.ontology..biological.process.[go]))) |
-           (grepl(searchTerm, tolower(GeneToGO$Gene.ontology..cellular.component.[go]))) |
-           (grepl(searchTerm, tolower(GeneToGO$Gene.ontology..molecular.function.[go]))) |
-           (grepl(searchTerm, tolower(GeneToGO$Gene.ontology.IDs[go])))){
-          tempIDs <- append(tempIDs, GeneToGO$Ensembl_GeneID[go])
-        }
-      }
-      
-      # If no info is found for the current ID, append a warning and skip
+      # If no info is found for the current search term, append a warning 
       if(length(tempIDs) == 0){
         warn <- append(warn, paste(c("No genes found corresponding to the input",
                                      input_vec[i]), collapse = " "))
+        # If ID(s) corresponding to this search term ARE found, append the IDs to
+        # the gene ID vector
       }else{
-        # Once ID(s) corresponding to this entry are found, remove duplicate/NA IDs,
-        # append the IDs to the gene ID vector, then move to the next entry
-        geneIDs <- append(geneIDs, tempIDs[!duplicated(tempIDs) & 
-                                             !grepl("NA", tempIDs) &
-                                             !is.na(tempIDs)])
-        next
+        geneIDs <- append(geneIDs, tempIDs)
       }
     }
   }
+  # Remove any geneIDs which were found in multiple sources or are NA
+  geneIDs <- geneIDs[!duplicated(geneIDs) & !grepl("NA", geneIDs) &
+                       !is.na(geneIDs)]
   
   # Initialize final dataframes in which to store data corresponding to ALL gene
   # IDs
   finalPos <- data.frame(matrix(nrow = length(geneIDs), ncol = 6))
-  finalGO <- data.frame(matrix(nrow = length(geneIDs), ncol = 7))
-  # Do not give row names for transcription or popgen data because there could
-  # be multiple rows per gene
+  
+  # Do not give row names for GO, transcription, or popgen data because there 
+  # could be multiple rows per gene
+  finalGO <- data.frame(matrix(ncol = 7))
   finalTransc <- data.frame(matrix(ncol = 11))
   finalPopgen <- data.frame(matrix(ncol = 7))
   
@@ -200,13 +248,6 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                           "Age at Sampling",
                           "Tissue",
                           "Publication")
-  names(finalPopgen) <- c("Gene ID",
-                          "Gene name",
-                          "Gene description",
-                          "Statistic Type",
-                          "Population(s)",
-                          "Statistic Value",
-                          "Publication")
   names(finalGO) <- c("Gene ID",
                       "Gene name",
                       "Gene Ontology IDs",
@@ -214,12 +255,20 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                       "Cellular Component",
                       "Molecular Function",
                       "Publication")
+  names(finalPopgen) <- c("Gene ID",
+                          "Gene name",
+                          "Gene description",
+                          "Statistic Type",
+                          "Population(s)",
+                          "Statistic Value",
+                          "Publication")
   # If no info was found for ANY of the entries, output an ERROR
   if(length(geneIDs) == 0){
     warn <- paste(c("Error: No genes can be described by any of these inputs:", 
                     input), collapse = "\n")
-    return(list(finalPos, finalTransc, finalPopgen, tempGO, warn))
+    return(list(finalPos, finalTransc, finalPopgen, finalGO, warn))
   }
+  
   # Iterate through each gene ID in the vector of gene IDs
   for(i in 1:length(geneIDs)){
     # If position data was requested...
@@ -273,8 +322,8 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         tempTransc$`Gene ID` <- morph1.morph2$Gene_stable_ID[
           morph1.morph2$Gene_stable_ID == geneIDs[i]
         ]
-        tempTransc$`Gene name` <- morph1.morph2$Gene_name[
-          morph1.morph2$Gene_stable_ID == geneIDs[i]
+        tempTransc$`Gene name` <- position_table$Gene_Name[
+          position_table$Gene_ID == geneIDs[i]
         ]
         tempTransc$`Gene description` <- "Not available for this study"
         tempTransc$`Study-specific information` <- morph1.morph2$study_specific_gene_details[
@@ -322,8 +371,8 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
         tempTransc$`Gene ID` <- condition_control$Gene_stable_ID[
           condition_control$Gene_stable_ID == geneIDs[i]
         ]
-        tempTransc$`Gene name` <- condition_control$Gene_name[
-          condition_control$Gene_stable_ID == geneIDs[i]
+        tempTransc$`Gene name` <- position_table$Gene_Name[
+          position_table$Gene_ID == geneIDs[i]
         ]
         tempTransc$`Gene description` <- condition_control$Gene_description[
           condition_control$Gene_stable_ID == geneIDs[i]
@@ -382,7 +431,9 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
                                        "Statistic Type","Population(s)","Statistic Value",
                                        "Publication")
                 tempPopgen$`Gene ID`[1] <- geneIDs[i]
-                tempPopgen$`Gene name`[1] <- subsetPopgen$Gene_Name[r]
+                tempPopgen$`Gene name`[1] <- position_table$Gene_Name[
+                  position_table$Gene_ID == geneIDs[i]
+                ]
                 tempPopgen$`Gene description`[1] <- subsetPopgen$Gene_Description[r]
                 names_pops <- str_split(names(subsetPopgen)[c], "_")[[1]]
                 tempPopgen$`Statistic Type`[1] <- names_pops[1]
@@ -407,27 +458,37 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
     
     # If GO data was requested...
     if(GOBool){
-      # Check if this gene ID is present in the position table
+      # Check if this gene ID occurs at all in the GeneToGO table
       if(geneIDs[i] %in% GeneToGO$Ensembl_GeneID){
-        # If so, output the gene ID's GO info to the final dataframe
-        finalGO$`Gene ID`[i] <- geneIDs[i]
-        finalGO$`Gene name`[i] <- GeneToGO$Gene.names[
-          GeneToGO$Ensembl_GeneID == geneIDs[i]]
-        finalGO$`Gene Ontology IDs`[i] <- GeneToGO$Gene.ontology.IDs[
-          GeneToGO$Ensembl_GeneID == geneIDs[i]]
-        finalGO$`Biological Process`[i] <- GeneToGO$Gene.ontology..biological.process.[
-          GeneToGO$Ensembl_GeneID == geneIDs[i]]
-        finalGO$`Cellular Component`[i] <- GeneToGO$Gene.ontology..cellular.component.[
-          GeneToGO$Ensembl_GeneID == geneIDs[i]]
-        finalGO$`Molecular Function`[i] <- GeneToGO$Gene.ontology..molecular.function.[
-          GeneToGO$Ensembl_GeneID == geneIDs[i]]
-        finalGO$Publication[i] <- "7"
-        
+        # Find the row(s) of GeneToGO which house the current gene ID (I am 
+        # using which() instead of just using grepl() because the output of
+        # grepl() would be a gigantic and thus inefficient matrix of bools while
+        # the output of which() is just a few numbers)
+        ID_rows <- which(grepl(geneIDs[i], GeneToGO$Ensembl_GeneID))
+        # Create a temporary dataframe with just the rows containing the current
+        # gene ID
+        tempGO <- data.frame(matrix(nrow = length(ID_rows), ncol = 7))
+        names(tempGO) <- c("Gene ID","Gene name","Gene Ontology IDs",
+                           "Biological Process","Cellular Component",
+                           "Molecular Function","Publication")
+        # Append any rows of GeneToGO containing information relevant to the
+        # current GeneID to the finalGO dataframe
+        tempGO$`Gene ID` <- GeneToGO$Ensembl_GeneID[ID_rows]
+        tempGO$`Gene name` <- position_table$Gene_Name[
+          position_table$Gene_ID == geneIDs[i]
+        ]
+        tempGO$`Gene Ontology IDs` <- GeneToGO$Gene.ontology.IDs[ID_rows]
+        tempGO$`Biological Process` <- GeneToGO$Gene.ontology..biological.process.[
+          ID_rows]
+        tempGO$`Cellular Component` <- GeneToGO$Gene.ontology..cellular.component.[
+          ID_rows]
+        tempGO$`Molecular Function` <- GeneToGO$Gene.ontology..molecular.function.[
+          ID_rows]
+        tempGO$Publication <- rep("7", length(ID_rows))
+        # Once you have collected all the relevant GO information for this gene
+        # ID, append it to the finalGO dataframe
+        finalGO <- rbind(tempGO, finalGO)
       }else{
-        # If not, output all NAs at the corresponding row in the dataframe so the 
-        # length of the dataframe stays consistent. Remove these rows later
-        finalGO[i,] <- rep(NA, ncol(finalGO))
-        
         # Output a warning saying that GO data is not present for this 
         # ID
         warn <- append(warn, paste(c("GO data not present for gene ID ", 
@@ -436,6 +497,7 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
       }
     }
   }
+  
   
   # Once you have each of the dataframes, remove all NA rows from each dataframe
   # which is supposed to have and output, then output all 4 dataframes AND 

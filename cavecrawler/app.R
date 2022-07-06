@@ -66,6 +66,18 @@ source("functions/CaveCrawler_functions.R")
                      btnSearch = icon("search"),
                      width = "450px"
                    ),
+                  # A checkbox specifying where the GeneSearch() 
+                  # function should...
+                  # (if CSB == TRUE)  Output only genes whose names or
+                  #                   associated phrases match the 
+                  #                   case in the user inputted search
+                  #                   term(s) or...
+                  # (if CSB == FALSE) Output all genes whose names or
+                  #                   associated phrases match any of  
+                  #                   the user inputted search term(s)
+                  #                   REGARDLESS of case.
+                  checkboxInput(inputId = "CSB",
+                                label = "Case-sensitive"),
                    conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                     tags$div("Crawling through the data...",id="loadmessage"))
                  ),
@@ -847,6 +859,7 @@ source("functions/CaveCrawler_functions.R")
                    transcBool = TB, 
                    popgenBool = PGB, 
                    GOBool = GOB, 
+                   case_sensitive = input$CSB,
                    position_table = position_table, 
                    morph1.morph2 = morph1.morph2, 
                    condition_control = condition_control,
