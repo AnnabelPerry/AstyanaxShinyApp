@@ -1,0 +1,318 @@
+Problem 1: These studies were originally mapped to Pachon but have yet to be remapped to Surface
+Riddle, M. R., Aspiras, A., Damen, F., McGaugh, S., Tabin, J. A., & Tabin, C. J. (2021). Genetic mapping of metabolic traits in the blind Mexican cavefish reveals sex-dependent quantitative trait loci associated with cave adaptation. *BMC ecology and evolution*, *21*(1), 1-22.  
+Description for Data Sources:
+	F1 generation created through paired breeding of female Pachon with male Rio Choy from Tabin lab-reared populations (descended several generations from wild-caught)
+  . F2 generation (n = 219) created through paired breeding of F1 Pachon-Rio Choy siblings.
+	Fasting blood glucose quantified 24 hours after fish were fed. Arginine response quantified by measuring blood glucose 5 hours after injecting arginine into 
+  intraperitoneal cavity. Muscle triglycerides quantified from flash frozen fish muscle.
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD score by calculating the 95th percentile of genome-wide maximum 
+  penalized LOD score using 1000 random permutations (scanone). 95% Bayesian confidence intervals and 1.5 LOD support intervals used to establish QTL
+	Metabolism-associated markers obtained from Table 6.
+	Linkage map obtained from Riddle et al. 2020. All data was mapped to Astyanax mexicanus 1.02 assembly (GCA_000372685.1).
+Tables to Include:
+  Table 6: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8139031/table/Tab6/?report=objectonly
+ Additional Notes:
+  Zelun & Daniel used this article as practice to hunt for data
+
+Carlson, B. M., Klingler, I. B., Meyer, B. J., & Gross, J. B. (2018). Genetic analysis reveals candidate genes for activity QTL in the blind Mexican tetra, *Astyanax mexicanus*. *PeerJ*, *6*, e5189.
+Description for Data Sources:
+  F1 generation created through paired breeding of female Pachon with male Rio Choy from Borowsky lab-reared populations (descended several generations from 
+  wild-caught). F2 generation (n = 127) created through paired breeding of F1 Pachon-Rio Choy siblings.
+	Activity quantified via video tracking of individual adult fish. A "trial" refers to a 15min tracking interval between Zeitberger Time 6:00 and 10:00. QTL 
+  intervals mapped using R/qtl scan-one function (marker regression (MR), expectation maximization (EM), and Haley-Knott (HK) used for binary/normal data; 
+  non-parametric (NP) used for non-normal data) with 0.05 α LOD significance thresholds.
+	This paper also used data from Stahl & Gross 2017 to identify genes simultaneously associated with activity QTL and differentially expressed between morphs.
+	Activity-associated markers obtained from Table 1, genes associated with activity GO terms obtained from Table 2
+	Linkage map obtained from Carlson, Onusko, and Gross 2015. All data was mapped to the original Astyanax mexicanus Pachon reference genome
+Tables with Relevant Data:
+  Table 1: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6054784/table/table-1/?report=objectonly
+Additional Notes:
+  Collapse "Data set" and "Activity metric" from original table into "Quantitative Trait" column
+  Cross = Pachon x Rio Choy F2
+  In "Study-specific details", include "Method" (Use full names from "Data Sources" instead of abbreviations)
+  
+Riddle, M. R., Aspiras, A. C., Damen, F., Hutchinson, J. N., Chinnapen, D. J., Tabin, J., & Tabin, C. J. (2020). Genetic architecture underlying changes in 
+carotenoid accumulation during the evolution of the blind Mexican cavefish, Astyanax mexicanus. *Journal of experimental zoology. Part B, Molecular and 
+developmental evolution*, *334*(7-8), 405–422. https://doi.org/10.1002/jez.b.22954 
+Description for Data Sources:
+  F1 generation created through paired breeding of female Pachon with male Rio Choy from Tabin lab-reared populations (descended several generations from wild-caught)
+  . F2 generation (n = 219) created through paired breeding of F1 Pachon-Rio Choy siblings.
+	VAT (Ventral Adipose Tissue) color (yellow vs. white) scored as a binary trait. Normal model was used for IR intensity of red in VAT.
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD score by calculating the 95th percentile of genome-wide maximum 
+  penalized LOD score using 1000 random permutations (scanone). 95% Bayesian confidence intervals and 1.5 LOD support intervals used to establish QTL
+	VAT color-associated markers obtained from Table 1, genes found between chromosome 3 VAT-associated markers obtained from Table 2
+	The 1,800 marker, 25 linkage group linkage map was generated using R/qtl and homozygous markers from the F2 population (n = 219). All data was mapped to Astyanax 
+  mexicanus 1.02 assembly, augmented with transcript information from Ensembl release 2.0.97
+Tables with Relevant Data:
+  Table 1: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7708440/table/T1/?report=objectonly
+Additional Notes:
+  "Quantitative Trait" column: Mention all associations were determined using "Haley-Knott regression"
+  Cross = Pachon x Rio Choy F2
+
+
+
+Problem 2: These studies were originally mapped to Pachon and were remapped in Warren et al 2021 but lack LOD and PVE scores. The data for ALL the below studies is 
+included in the "QTL_remapped_noLOD.csv" file which only needs LOD, PVE, and Quantitative Traits added to be ready to be merged to the other QTL.csv file.
+Protas, M., Conrad, M., Gross, J. B., Tabin, C., & Borowsky, R. (2007). Regressive evolution in the Mexican cave tetra, Astyanax mexicanus. *Current biology : CB*, *17*(5), 452–454. https://doi.org/10.1016/j.cub.2007.01.051 
+Description for Data Sources:
+  F1 generation created through breeding of wild-caught Pachon with Surface. F2 generation (n = 539) created through paired breeding of F1 Pachon-Surface siblings.
+	Eye size was measured in 535 individuals on the left eye after removal of covering tissue. Relative eye size was obtained from regression of eye size on standard 
+  length as the ratio of observed divided by the expected diameter. Lens width was measured in 115 individuals in the transverse section at its maximum diameter and 
+  standardized against either standard length or eye size. Dentary bones measured in 218 fish, maxillary bones in 219. Bone lengths standardized to other major head 
+  measurements and to opercular heights and lengths. Taste buds counted in 117 fish on the left side on the upper lip and dorsal to the nostril and the eye.
+	The body regions in which melanophores were counted were defined as follows: 
+	Above and forward of eye (n = 174) - Area centered at 3 mm above and forward of the left eye.
+	Below dorsal fin (n = 174) - 3 mm under the middle of the dorsal fin.
+	Anal fin (n = 128) - Left flank 3 mm above the middle of the anal fin.
+	Lateral flank (n = 128) - Less pigmented area midway between the lateral line stripe and the more pigmented regions dorsal to it and under the center of the dorsal
+  fin.
+	QTL intervals determined using MultiQTL software with P < 0.05 and a false detection rate < 0.10. QTL detected in two phases: first by simple interval mapping (SIM)
+  of putative QTL, followed by a refinement phase using multiple interval mapping algorithms (MIM). 
+	QTL data comes from Table 2 of this publication and from the Supplementary Data 1 of Warren et al. 2021.
+	Microsatellite linkage map with 29 linkage groups was generated using MultiPoint (threshold recombination of r < 0.20) on F2 fish DNA. Consistency of markers was 
+  checked via jacknife analysis and inconsistently mapped markers were excluded from QTL analysis. This publication precedes creation of the first Mexican tetra 
+  reference genome but all data was remapped to Warren et al. 2021.
+
+Protas, M., Tabansky, I., Conrad, M., Gross, J. B., Vidal, O., Tabin, C. J., & Borowsky, R. (2008). Multi-trait evolution in a cave fish, Astyanax mexicanus. *Evolution & development*, *10*(2), 196–209. https://doi.org/10.1111/j.1525-142X.2008.00227.x 
+Description for Data Sources:
+	F2 Pachon-Surface (n = 539) cross described in Protas et al. 2007
+	Measurement protocols and sample sizes for each quantitative trait:
+	Relative Condition (n = 534) - Ratio of observed weight to weight predicted from regression of log weight on log length in well-fed fish.
+	Peduncle Depth (n = 200) - Depth of caudal peduncle divided by standard length.
+	Fin Placement (n = 200) - Distance from mouth to dorsal fin insertion divided by standard length.
+	Chemical Sense (n = 113) - Threshold sensitivity to amino acids (L-alanine, L-serine, L-methionine, and L-proline with concentrations ranging from 10−6 to 10−11 
+  molar, in 10-fold dilutions, and a pure water control) dissolved in individual's tank. Three tests of each individual were performed for each concentration, with 
+  the orders randomized and the observer blinded. The data were used to calculate threshold sensitivity for each individual and were represented for analysis as 
+  integers, representing orders of magnitude, ranging from 6 through 11. Pachón cave fish were tested in the same manner; surface fish were tested under reduced 
+  illumination. 
+	Length (n = 533) and Weight Loss ( Percent decrease in weight per day; n = 361) were measured periodically and at sacrifice.
+	Anal Fin Rays (n = 214), Width of Sub-Orbital Bones (n = 221), and Thoracic Rib Count (n = 163) phenotyped using alizarin red staining.
+	Maxillary Tooth Count (n = 227), Eye Size (n = 539), and Melanophore Count (Above and forward of eye) (n = 174) measured according to methods in Protas et al. 2007
+	QTL intervals determined using MultiQTL software with P < 0.10. Single-trait QTL detected in two phases: first by simple interval mapping (SIM) of putative QTL, 
+  followed by a refinement phase using multiple interval mapping algorithms (MIM). Multiple-trait (>= 3 traits) QTL detected using MultiQTL's multiple-trait maximum 
+  likelihood algorithms.
+	Table 1 was used as a key to determine the names of traits in Table 2 and 3. QTL for correlations between single traits and markers were obtained from Table 2 
+  while QTL for correlations between __multiple__ traits and putatatively pleiotropic markers were obtained from Table 3. Remapped positional data came from the 
+  Supplementary Data 1 of Warren et al. 2021.
+	Linkage map obtained from Protas et al. 2007, with some additional microsatellite markers and 12 newly mapped genes. This publication precedes creation of the first
+  Mexican tetra reference genome but all data was remapped to Warren et al. 2021.
+
+Yoshizawa, M., Yamamoto, Y., O'Quin, K. E., & Jeffery, W. R. (2012). Evolution of an adaptive behavior and its sensory receptors promotes eye regression in blind cavefish. *BMC biology*, *10*(1), 1-16. 
+Description for Data Sources:
+	F1 generation (n ~= 130) created through paired breeding of 1 Pachon with 1 Surface from Jeffery lab-reared populations (descended several generations from 
+  wild-caught; surface strain originated from Balmorhea Springs State Park, Texas). F2 generation (n = 384) created through paired breeding of F1 Pachon-Surface 
+  siblings. F3 generation (n = 91) created from 3 pairs of F2 siblings (each of the F2 parents had at least 1 cavefish allele at markers identifed in a previous QTL 
+  scan of the F2 generation to be associated with Vibration Attraction Behavior and Superficial Neuromasts in Eye Orbit)
+	At 1-2 years of age, F2 and F3 hybrids were phenotyped 1-3x for Vibration Attraction Behavior (n = 227), 1x for number of Superficial Neuromasts in Eye Orbit 
+  (n = 253), and 1x for Eye Size (n = 350). Vibration Attraction Behavior was measured by using ImageJ to count the number of approaches an acclimated fish made to a
+  vibrating glass rod under infrared illumination. Eye diameter was measured digitally in ImageJ and standardized to standard length of fish. Albinism was measured 
+  as a binary trait (n = 254).
+	Two types of QTL strategies were performed in this study: (1) multiple interval mapping via the function *stepwiseqtl* in R/qtl and (2) single-QTL model mapping 
+  accounting for relatedness in the program QTLRel. All logarithms of the odds (LOD) significant thresholds were determined following 2,000 permutation tests after 
+  single-QTL model mapping with *scanone* implemented in R/qtl or *scanOne* in QTLRel. 
+	QTL data comes from Table 2 of this publication.
+	Microsatellite linkage map with 27 linkage groups, 246 SNP and microsatellite markers was generated using DNA from F2 individuals. This publication precedes 
+  creation of the first Mexican tetra reference genome but all data was remapped to Warren et al. 2021.
+
+O'Quin, K. E., Yoshizawa, M., Doshi, P., & Jeffery, W. R. (2013). Quantitative genetic analysis of retinal degeneration in the blind cavefish Astyanax mexicanus. *PloS one*, *8*(2), e57281. https://doi.org/10.1371/journal.pone.0057281 
+Description for Data Sources:
+	F2 Pachon-Surface (n = 384) cross described in Yoshizawa et al. 2012. 115 of these F2 progeny were randomly chosen for retinal measurements. Subjects were euthanized at 1-2 years old and retina were imaged using a Zeiss Axioskop2 confocal microscope. Thickness of retinal layers in both eyes were measured using the ‘Length’ tool in the program AxioVision 4.7, then averaged.
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD score by calculating the 95th percentile of genome-wide maximum 
+  penalized LOD score using 1000 random permutations (scanone). 95% Bayesian confidence intervals used to establish QTL
+	QTL data comes from Table 2 of this publication and from the Supplementary Data 1 of Warren et al. 2021.
+	Microsatellite linkage map with 25 linkage groups, 698 markers was generated using RAD-seq genotyping in 115 F2 progeny. This publication precedes creation of the 
+  first Mexican tetra reference genome but all data was remapped to Warren et al. 2021.
+
+Kowalko, J. E., Rohner, N., Linden, T. A., Rompani, S. B., Warren, W. C., Borowsky, R., ... & Yoshizawa, M. (2013). Convergence in feeding posture occurs through different genetic loci in independently evolved cave populations of Astyanax mexicanus. *Proceedings of the National Academy of Sciences*, *110*(42), 16933-16938. 
+Description for Data Sources:
+	Tinaja-Surface F1 generation created through paired breeding of Tinaja with Surface. F2 generation (n = 226) created from 5 of the F1 Tinaja-Surface siblings. F2 
+  Pachon-Surface (n = 384) cross described in Yoshizawa et al. 2012. 
+	Feeding posture assayed by filming F2 fish which had been starved for 5 days. All fish were acclimated 3 min prior to feeding and filmed for 2 min (Pachon-Surface 
+  F2s) or 3 min (Tinaja-Surface F2s). Feeding Angle (Pachon-Surface F2s n = 267; Tinaja-Surface F2s n = 226) was defined as the angle between bottom of tank and line
+  bisecting head of fish and was measured using software developed in LabVIEW. Body Depth (Tinaja-Surface F2s n = 152), Eye Size (Pachon-Surface F2s n = 357), Jaw 
+  Angle (Pachon-Surface F2s n = 273), Head Depth (Pachon-Surface F2s n = 162; Tinaja-Surface F2s n = 153), Lateral Tastebud Count (Tinaja-Surface F2s n = 158), 
+  Ventral Tastebud Count (Tinaja-Surface F2s n = 153), Orbital Diameter (Tinaja-Surface F2s n = 212), Jaw Width (Tinaja-Surface F2s n = 211), and Maxillary Tooth 
+  Count (Tinaja-Surface F2s n = 161) were quantified in F2 fish using Fiji. Body Depth (Tinaja-Surface F2s n = 152), Eye Size, Jaw Angle, Head Depth, Tastebuds, 
+  Orbital Diameter, and Jaw Width were normalized using standard length.
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD score by calculating the 95th percentile of genome-wide maximum 
+  penalized LOD score using 1200 random permutations (scanone). 95% Bayesian confidence intervals used to establish QTL
+	QTL data comes from Table 1 of this publication and from the Supplementary Data 1 of Warren et al. 2021.
+	Linkage map created according to instructions presented in Kowalko et al. 2013 (Current Biology). This publication precedes creation of the first Mexican tetra 
+  reference genome but all data was remapped to Warren et al. 2021.
+
+Kowalko, J. E., Rohner, N., Rompani, S. B., Peterson, B. K., Linden, T. A., Yoshizawa, M., ... & Tabin, C. J. (2013). Loss of schooling behavior in cavefish through sight-dependent and sight-independent mechanisms. *Current Biology*, *23*(19), 1874-1883. 
+Description for Data Sources:
+	Tinaja-Surface F1 generation created through breeding of Tinaja with Surface, and F2 generation (n = 283) created by crossing Tinaja-Surface F1 individuals.
+	Dark Preference (n = 275) defined as negative phototaxis. Schooling (n = 276) measured as the tendency of fish to follow a model school of plastic fish, and 
+  Light-Perceiving Fish were defined as fish which spent at least two thirds of time in the dark during assays of Dark Preference (151 F2s were defined as 
+  light-percieving, but only 143 of these light-percieving fish were used in QTL analysis). Eye Size (n = 283) and Pupil Diameter (n = 283) both were normalized to 
+  standard length.
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD scores using 1000 random permutations (scanone). Bayesian confidence 
+  intervals used to establish QTL
+	QTL data comes from Table 1 of this publication and from the Supplementary Data 1 of Warren et al. 2021.
+	SNP linkage map with 28 linkage groups and 330 markers was generated using R/qtl. This publication precedes creation of the first Mexican tetra reference genome
+  but all data was remapped to Warren et al. 2021.
+
+Yoshizawa, M., Robinson, B. G., Duboué, E. R., Masek, P., Jaggard, J. B., O’Quin, K. E., ... & Keene, A. C. (2015). Distinct genetic architecture underlies the emergence of sleep loss and prey-seeking behavior in the Mexican cavefish. BMC biology, 13(1), 1-12.
+Description for Data Sources:
+	F1 generation created by breeding a female surface fish with a male Pachon cave fish. This F1 generation was bred to create the F2 generation, which was then bred 
+  to create the F3 generation.
+	Locomotor activity was measured in both F2 and F3 fish (n = 58) as the sum swimming distances in every 10 minutes or 24 hours while fish were awake. Fish were 
+  acclimated 4-5 days in recording chamber prior to starting recording at 1 hr after lights turned on. 
+	Vibration Attraction Behavior was measured in both F2 and F3 fish (n = 227) and the protocol described in Yoshizawa et al. 2012
+	QTL intervals mapped using R/qtl (Haley-Knott). Assessed statistical significance of the LOD score by calculating the 95th percentile of genome-wide maximum 
+  penalized LOD score using 1200 random permutations (scanone). 95% Bayesian confidence intervals used to establish QTL
+	All QTL data derived from Additional File 4 and from the Supplementary Data 1 of Warren et al. 2021.
+	Linkage map obtained from O'Quin et al. 2013. This study did not use a reference genome but all data was remapped to Warren et al. 2021.
+
+
+
+Problem 3: These studies currently have no reference genome
+Borowsky, R., & Wilkens, H. (2002). Mapping a cave fish genome: polygenic systems and regressive evolution. *The Journal of heredity*, *93*(1), 19–21. 
+Description for Data Sources:
+	An F1 hybrid Pachon-Surface (unspecified strain) female was mated to a Pachon male to produce a backcross progeny (BC, n = 111). BC animals were raised in the 
+  light in community tanks to the age of 6–8 months. 
+	Residual of eye size, regressed to standard length of fish, used for all measurements of eye size. All fish were given binary score of albino or non-albino. 
+  In nonalbino fish, melanophores were counted on standardized areas in three locations on the back, near the dorsal fin. The measure of condition factor (CF) 
+  was the residual of the logarithm of weight after regression of log weight on log length. 
+	Significance levels of QTL were determined by permuting the data as implemented by the Permutation Test module with significance threshold of p <= 0.05
+	Linkage group-trait mappings were obtained from Table 1. 
+	Partial linkage map generated using random amplified polymorphic DNA. This publication precedes creation of the first Mexican tetra reference genome.
+Tables with Relevant Data:
+  Table 1: https://academic.oup.com/view-large/33775181?login=true
+Additional Notes:
+  This study was weird because no __specific__ markers were analyzed. Fill the columns with NA:
+    Marker (Peak)
+    Chromosome
+    Start Position on Chromosome
+    End Position on Chromosome
+    LOD
+  For "Study-specific information", say "This study precedes assembly of the Mexican tetra genome"
+  in "Quantitative Trait" change "Condition" to "Relative Condition" (You checked and this trait IS the same trait measured in Protas et al. 2008
+  Cross = Pachon x Surface F2
+  
+Protas ME, et al. Genetic analysis of cavefish reveals molecular convergence in the evolution of albinism. Nat Genet. 2006;38:107–11.
+Description for Data Sources:
+	Molino and Pachon QTL for albinism established using a backcross and F2 cross, respectively. Molino backcross (n = 111) generated by mating 1 Molino to 1 F1 (from 
+  a cross between 1 Molino and 1 Surface), and fish were euthanized at 14 months. Pachon F2 cross (n = 235) generated by mating 2 F1 siblings (from a cross between 1 
+  Pachon and 1 Surface), and fish were euthanized at 7 months.
+	QTL intervals mapped using MapQTL. Assessed statistical significance of the LOD score using a permutation test.
+	QTL information from this paper was derived directly from the text.
+	Microsatellite linkage map with 35 linkage groups, 267 microsatellite markers was generated using DNA from 1 Molino backcross individual. This publication precedes 
+  creation of the first Mexican tetra reference genome.
+Tables with Relevant Data:
+  NA (see additional notes)
+Additional Notes:
+  Create a table with two rows
+	Pachon Row:
+		1. Marker (Peak) = microsatellite marker 218E (GenBank: BV678883.1)
+		2. Scaffold = "Not analyzed in this study"
+		3. Linkage Group = 16
+		4. Cross = Pachon x Rio Choy F2
+		5. Start Position on Scaffold = "Not analyzed in this study"
+		6. End Position on Scaffold = "Not analyzed in this study"
+		7. LOD = 17.98
+		8. Quantitative Trait = Albinism
+		9. Percent Variance Explained = 42.6 
+		10. QTL Significance Thresholds = Permutation test
+		11. Study-specific information = This study precedes assembly of the Mexican tetra genome
+	Molino Row:
+		1. Marker (Peak) = microsatellite marker 218E (GenBank: BV678883.1)
+		2. Scaffold = "Not analyzed in this study"
+		3. Linkage Group = 16
+		4. Cross = Molino x Rio Choy Backcross
+		5. Start Position on Scaffold = "Not analyzed in this study"
+		6. End Position on Scaffold = "Not analyzed in this study"
+		7. LOD = 17.29 
+		8. Quantitative Trait = Albinism
+		9. Percent Variance Explained = 49.4 
+		10. QTL Significance Thresholds = Permutation test
+		11. Study-specific information = This study precedes assembly of the Mexican tetra genome
+   
+Gross, J. B., Krutzler, A. J., & Carlson, B. M. (2014). Complex craniofacial changes in blind cave-dwelling fish are mediated by genetically symmetric and asymmetric 
+loci. *Genetics*, *196*(4), 1303-1319. 
+Description for Data Sources:
+	F2 Pachon-Surface (n = 539) cross described in Protas et al. 2007
+	Left and right sides of each fish were imaged from multiple focal points using high-resolution microscopy and the individual images for each fish were montaged.
+  Eye size, sub-orbital bone number, and sub-orbital bone area were quantified from these images using the free-hand tool in ImageJ. Sub-orbital bone fusions and 
+  albinism were scored as binary traits.
+	Both single-QTL mapping and multiple-QTL mapping (MQM) were performed using the R/qtl. For each single-QTL interval, the scanone function's marker regression (MR),
+  expectation maximization (EM), and Haley-Knott (HK) algorithms were used. Assessed statistical significance of the LOD scores using 1000 random permutations. 
+  Interval mapping using maximum likelihood was used to identify prospective epistatic interactions between cofactors
+	Single-QTL obtained from Table 1, multiple-QTL from Table 2, and QTL on standard length-regressed traits from Table 3
+	Linkage map calculated according to instructions presented in Protas et al. 2007. This study did not use a reference genome.
+Tables with Relevant Data (and notes on each):
+  Combine these tables into a single table and integrate in to master CSV: 
+	Table 1
+		For each microsatellite in "LOD" score column, find GenBank ID and store in "Marker (Peak)"
+		Enter "Not analyzed in this study" for the following columns:
+			Scaffold
+			Start Position on Scaffold
+			End Position on Scaffold
+		Cross = Pachon x Surface F2
+		Create separate row for QTL discovered using different algorithms (MR, EM, and HK)
+		In "Study-specific information"...
+			State "This study did not use a reference genome."
+			Report the algorithm
+	Table 2
+		Create separate row for each marker in "Scanone result" and "MQM" result column 
+		In "Study-specific information"
+			State "This study did not use a reference genome."
+			Report algorithm ("Scanone result" or "MQM")
+			Report "Cofactor(s)" and "Epistatic interaction"
+		For each microsatellite in "LOD" score column, find GenBank ID and store in "Marker (Peak)"
+		Cross = Pachon x Surface F2
+		Enter "Not analyzed in this study" for the following columns:
+			Scaffold
+			Start Position on Scaffold
+			End Position on Scaffold
+	Table 3
+		Create separate row for each marker in "MR", "EM", "HK", "Scanone result", and "MQM" columns
+		For each microsatellite in "LOD" score column, find GenBank ID and store in "Marker (Peak)"
+		Enter "Not analyzed in this study" for the following columns:
+			Scaffold
+			Start Position on Scaffold
+			End Position on Scaffold
+		Cross = Pachon x Surface F2
+		In "Study-specific information"
+			State "This study did not use a reference genome."
+			Report algorithm ( "MR", "EM", "HK", "Scanone result", or "MQM")
+			Report "Cofactor(s)" and "Epistatic interaction"
+		In "Quantitative Trait", add "(Regressed to Standard Length)" in parentheses
+ 
+Gross, J. B., Borowsky, R., & Tabin, C. J. (2009). A novel role for Mc1r in the parallel evolution of depigmentation in independent populations of the cavefish Astyanax mexicanus. *PLoS genetics*, *5*(1), e1000326. https://doi.org/10.1371/journal.pgen.1000326 
+Description for Data Sources:
+  F2 Pachon-Surface (n = 539) cross described in Protas et al. 2007. Melanophore count measured according to methods in Protas et al. 2007. QTL intervals mapped 
+  according to methods in Protas et al. 2006. QTL information from this paper was derived directly from the text. Linkage map obtained from Protas et al. 2008. 
+  This publication precedes creation of the first Mexican tetra reference genome. 
+Tables with Relevant Data:
+  NA (see additional notes)
+Additional Notes:
+  Create a table with two rows:
+	Eye row:
+		1. Marker (Peak) = microsatellite marker 230D (GenBank: BV678925.1)
+		2. Scaffold = "Not analyzed in this study"
+		3. Linkage Group = 9
+		4. Cross = Pachon x Surface F2
+		5. Start Position on Scaffold = "Not analyzed in this study"
+		6. End Position on Scaffold = "Not analyzed in this study"
+		7. LOD = 9.8
+		8. Quantitative Trait = Melanophore Count (Above and forward of eye)
+		9. Percent Variance Explained = 23.4
+		10. QTL Significance Thresholds = Permutation test
+		11. Study-specific information = "This study precedes assembly of the Mexican tetra genome"
+		12. Publication
+	Dorsal row:
+		1. Marker (Peak) = microsatellite marker 230D (GenBank: BV678925.1)
+		2. Scaffold = "Not analyzed in this study"
+		3. Linkage Group = 9
+		4. Cross = Pachon x Surface F2
+		5. Start Position on Scaffold = "Not analyzed in this study"
+		6. End Position on Scaffold = "Not analyzed in this study"
+		7. LOD = 6.6
+		8. Quantitative Trait = Melanophore Count (Below dorsal fin)
+		9. Percent Variance Explained = 16.5
+		10. QTL Significance Thresholds = Permutation test
+		11. Study-specific information = "This study precedes assembly of the Mexican tetra genome"
+		12. Publication
+ 
