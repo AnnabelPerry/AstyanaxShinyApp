@@ -662,9 +662,20 @@ source("functions/CaveCrawler_functions.R")
                br(),
                "Description:",
                br(),
-               "The authors of this study created a fully-annotated surface fish
-               genome assembly. The genome assembly from this study was acquired
-               for CaveCrawler using Ensembl Genome Browser, release 106.",
+               "To generate de novo albinism/eye size QTL data (obtained from 
+               Supplementary Info pg 18), 219 Surface-Pachon F2 hybrids were 
+               created by Riddle et al. 2020. Albinism was measured as the 
+               presence/absence of pigmentation while eye size was measured as 
+               diameter of eye normalized to standard length of fish.
+               QTL intervals mapped using R/qtl. Assessed statistical 
+               significance of the LOD score by calculating the 95th percentile 
+               of genome-wide maximum penalized LOD score using 1000 random 
+               permutations (scanone). 95% Bayesian confidence intervals and 1.5 
+               LOD support intervals used to establish QTL.
+               Linkage map obtaiend from Carlson et al. 2018.
+               All positional data in use on CaveCrawler was acquired (via 
+               Ensembl Genome Browser, release 106) from the fully-annotated 
+               surface fish created by these authors.",
                br(),
                br(),
                br(),

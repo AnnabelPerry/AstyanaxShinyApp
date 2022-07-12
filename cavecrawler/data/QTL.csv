@@ -1,0 +1,12 @@
+﻿Marker,Scaffold,Linkage_Group,Cross,Start_Position_on_Scaffold,End_Position_on_Scaffold,LOD,Quantitative_Trait,Percent_Variance_Explained,Study_Specific_Information,Publication
+m6036,13,3,Surface-Pachon F2,35611239,35611239,45.03,Albinism,NA,NA,Warren_et_al_2021
+m17241,13,3,Surface-Pachon F2,38374549,38374549,47.31,Albinism,NA,NA,Warren_et_al_2021
+m36842,13,3,Surface-Pachon F2,37945372,37945372,45.16,Albinism,NA,NA,Warren_et_al_2021
+r219177,13,22,Surface-Pachon F2,39098911,39098911,20.67,Albinism,NA,NA,Warren_et_al_2021
+r219695,13,22,Surface-Pachon F2,37844883,37844883,22.56,Albinism,NA,NA,Warren_et_al_2021
+r220017,13,22,Surface-Pachon F2,41898580,41898580,20.98,Albinism,NA,NA,Warren_et_al_2021
+m23384,3,1,Surface-Pachon F2,23014157,23014157,3.39,Eye Size,NA,NA,Warren_et_al_2021
+m15225,3,1,Surface-Pachon F2,9301997,9301997,5.46,Eye Size,NA,NA,Warren_et_al_2021
+m30438,3,1,Surface-Pachon F2,8742127,8742127,3.89,Eye Size,NA,NA,Warren_et_al_2021
+r230947,20,15,Surface-Pachon F2,1802669,1802669,8.45,Eye Size,NA,NA,Warren_et_al_2021
+r231141,20,15,Surface-Pachon F2,1169105,1169105,11.98,Eye Size,NA,NA,Warren_et_al_2021
