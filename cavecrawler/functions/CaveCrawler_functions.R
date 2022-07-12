@@ -204,8 +204,8 @@ GeneSearch <- function(input, posBool, transcBool, popgenBool, GOBool,
             tempIDs <- append(tempIDs, GeneToGO$Ensembl_GeneID[go])
           }
         }
-        
       }
+      
       # If no info is found for the current search term, append a warning 
       if(length(tempIDs) == 0){
         warn <- append(warn, paste(c("No genes found corresponding to the input",
