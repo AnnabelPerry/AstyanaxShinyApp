@@ -20,11 +20,9 @@
 library(shiny)
 
 # The QTL function takes the following inputs: 
-# chr_table = Dataframe describing the length of each chromosome in the Mexican
-#             tetra genome assembly
-# position_table = Dataframe describing location of every gene in Mexican tetra
-#                  genome
-# QTL_table = Dataframe describing each trait-associated marker
+chr_table <- read.csv("data/ChrTable.csv", fill = TRUE)
+position_table <- read.csv("data/PositionTable.csv", fill = TRUE)
+QTL_table <- read.csv("data/QTL_remapped_noLOD.csv", fill = TRUE)
 
 # TODO P: Read in the appropriate files for chr_table, position_table, and QTL_table
 
