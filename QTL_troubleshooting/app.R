@@ -59,6 +59,15 @@ ui <- fluidPage(
         ),
         conditionalPanel(
           condition = "input.QTLsub_mod == 'TM'",
+          
+          uiOutput("TM_checkboxes")
+          # searchInput(
+          #   inputId = "Trait_search",
+          #   label = "Quantitative trait",
+          #   placeholder = "Enter a trait...",
+          #   width = "450px"
+            
+          #),
           # TODO TM:
           #   Based on the slides describing the "Trait-to-Marker" sub-module and 
           #   the 'TM' inputs specified in the QTL function, add widgets for the 
@@ -73,7 +82,8 @@ ui <- fluidPage(
         # Note: Later, Annabel will add plot output here
         tableOutput("QTLmarker_table"),
         tableOutput("QTLgene_table"),
-        textOutput("QTLwrnings")
+        textOutput("QTLwrnings"),
+        tableOutput("TM_tableout")
       )
     )
   )
@@ -104,13 +114,42 @@ server <- function(input, output, session) {
         #          the widgets you made in the UI section.
         # Hint: Control-F for "GeneSearch(" in the official CaveCrawler app.R. 
         # Hint: Use your example apps!
-        TM.bool = F, TM.QT = NA)
+        if(input$QTLsub_mod == 'TM'){
+          TM.bool = T
+        },
+        if(input$Trait_search > 0){
+          TM.QT = input$Trait_search
+        }
+    )
+  })
+  
+  output$QTLmarker_table <- renderTable({
+    if(('TM' %in% input$QTLsub_mod) & (length(input$Trait_search) > 0)){
+      QTLoutput()[[1]]
+    }else{
+      data.frame()
+    }
+      
     })
   
-  output$QTLmarker_table <- renderTable({QTLoutput()[[1]]})
-  output$QTLgene_table <- renderTable({QTLoutput()[[2]]})
+  output$TM_checkboxes <- renderUI({
+    #populate checkboxes with all traits in trait column
+    traits <- QTL_table$Quantitative_Trait
+    #remove duplicates
+    traits <- traits[!duplicated(traits) &!grepl('NA', traits) &!is.na(traits)]
+    
+    checkboxGroupInput(
+      inputId = "Trait_search",
+      label = "Select trait(s)",
+      choices = traits
+    )
+    
+  })
+  #output$QTLgene_table <- renderTable({QTLoutput()[[2]]})
   # Note: Later, Annabel will add plot output here
-  output$QTLwrnings <- renderText({QTLoutput()[[4]]})
+  #output$QTLwrnings <- renderText({QTLoutput()[[4]]})
+  
+  
 }
 
 shinyApp(ui, server)

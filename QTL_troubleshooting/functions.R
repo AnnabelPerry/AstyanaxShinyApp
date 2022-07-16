@@ -18,11 +18,12 @@
 # TODO P: As you code the sub-modules AND the app, add any additional libraries
 # here.
 library(shiny)
+library(shinyWidgets)
 
 # The QTL function takes the following inputs: 
 chr_table <- read.csv("data/ChrTable.csv", fill = TRUE)
 position_table <- read.csv("data/PositionTable.csv", fill = TRUE)
-QTL_table <- read.csv("data/QTL_remapped_noLOD.csv", fill = TRUE)
+QTL_table <- read.csv("data/QTL.csv", fill = TRUE)
 
 # TODO P: Read in the appropriate files for chr_table, position_table, and QTL_table
 
@@ -52,11 +53,11 @@ QTL_table <- read.csv("data/QTL_remapped_noLOD.csv", fill = TRUE)
 QTL <- function(chr_table, position_table, QTL_table, 
                 GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA, 
                 MR.bool = F, MR.search_term = NA, MR.bp = NA, 
-                TM.bool = F, TM.QT = NA){
+                TM.bool, TM.QT){
   # Vector into which warnings will be appended
-  QTL.wrnings <- c()
+  QTL.wrnings <- c("Notes: ")
   # Dataframe for QTL marker(s) matching the user's search parameters
-  QTL_Marker_Data <- data.frame()
+  QTL_Marker_Data <- data.frame(matrix(ncol = 9))
   colnames(QTL_Marker_Data) <- c("Marker (Peak)", "Scaffold", 
                                 "Start Position on Scaffold", 
                                 "End Position on Scaffold", "LOD (Peak)",
@@ -64,7 +65,7 @@ QTL <- function(chr_table, position_table, QTL_table,
                                 "Percent Variance Explained",
                                 "Study-Specific Information", "Publication(s)")
   # Dataframe for QTL marker(s) matching the user's search parameters
-  QTL_Gene_Data <- data.frame()
+  QTL_Gene_Data <- data.frame(matrix(ncol = 5))
   colnames(QTL_Gene_Data) <- c("Gene", "Scaffold", "Start Locus", "End Locus",
                                "Publication")
   # Object into which plots will be stored (This is currently a placeholder)
@@ -153,4 +154,85 @@ QTL <- function(chr_table, position_table, QTL_table,
   #   After all markers have been added to QTL_Marker_Data, check for any 
   #   duplicate markers in this table
   #   Output QTL_Marker_Data + warnings as list
+  
+  #Define a vector in which to store markers
+  TM_markers <- c()
+  
+  #for each trait
+  for(i in 1:length(TM.QT)){
+     #for each row in qtl_table, of trait matches, store marker. W/O case sensitivity.
+    for(j in 1:nrow(QTL_table)){
+      if(grepl(tolower(TM.QT[i]), tolower(QTL_table$Quantitative_Trait[j]))){
+        TM_markers <- append(TM_markers, QTL_table$Marker[j])
+      }
+    }
+  }
+  
+  
+  
+  #check for duplicates.
+  TM_markers <- TM_markers[!duplicated(TM_markers) & !grepl("NA", TM_markers) &
+                             !is.na(TM_markers)]
+  
+  #final marker data table
+  for(i in 1:length(TM_markers)){
+    #if TM was requested...
+    if(TM.bool){
+      #check if marker is present in position table
+      if(TM_markers[i] %in% QTL_table$Marker){
+        
+        temp_TM <- data.frame(matrix(
+          nrow = length(TM_markers), ncol = 9))
+        names(temp_TM) <- c("Marker (Peak)", "Scaffold",
+                            "Start Position on Scaffold",
+                            "End Position on Scaffold", "LOD (Peak)",
+                            "Quantitative Trait",
+                            "Percent Variance Explained",
+                            "Study-Specific Information", "Publication(s)")
+
+
+        #if so, output the marker's info to the marker data frame
+        temp_TM$`Marker (Peak)`[i] <- QTL_table$Marker[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Scaffold`[i] <- QTL_table$Chromosome[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Start Position on Scaffold`[i] <- QTL_table$Start_Position_on_Chromosome[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`End Position on Scaffold`[i] <- QTL_table$End_Position_on_Chromosome[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`LOD (Peak)`[i] <- QTL_table$LOD[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Quantitative Trait`[i] <- QTL_table$Quantitative_Trait[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Percent Variance Explained`[i] <- QTL_table$Percent_Variance_Explained[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Study-Specific Information`[i] <- QTL_table$Study_Specific_Information[
+          QTL_table$Marker == TM_markers[i]]
+        temp_TM$`Publication(s)`[i] <- QTL_table$Publication[
+          QTL_table$Marker == TM_markers[i]]
+        
+        QTL_Marker_Data <- rbind(QTL_Marker_Data, temp_TM)
+        
+      }else{
+        #if marker is NOT present in position table...
+        #output NAs at corresponding row, length data frame stays consistent.
+        #remove these rows later
+        QTL_Marker_Data[i,] <- rep(NA, ncol(QTL_Marker_Data))
+        
+        #output a warning saying that marker data is not present for this trait
+        QTL.wrnings <- append(QTL.wrnings, paste(c("Marker datta not present for trait", TM_markers[i], collapse = "")))
+      }
+    }
+  }
+  
+  #remove all NA rows from each data frame which is supposed to have output
+  # then output data frame and warnings as a list
+  
+  if(TM.bool){
+    QTL_Marker_Data <- QTL_Marker_Data[!is.na(QTL_Marker_Data$`Marker (Peak)`),]
+  }
+  
+  #return marker table and warnings as a list
+  return(list(QTL_Marker_Data, QTL.wrnings))
+  
 }
