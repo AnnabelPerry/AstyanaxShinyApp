@@ -60,12 +60,11 @@ ui <- fluidPage(
         conditionalPanel(
           condition = "input.QTLsub_mod == 'TM'",
           
-          uiOutput("TM_checkboxes")
-          # searchInput(
-          #   inputId = "Trait_search",
-          #   label = "Quantitative trait",
-          #   placeholder = "Enter a trait...",
-          #   width = "450px"
+          uiOutput("TM_checkboxes"),
+          actionButton("TM_enter", "Find Markers"),
+          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                           tags$div("Crawling through the data...",id="loadmessage"))
+
             
           #),
           # TODO TM:
@@ -80,7 +79,11 @@ ui <- fluidPage(
       ),
       mainPanel(
         # Note: Later, Annabel will add plot output here
-        tableOutput("QTLmarker_table"),
+        conditionalPanel(
+          condition = "input.TM_enter",
+          tableOutput("QTLmarker_table")
+        ),
+        
         tableOutput("QTLgene_table"),
         textOutput("QTLwrnings"),
         tableOutput("TM_tableout")

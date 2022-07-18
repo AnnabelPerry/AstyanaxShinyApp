@@ -19,6 +19,7 @@
 # here.
 library(shiny)
 library(shinyWidgets)
+library(ggplot2)
 
 # The QTL function takes the following inputs: 
 chr_table <- read.csv("data/ChrTable.csv", fill = TRUE)
