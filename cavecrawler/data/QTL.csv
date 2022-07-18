@@ -1,4 +1,4 @@
-﻿Marker,Chromosome,Linkage_Group,Cross,Start_Position_on_Chromosome,End_Position_on_Chromosome,LOD,Quantitative_Trait,Percent_Variance_Explained,Study_Specific_Information,Publication
+Marker,Chromosome,Linkage_Group,Cross,Start_Position_on_Chromosome,End_Position_on_Chromosome,LOD,Quantitative_Trait,Percent_Variance_Explained,Study_Specific_Information,Publication
 m6036,13,3,Surface-Pachon F2,35611239,35611239,45.03,Albinism,NA,NA,Warren_et_al_2021
 m17241,13,3,Surface-Pachon F2,38374549,38374549,47.31,Albinism,NA,NA,Warren_et_al_2021
 m36842,13,3,Surface-Pachon F2,37945372,37945372,45.16,Albinism,NA,NA,Warren_et_al_2021
