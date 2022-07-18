@@ -156,6 +156,11 @@ QTL <- function(chr_table, position_table, QTL_table,
   #   duplicate markers in this table
   #   Output QTL_Marker_Data + warnings as list
   
+  # TODO Edits for Daniel
+  # You only want to collect markers corresponding to a quantitative trait
+  # if the Trait-to-Marker sub-module has been selected, right? So... which if
+  # statement needs to be passed before running any of this code?
+  
   #Define a vector in which to store markers
   TM_markers <- c()
   
@@ -163,6 +168,11 @@ QTL <- function(chr_table, position_table, QTL_table,
   for(i in 1:length(TM.QT)){
      #for each row in qtl_table, of trait matches, store marker. W/O case sensitivity.
     for(j in 1:nrow(QTL_table)){
+      # TODO Edits for Daniel
+      # This isn't an edit but I just wanted to say nicely done!! You did a 
+      # great job anticipating that sometimes the case of the inputted quantitative
+      # triat might not match the case of the quantitative trait in the table.
+      # You're good at thinking these things through - you're gonna go far :)
       if(grepl(tolower(TM.QT[i]), tolower(QTL_table$Quantitative_Trait[j]))){
         TM_markers <- append(TM_markers, QTL_table$Marker[j])
       }
@@ -178,8 +188,14 @@ QTL <- function(chr_table, position_table, QTL_table,
   #final marker data table
   for(i in 1:length(TM_markers)){
     #if TM was requested...
+    # TODO Edits for Daniel
+    # Putting this if statement here is not the most elegant solution becase
+    # you end up evaluating the bool for EVERY marker. See the edit on Line 159
     if(TM.bool){
       #check if marker is present in position table
+      # TODO Edits for Daniel
+      # Where did you get the markers in "TM_markers" from? Given this, is this
+      # if statement necessary..?
       if(TM_markers[i] %in% QTL_table$Marker){
         
         temp_TM <- data.frame(matrix(
@@ -193,6 +209,9 @@ QTL <- function(chr_table, position_table, QTL_table,
 
 
         #if so, output the marker's info to the marker data frame
+        # TODO Edits for Daniel
+        # This is not incorrect, but it is redundant. Where did you get the 
+        # markers stored in 'TM_markers' from?
         temp_TM$`Marker (Peak)`[i] <- QTL_table$Marker[
           QTL_table$Marker == TM_markers[i]]
         temp_TM$`Scaffold`[i] <- QTL_table$Chromosome[
@@ -209,6 +228,9 @@ QTL <- function(chr_table, position_table, QTL_table,
           QTL_table$Marker == TM_markers[i]]
         temp_TM$`Study-Specific Information`[i] <- QTL_table$Study_Specific_Information[
           QTL_table$Marker == TM_markers[i]]
+        # TODO Edits for Daniel
+        # How are Publications formatted in the rest of the tables on this website?
+        # You'll want the formatting to be consistent with the rest of the tables
         temp_TM$`Publication(s)`[i] <- QTL_table$Publication[
           QTL_table$Marker == TM_markers[i]]
         
@@ -226,9 +248,12 @@ QTL <- function(chr_table, position_table, QTL_table,
     }
   }
   
-  #remove all NA rows from each data frame which is supposed to have output
+  # remove all NA rows from each data frame which is supposed to have output
   # then output data frame and warnings as a list
   
+  # TODO Edits for Daniel
+  # Remember the edit on Line 159? Given that... where would be the most 
+  # elegant place to move this if statement?
   if(TM.bool){
     QTL_Marker_Data <- QTL_Marker_Data[!is.na(QTL_Marker_Data$`Marker (Peak)`),]
   }
