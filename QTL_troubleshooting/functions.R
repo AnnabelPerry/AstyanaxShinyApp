@@ -52,8 +52,8 @@ QTL_table <- read.csv("data/QTL.csv", fill = TRUE)
 
 ######################### QTL Function Code Start ##############################
 QTL <- function(chr_table, position_table, QTL_table, 
-                GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA, 
-                MR.bool = F, MR.search_term = NA, MR.bp = NA, 
+                GR.bool, GR.chr, GR.start, GR.end, 
+                MR.bool, MR.search_term, MR.bp, 
                 TM.bool, TM.QT){
   # Vector into which warnings will be appended
   QTL.wrnings <- c("Notes: ")
@@ -106,6 +106,28 @@ QTL <- function(chr_table, position_table, QTL_table,
   #   If MR.search_term does NOT occur within QTL_table OR within "Gene Names", 
   #   return a descriptive but concise (in other words, user-friendly) error
   
+  # if second button is activated
+  
+  if (MR.bool) {
+    for (i in 1:nrow(QTL_table)) {
+      if (MR.search_term == QTL_table$Marker[i]) {
+        GR.chr <- as.numeric(QTL_table$Chromosome[i])
+        GR.start <- as.numeric(QTL_table$Start_Position_on_Chromosome[i] - MR.bp)
+        GR.end <- as.numeric(QTL_table$End_Position_on_Chromosome[i] + MR.bp)
+        GR.bool <- T
+      }
+    }
+    if (GR.bool == F) {
+      # TODO Edits for Zelun: There are two logical issues here
+      # 1. Function will fail as soon as the script encounters a marker not found
+      #   in the CSV. Think about what we discussed on Sunday
+      # 2. User doesn't need a warning for EVERY instance where a marker in the
+      #    CSV doesn't match the search parameters
+      QTL.wrnings <- append(QTL.wrnings, paste("No marker is not found in data"))
+      return(list(chr_plot,QTL_Marker_Data,QTL_Gene_Data,QTL.wrnings))
+    }
+  }
+  
 ########################### Genomic Range Pseudocode ###########################
   # TODO GR: Write & troubleshoot code which performs ALL the logic described in
   #          the following several lines of comments:
@@ -138,7 +160,95 @@ QTL <- function(chr_table, position_table, QTL_table,
   #
   # ... close the "if" statement here.
     
-
+  if (GR.bool) {
+    # for each row in QTL table
+    GR_markers <- c() 
+    for (i in 1:nrow(QTL_table)) {
+      if((grepl(GR.chr,QTL_table$Chromosome[i])) &
+         (QTL_table$Start_Position_on_Chromosome[i] >= GR.start) &
+         (QTL_table$End_Position_on_Chromosome[i] <= GR.end)){
+        GR_markers <- append(GR_markers, QTL_table$Marker[i])
+      }
+    }
+    QTL_Marker_Data <- data.frame(matrix(nrow = length(GR_markers),ncol = 9))
+    colnames(QTL_Marker_Data) <- c("Marker (Peak)", "Scaffold", 
+                                   "Start Position on Scaffold", 
+                                   "End Position on Scaffold", "LOD (Peak)",
+                                   "Quantitative Trait", 
+                                   "Percent Variance Explained",
+                                   "Study-Specific Information", "Publication(s)")
+    j <- 1
+    for(i in 1:nrow(QTL_table)){
+      # You are resetting 'j' to 1 each time you enter a new row of the
+      # QTL_table. This is wrong. Why?
+      # Zelun: We want to see if after traversing through the loop, no marker is found,
+      # so we want to set j <- 1 before entering the loop
+      #if chromosome at that row is same as user input
+      if ((grepl(GR.chr,QTL_table$Chromosome[i])) &
+          (QTL_table$Start_Position_on_Chromosome[i] >= as.numeric(GR.start)) &
+          (QTL_table$End_Position_on_Chromosome[i] <= as.numeric(GR.end))) {
+        # TODO Edits for Zelun
+        # As this is currently written, asigning a value to row 'j' of 
+        # QTL_Marker_Data will fail if j > 1.
+        #  To Troubleshoor:
+        #   1. Set j = 2
+        #   2. Run lines 59-65 to define QTL_Marker_Data
+        #   3. Run this code: QTL_Marker_Data$`Marker (Peak)`[j] <- "enter anything here"
+        #   You'll get an error. Troubleshoot it.
+        #output this marker's info to the marker data frame, with j keeping track of order
+        QTL_Marker_Data$`Marker (Peak)`[j] <- QTL_table$Marker[i]
+        QTL_Marker_Data$`Scaffold`[j] <- QTL_table$Chromosome[i]
+        QTL_Marker_Data$`Start Position on Scaffold`[j] <- QTL_table$Start_Position_on_Chromosome[i]
+        QTL_Marker_Data$`End Position on Scaffold`[j] <- QTL_table$End_Position_on_Chromosome[i]
+        QTL_Marker_Data$`LOD (Peak)`[j] <- QTL_table$LOD[i]
+        QTL_Marker_Data$`Quantitative Trait`[j] <- QTL_table$Quantitative_Trait[i]
+        QTL_Marker_Data$`Percent Variance Explained`[j] <- QTL_table$Percent_Variance_Explained[i]
+        QTL_Marker_Data$`Study-Specific Information`[j] <- QTL_table$Study_Specific_Information[i]
+        QTL_Marker_Data$`Publication(s)`[j] <- QTL_table$Publication[i]
+        j <- j + 1
+      }
+    }
+    if (j == 1) {
+      QTL.wrnings <- append(QTL.wrnings, paste(c("No marker is not found in selected range: ", "from ", GR.start, " to ",GR.end, " on chromosome ", GR.chr), collapse = ""))
+    }
+    # Now for each item in position table
+    GR_genes <- c() 
+    for (i in 1:nrow(position_table)) {
+      if((grepl(GR.chr,position_table$Scaffold[i])) &
+         (position_table$Start_Locus[i] >= GR.start) &
+         (position_table$End_Locus[i] <= GR.end)){
+        GR_genes <- append(GR_genes, position_table$Gene_Name[i])
+      }
+    }
+    QTL_Gene_Data <- data.frame(matrix(nrow = length(GR_genes),ncol = 5))
+    colnames(QTL_Gene_Data) <- c("Gene", "Scaffold", "Start Locus", "End Locus",
+                                 "Publication")
+    j <- 1
+    for(i in 1:nrow(position_table)){
+      # if gene position is in range
+      if ((grepl(GR.chr,position_table$Scaffold[i])) &
+          (position_table$Start_Locus[i] >= as.numeric(GR.start)) &
+          (position_table$End_Locus[i] <= as.numeric(GR.end))) {
+        # add row in QTL_Gene_Data
+        # TODO Edits for Zelun: See edit on line 173
+        QTL_Gene_Data$`Gene`[j] <- position_table$Gene_ID[i]
+        QTL_Gene_Data$`Scaffold`[j] <- position_table$Scaffold[i]
+        QTL_Gene_Data$`Start Locus`[j] <- position_table$Start_Locus[i]
+        QTL_Gene_Data$`End Locus`[j] <- position_table$End_Locus[i]
+        # TODO Edits for Zelun: 
+        # How are Publications formatted in all the other tables on CaveCrawler?
+        QTL_Gene_Data$`Publication`[j] <- as.integer(6)
+        j <- j + 1
+      }
+    }
+    if (j == 1) {
+      QTL.wrnings <- append(QTL.wrnings, paste(c("No gene is not found in selected range: ", "from ", GR.start, " to ",GR.end, " on chromosome ", GR.chr), collapse = ""))
+    }
+    #   Output chr_plot (currently empty) + QTL_Marker_Data + QTL_Gene_Data + 
+    #   warnings as list
+    return(list(chr_plot,QTL_Marker_Data,QTL_Gene_Data,QTL.wrnings))
+  }
+  
 ########################### Trait-to-Marker Pseudocode #########################
   # TODO TM: Write & troubleshoot code which performs ALL the logic described in
   #          the following several lines of comments:
@@ -166,7 +276,7 @@ QTL <- function(chr_table, position_table, QTL_table,
   
   #for each trait
   for(i in 1:length(TM.QT)){
-     #for each row in qtl_table, of trait matches, store marker. W/O case sensitivity.
+    #for each row in qtl_table, of trait matches, store marker. W/O case sensitivity.
     for(j in 1:nrow(QTL_table)){
       # TODO Edits for Daniel
       # This isn't an edit but I just wanted to say nicely done!! You did a 
@@ -206,8 +316,8 @@ QTL <- function(chr_table, position_table, QTL_table,
                             "Quantitative Trait",
                             "Percent Variance Explained",
                             "Study-Specific Information", "Publication(s)")
-
-
+        
+        
         #if so, output the marker's info to the marker data frame
         # TODO Edits for Daniel
         # This is not incorrect, but it is redundant. Where did you get the 
