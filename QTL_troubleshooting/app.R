@@ -45,8 +45,15 @@ ui <- fluidPage(
           #   Based on the slides describing the "Marker Range" sub-module and 
           #   the 'MR' inputs specified in the QTL function, add widgets for the 
           #   Marker Range sub-module.
-          # Hint: You may need to load additional libraries.
-          # Hint: Use your example apps!
+          textInput("marker_term",label = "Search for a marker:",width = "500px"),
+          textInput("marker_position",label = "Search for position around marker:",width = "500px"),
+          actionButton(
+            # Unique identifier for the action button
+            inputId = "MR_action_button",
+            # Label to be displayed on the action button
+            label = "Find Genes & Markers"),
+          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                           tags$div("Crawling through the data...",id="loadmessage"))
         ),
         conditionalPanel(
           condition = "input.QTLsub_mod == 'GR'",
@@ -56,6 +63,39 @@ ui <- fluidPage(
           #   Genomic Range sub-module.
           # Hint: You may need to load additional libraries.
           # Hint: Use your example apps!
+          fluidRow(
+            # Any data placed within the same "column()" function call will appear
+            # in the same column of that row
+            column(
+              # We must assign each column a width between 1 and 12
+              width = 5,
+              br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+              tags$b("Select a chromosome: "),
+              br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+              tags$b("Starting position: "),
+              br(),br(),
+              tags$b("Ending position: "),
+              br(),br(),
+              actionButton("GR_action_button","Find Genes & Markers"),
+              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                               tags$div("Crawling through the data...",id="GR_loadmessage"))
+            ),
+            column(
+              # We must assign each column a width between 1 and 12
+              width = 7,
+              radioButtons(
+                # A unique identifier which will be stored as an entry in a list called "input"
+                inputId = "GR_chr",
+                # The text to be displayed above the radiobuttons
+                label = NULL,
+                choices = 1:25,
+                # Tell shiny whether a default value should show as "selected"
+                selected = NULL
+              ),
+              textInput("GR_start",label = NULL,width = "500px"),
+              textInput("GR_end",label = NULL,width = "500px")
+            )
+          )
         ),
         conditionalPanel(
           condition = "input.QTLsub_mod == 'TM'",
@@ -80,13 +120,16 @@ ui <- fluidPage(
       mainPanel(
         # Note: Later, Annabel will add plot output here
         conditionalPanel(
+          condition = "input.GR_action_button | input.MR_action_button",
+          tableOutput("QTL_Marker_table"),
+          tableOutput("QTL_Gene_table")
+        ),
+        conditionalPanel(
           condition = "input.TM_enter",
           tableOutput("QTLmarker_table")
         ),
-        
-        tableOutput("QTLgene_table"),
-        textOutput("QTLwrnings"),
-        tableOutput("TM_tableout")
+        textOutput("chr_plot"),
+        tableOutput("QTL_wrnings")
       )
     )
   )
@@ -103,14 +146,37 @@ server <- function(input, output, session) {
         #          the widgets you made in the UI section.
         # Hint: Control-F for "GeneSearch(" in the official CaveCrawler app.R. 
         # Hint: Use your example apps!
-        GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
+        # GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
+        if (input$QTLsub_mod == 'GR') {
+          GR.bool = T
+        },
+        if (input$GR_chr != "") {
+          GR.chr = as.numeric(input$GR_chr)
+        },
+        if (input$GR_start != "") {
+          GR.start = as.numeric(input$GR_start)
+        },
+        if (input$GR_end != "") {
+          GR.end = as.numeric(input$GR_end)
+        },
         # TODO MR: To minimize errors in simultaneously troubleshooting multiple
         #          sub-modules, these arguments currently are set to not have
         #          values. Fill in the arguments with the reactive inputs from
         #          the widgets you made in the UI section.
         # Hint: Control-F for "GeneSearch(" in the official CaveCrawler app.R. 
         # Hint: Use your example apps!
-        MR.bool = F, MR.search_term = NA, MR.bp = NA,
+        # MR.bool = F, MR.search_term = NA, MR.bp = NA,
+        if (input$QTLsub_mod == 'MR') {
+          MR.bool = T
+        } else {
+          MR.bool = F
+        },
+        if (length(input$marker_term) > 0) {
+          MR.search_term = input$marker_term
+        },
+        if (length(input$marker_position) > 0) {
+          MR.bp = as.numeric(input$marker_position)
+        },
         # TODO TM: To minimize errors in simultaneously troubleshooting multiple
         #          sub-modules, these arguments currently are set to not have
         #          values. Fill in the arguments with the reactive inputs from
@@ -126,14 +192,18 @@ server <- function(input, output, session) {
     )
   })
   
+  output$QTL_Marker_table <- renderTable({QTLoutput()[[2]]})
+  output$QTL_Gene_table <- renderTable({QTLoutput()[[3]]})
+  # Note: Later, Annabel will add plot output here
+  output$QTLwrnings <- renderText({QTLoutput()[[4]]})
+  
   output$QTLmarker_table <- renderTable({
     if(('TM' %in% input$QTLsub_mod) & (length(input$Trait_search) > 0)){
       QTLoutput()[[1]]
-    }else{
+    } else{
       data.frame()
     }
-      
-    })
+  })
   
   output$TM_checkboxes <- renderUI({
     #populate checkboxes with all traits in trait column
@@ -148,10 +218,7 @@ server <- function(input, output, session) {
     )
     
   })
-  #output$QTLgene_table <- renderTable({QTLoutput()[[2]]})
   # Note: Later, Annabel will add plot output here
-  #output$QTLwrnings <- renderText({QTLoutput()[[4]]})
-  
   
 }
 
