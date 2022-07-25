@@ -494,6 +494,110 @@ source("functions/CaveCrawler_functions.R")
                    )
                  )
         ),
+      tabPanel("QTL", fluid = TRUE,
+               sidebarLayout(
+                 sidebarPanel(id = "sidebar",
+                   # With this radiobutton, the user specifies if they would like to...
+                   # 1. Use the Marker Range sub-module.
+                   # 2. Use the Genomic Range sub-module.
+                   # 3. Use the Trait-to-Marker sub-module.
+                   radioButtons(
+                     inputId = "QTLsub_mod",
+                     label = "I want to...",
+                     selected = character(0),
+                     # The choicenames are user-friendly descriptions of the actions of 
+                     # different sub-modules
+                     choiceNames = c("... search for markers and genes within range of a 
+                          known marker or gene.", 
+                                     "... search for markers and genes in a specific region
+                          of the genome.",
+                                     "... search for markers associated with a quantitative
+                          trait"),
+                     # The choice values are abbreviations for the sub-modules which the 
+                     # user-friendly names refer to.
+                     choiceValues = c("MR", "GR", "TM")
+                   ),
+                   conditionalPanel(
+                     condition = "input.QTLsub_mod == 'MR'",
+                     textInput("MR_term",label = "Search for a marker/gene:",width = "500px"),
+                     textInput("MR_position",label = "Search for position around marker/gene:",width = "500px"),
+                     actionButton(
+                       # Unique identifier for the action button
+                       inputId = "MR_enter",
+                       # Label to be displayed on the action button
+                       label = "Find Genes & Markers"),
+                     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                      tags$div("Crawling through the data...",id="MR_loadmessage"))
+                   ),
+                   conditionalPanel(
+                     condition = "input.QTLsub_mod == 'GR'",
+                     fluidRow(
+                       # Any data placed within the same "column()" function call will appear
+                       # in the same column of that row
+                       column(
+                         # We must assign each column a width between 1 and 12
+                         width = 5,
+                         br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                         tags$b("Select a chromosome: "),
+                         br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                         tags$b("Starting position: "),
+                         br(),br(),
+                         tags$b("Ending position: "),
+                         br(),br(),
+                         actionButton("GR_enter","Find Genes & Markers"),
+                         conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                          tags$div("Crawling through the data...",id="GR_loadmessage"))
+                       ),
+                       column(
+                         # We must assign each column a width between 1 and 12
+                         width = 7,
+                         radioButtons(
+                           # A unique identifier which will be stored as an entry in a list called "input"
+                           inputId = "GR_chr",
+                           # The text to be displayed above the radiobuttons
+                           label = NULL,
+                           choices = 1:25,
+                           # Tell shiny whether a default value should show as "selected"
+                           selected = character(0)
+                         ),
+                         textInput("GR_start",label = NULL,width = "500px"),
+                         textInput("GR_end",label = NULL,width = "500px")
+                       )
+                     )
+                   ),
+                   conditionalPanel(
+                     condition = "input.QTLsub_mod == 'TM'",
+                     
+                     uiOutput("TM_checkboxes"),
+                     actionButton("TM_enter", "Find Markers"),
+                     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                      tags$div("Crawling through the data...",id="loadmessage"))
+                   ),
+                   "Chromosome lengths obtained from assembly GCA_000372685.2 via the 
+        European Nucleotide Archive Browser (Accessed July 2022)"
+                 ),
+                 mainPanel(
+                   #TODO Describe this code in GitHub issues
+                   # If ANY of the sub-modules are outputted, output the marker
+                   # table and marker download button
+                   conditionalPanel(
+                     condition = "input.QTLsub_mod == 'TM' | input.QTLsub_mod == 'MR' | input.QTLsub_mod == 'GR'",
+                     tableOutput("QTL_Marker_table"),
+                     downloadButton("QTL_M_DL", "Download Markers", 
+                                    class = "download")
+                   ),
+                   # If the Marker Range or Genomic Range sub-modules are 
+                   # activated, also output the gene table and QTL plot
+                   conditionalPanel(
+                     condition = "input.QTLsub_mod == 'MR' | input.QTLsub_mod == 'GR'",
+                     tableOutput("QTL_Gene_table"),
+                     downloadButton("QTL_G_DL", "Download Genes", class = "download"),
+                     chromoMapOutput("QTLplot")
+                   ),
+                   textOutput("QTLwrnings")
+                 )
+               )
+      ),
       tabPanel("GO Term Info", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
@@ -1374,6 +1478,174 @@ source("functions/CaveCrawler_functions.R")
         write.csv(GOInfoOutTable(), file, row.names = F)
       }
     )
+    
+    QTLoutput <- eventReactive(input$QTLsub_mod, valueExpr = {
+      if((input$QTLsub_mod == 'MR') & ((input$MR_term) != "")
+         & ((input$MR_position) != "")){
+        QTL(chr_table, position_table, QTL_table,
+            GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
+            MR.bool = T, MR.search_term = input$MR_term,
+            MR.bp = as.numeric(input$MR_position),
+            TM.bool = F, TM.QT = NA
+        )
+      } else if((input$QTLsub_mod == 'GR') & (length(input$GR_chr) > 0) &
+                ((input$GR_start) != "") & (input$GR_end != "")){
+        QTL(chr_table, position_table, QTL_table,
+            GR.bool = T, GR.chr = as.numeric(input$GR_chr),
+            GR.start = as.numeric(input$GR_start),
+            GR.end = as.numeric(input$GR_end),
+            MR.bool = F, MR.search_term = NA, MR.bp = NA,
+            TM.bool = F, TM.QT = NA
+        )
+      } else if((input$QTLsub_mod == 'TM') & (length(input$Trait_search) > 0)){
+        QTL(chr_table, position_table, QTL_table,
+            GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
+            MR.bool = F, MR.search_term = NA, MR.bp = NA,
+            TM.bool = T, TM.QT = input$Trait_search
+        )
+      } else {
+        vector(mode = "list",length = 0)
+      }
+    })
+    
+    
+    # Check whether 
+    observeEvent(input$MR_enter, {
+      output$QTL_Marker_table <- renderTable({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[1]]
+        }else{
+          data.frame()
+        }
+      })
+      output$QTL_Gene_table <- renderTable({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[2]]
+        }else{
+          data.frame()
+        }
+      })
+      output$QTLplot <- renderChromoMap({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[3]]
+        }
+      })
+      output$QTLwrnings <- renderText({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[4]]
+        }else{
+          c()
+        }
+      })
+      # Create an object in which to store a button for downloading the QTL marker 
+      # table
+      output$QTL_M_DL <- downloadHandler(
+        filename = function() {
+          paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(QTLoutput()[[1]], file, row.names = F)
+        }
+      )
+      # Create an object in which to store a button for downloading the QTL gene 
+      # table
+      output$QTL_G_DL <- downloadHandler(
+        filename = function() {
+          paste("CaveCrawler-QTL-Genes-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(QTLoutput()[[2]], file, row.names = F)
+        }
+      )
+    })
+    observeEvent(input$GR_enter, {
+      output$QTL_Marker_table <- renderTable({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[1]]
+        }else{
+          data.frame()
+        }
+      })
+      output$QTL_Gene_table <- renderTable({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[2]]
+        }else{
+          data.frame()
+        }
+      })
+      output$QTLplot <- renderChromoMap({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[3]]
+        }
+      })
+      output$QTLwrnings <- renderText({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[4]]
+        }else{
+          c()
+        }
+      })
+      # Create an object in which to store a button for downloading the QTL marker 
+      # table
+      output$QTL_M_DL <- downloadHandler(
+        filename = function() {
+          paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(QTLoutput()[[1]], file, row.names = F)
+        }
+      )
+      # Create an object in which to store a button for downloading the QTL gene 
+      # table
+      output$QTL_G_DL <- downloadHandler(
+        filename = function() {
+          paste("CaveCrawler-QTL-Genes-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(QTLoutput()[[2]], file, row.names = F)
+        }
+      )
+    })
+    observeEvent(input$TM_enter, {
+      output$QTL_Marker_table <- renderTable({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[1]]
+        }else{
+          data.frame()
+        }
+      })
+      output$QTLwrnings <- renderText({
+        if(length(QTLoutput()) != 0){
+          QTLoutput()[[4]]
+        }else{
+          c()
+        }
+      })
+      # Create an object in which to store a button for downloading the QTL marker 
+      # table
+      output$QTL_M_DL <- downloadHandler(
+        filename = function() {
+          paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(QTLoutput()[[1]], file, row.names = F)
+        }
+      )
+    })
+    
+    output$TM_checkboxes <- renderUI({
+      #populate checkboxes with all traits in trait column
+      traits <- QTL_table$Quantitative_Trait
+      #remove duplicates
+      traits <- traits[!duplicated(traits) &!grepl('NA', traits) &!is.na(traits)]
+      
+      checkboxGroupInput(
+        inputId = "Trait_search",
+        label = "Select trait(s)",
+        choices = traits
+      )
+      
+    })
     
     # Text summary and table for community resources page
     #output$community_summary <- renderText("The table below describes molecular tools, genetic resources, stock populations, etc. available from different labs in the Mexican tetra research community, as well as contact info for each lab")
