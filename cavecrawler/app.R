@@ -10,20 +10,22 @@
 ############################### Source Functions ###############################
 source("functions/CaveCrawler_functions.R")
 
-  ui = fluidPage(
-    tags$head(includeHTML(("google-analytics.html"))),
-    setBackgroundColor("white"),
-    chooseSliderSkin("Flat", color = "#e8c4c2"),
-    theme = "style.css",
-    tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
-    tags$style(type="text/css",
-               ".shiny-output-error { visibility: hidden; }",
-               ".shiny-output-error:before { visibility: hidden; }",
-               'body {color:black;}'),
-    tabsetPanel(
-      tabPanel("Home", fluid = TRUE,
-               h1("Welcome to CaveCrawler"),
-               img(src="Astyanax_Evolution_GIF.gif", align = "center",height='250px',width='500px'),
+##############################/ User Interface \################################
+ui = fluidPage(
+################################### Styling ####################################
+  tags$head(includeHTML(("google-analytics.html"))),
+  setBackgroundColor("white"),
+  chooseSliderSkin("Flat", color = "#e8c4c2"),
+  theme = "style.css",
+  tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
+  tags$style(type="text/css", ".shiny-output-error { visibility: hidden; }",
+             ".shiny-output-error:before { visibility: hidden; }",
+             'body {color:black;}'),
+  tabsetPanel(
+#################################### Home UI ###################################
+    tabPanel("Home", fluid = TRUE,
+             h1("Welcome to CaveCrawler"),
+             img(src="Astyanax_Evolution_GIF.gif", align = "center",height='250px',width='500px'),
                br(),
                br(),
                "CaveCrawler is a reactive web interface for bioinformatic 
@@ -52,7 +54,8 @@ source("functions/CaveCrawler_functions.R")
                "To cite CaveCrawler, please cite our paper, currently available on BioRXiv: 'CaveCrawler: An interactive analysis suite for cavefish bioinformatics'",
                br(),
                plotOutput("home_plot")
-      ),
+             ),
+############################### Gene Search UI #################################
       tabPanel("Gene Search", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
@@ -221,6 +224,7 @@ source("functions/CaveCrawler_functions.R")
                )
           )
       ),
+############################### Transcription UI ###############################
       tabPanel("Transcription", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
@@ -299,6 +303,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
+############################ Population Genetics UI ############################
         tabPanel("Population Genetics", fluid = TRUE,
                  sidebarLayout(
                    sidebarPanel(id = "sidebar2",
@@ -494,6 +499,7 @@ source("functions/CaveCrawler_functions.R")
                    )
                  )
         ),
+##################################### QTL UI ###################################
       tabPanel("QTL", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
@@ -577,7 +583,6 @@ source("functions/CaveCrawler_functions.R")
         European Nucleotide Archive Browser (Accessed July 2022)"
                  ),
                  mainPanel(
-                   #TODO Describe this code in GitHub issues
                    # If ANY of the sub-modules are outputted, output the marker
                    # table and marker download button
                    conditionalPanel(
@@ -598,6 +603,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
+############################## GO Term Info UI #################################
       tabPanel("GO Term Info", fluid = TRUE,
                sidebarLayout(
                  sidebarPanel(id = "sidebar",
@@ -635,6 +641,7 @@ source("functions/CaveCrawler_functions.R")
                  )
                )
       ),
+############################### Data Sources UI ################################
       tabPanel("Data Sources", fluid = TRUE, align="left",
                h1("CaveCrawler Data Sources"),
                "1. Herman, A., Brandvain, Y., Weagley, J., Jeffery, W. R., 
@@ -793,28 +800,24 @@ source("functions/CaveCrawler_functions.R")
                UniProtKB (Feb. 2 2021 release) using the following search phrase: ",
                br(),
                "organism:","'Astyanax mexicanus (Blind cave fish) (Astyanax fasciatus mexicanus) [7994]'","AND proteome:up000018467"
-               )#,
-      #tabPanel(h2("Community Resources"), fluid = TRUE, align="left",
-      #         h1("Astyanax Mexicanus Community Resources", align = "center"),
-      #         br(),
-      #         textOutput("community_summary"),
-      #         br(),
-      #         tableOutput("community_table")
-      #)
+               )
     )
   )
 
-  server = function(input, output) {
+
+####################################/ Server \##################################
+server = function(input, output) {
     observe({
+###################### Transcription Reactive Widgets ##########################
       transc_morph_choices <- c("Control", "Rio Choy")
-      # Transcription Page: Update morph-selection widget to only enable
-      # comparisons between current morph and morph which is NOT morph1
+      # Update morph-selection widget to only enable comparisons between current 
+      # morph and morph which is NOT morph1
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "morph2",
                         choices = transc_morph_choices[transc_morph_choices != input$morph1],
                         selected = tail(transc_morph_choices, 1)
       )
-      # Transcription Page: Update min and max values for logFC based on data
+      # Update min and max values for logFC based on data
       output$FCthresh_updater <- renderUI({
         if((input$trstat == "logFC") & (input$morph2 == "Control")){
           sec.table <- condition_control$logFC[
@@ -840,8 +843,9 @@ source("functions/CaveCrawler_functions.R")
                       min = 0, max = 0, value = 0)
         }
       })
-      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been
-      # created, update widget for selecting which statistic to plot
+################### Population Genetics Reactive Widgets #######################
+      # Stat-By-Chr sub-module: If a valid table has been created, update widget 
+      # for selecting which statistic to plot
       if(length(SBCT()) == 2){
         if(sum(is.na(SBCT()[[2]])) != 9){
           updateSelectInput(session = getDefaultReactiveDomain(),
@@ -860,8 +864,8 @@ source("functions/CaveCrawler_functions.R")
                           label = "Visualize statistic...",
                           choices = "")
       }
-      # Population Genetics (Stat-By-Chr Suppage): If a valid table has been
-      # created, update the widget for selecting which scaffold to plot
+      # Stat-By-Chr sub-module: If a valid table has been created, update the 
+      # widget for selecting which scaffold to plot
       if(length(SBCT()) == 2){
           if(sum(is.na(SBCT()[[2]])) != 9){
           all_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
@@ -886,8 +890,7 @@ source("functions/CaveCrawler_functions.R")
                           label = "...plotted along scaffold:",
                           choices = "")
       }
-      # Population Genetics (StatDist Subpage): Update min and max values for
-      # threshold slider
+      # StatDist sub-module: Update min and max values for threshold slider
       output$thrsh_slider <- renderUI({
         if(((length(input$dist_pops) >= 2) &
          ((input$dist_statist == "Fst") | (input$dist_statist == "Dxy"))) |
@@ -906,10 +909,23 @@ source("functions/CaveCrawler_functions.R")
                     step = 0.05)
       }
       })
+############################# QTL Reactive Widgets #############################
+      output$TM_checkboxes <- renderUI({
+        #populate checkboxes with all traits in trait column
+        traits <- QTL_table$Quantitative_Trait
+        #remove duplicates
+        traits <- traits[!duplicated(traits) &!grepl('NA', traits) &!is.na(traits)]
+        
+        checkboxGroupInput(
+          inputId = "Trait_search",
+          label = "Select trait(s)",
+          choices = traits
+        )
+        
+      })
     })
-    
-    # Home Page: Plot a map of all populations
-    # Plot map of Astyanax populations
+####################################### Home ###################################
+    # Plot a map of all populations
     pop_map <- ggplot(data = world_map) +
       geom_polygon(aes(x = long,
                        y = lat,
@@ -942,7 +958,8 @@ source("functions/CaveCrawler_functions.R")
       theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
 
     output$home_plot <- renderPlot(pop_map)
-    # Gene Search Page: Output four tables of all data associated with the
+############################# Gene Search Outputs ##############################
+    # Output four tables of all data associated with the
     # entered gene search term
     GeneSearchOutput <- eventReactive(input$Gene_search, valueExpr = {
       # Tell function which tables to output based on values of logicals
@@ -1090,7 +1107,7 @@ source("functions/CaveCrawler_functions.R")
         data.frame()
       }
     })
-    # Gene Search Page: Output any warnings associated with the searched gene
+    # Output any warnings associated with the searched gene
     output$GSwarnings <- renderText({
       if(("Position" %in% input$GSbools) & (length(GeneSearchOutput()) == 5)){
         GeneSearchOutput()[[5]]
@@ -1099,7 +1116,7 @@ source("functions/CaveCrawler_functions.R")
       }
     })
 
-    # Gene Search Page: Enable downloading of Gene Search Position table
+    # Enable downloading of Position table
     output$GSPosDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-GeneSearch-Position-", Sys.Date(), ".csv", sep="")
@@ -1117,7 +1134,7 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     
-    # Gene Search Page: Enable downloading of Gene Search Transcription table
+    # Enable downloading of Transcription table
     output$GSTranscDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-GeneSearch-Transcription-", Sys.Date(), ".csv", sep="")
@@ -1142,7 +1159,7 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     
-    # Gene Search Page: Enable downloading of Gene Search Population Genetics table
+    # Enable downloading of Population Genetics table
     output$GSPopgenDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-GeneSearch-Popgen-", Sys.Date(), ".csv", sep="")
@@ -1166,7 +1183,7 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-    # Gene Search Page: Enable downloading of Gene Search GO table
+    # Enable downloading of GO table
     output$GSGODL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-GeneSearch-GO-", Sys.Date(), ".csv", sep="")
@@ -1184,12 +1201,13 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-    # Transcription Page labels
+############################ Transcription Outputs #############################
+    # Widget labels
     output$trstat_label <- renderText("Display genes whose logFC/p-value...")
     output$dir_label <- renderText("... is above/below....")
     output$pthresh_label <- renderText("... the following threshold:")
     
-    # Transcription Page: Output a table with specified transcription data
+    # Output a table with specified transcription data
     transc_table <- eventReactive(input$Transc_enter, valueExpr = {
       if(input$morph2 == "Control"){
         condit <- input$condition
@@ -1246,7 +1264,7 @@ source("functions/CaveCrawler_functions.R")
     })
     output$transc_wrnings_out <- renderText({transc_table()[[2]]})
 
-    # Transcription Page: Enable downloading of Transcription table
+    # Enable downloading of Transcription table
     output$TranscDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-Transcription-", Sys.Date(), ".csv", sep="")
@@ -1256,9 +1274,9 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     
-    # Population Genetics (Distribution Suppage): If Statistic Value was
-    # specified, output a table of all genes within the specified range of
-    # statistic values
+######################### Population Genetics Outputs ##########################
+    # Distribution Sup-Module: If Statistic Value was specified, output a table 
+    # of all genes within the specified range of statistic values
     SVDT <- eventReactive(input$SVDistTable_enter, valueExpr = {
       StatDistTable(input$type,
                     input$svTB,
@@ -1282,9 +1300,8 @@ source("functions/CaveCrawler_functions.R")
     )
     output$SVdist_wrnings <- renderText(SVDT()[[1]])
     
-    # Population Genetics (Distribution Suppage): If Visualize was pressed,
-    # output a plot of the number of genes with each value of the specified
-    # statistic
+    # Distribution Su-Module: If Visualize was pressed, output a plot of the 
+    # number of genes with each value of the specified statistic
     SVDP <- eventReactive(input$SVDistPlot_enter, valueExpr = {
       StatDistPlot(stat = input$dist_statist,
                    UL = input$svTB,
@@ -1296,7 +1313,7 @@ source("functions/CaveCrawler_functions.R")
     output$SVdist_plot_wrnings <- renderText(SVDP()[[1]])
     output$SVdist_plot <- renderPlot(SVDP()[[2]])
     
-    # Statistic Value SubPage: Enable downloading of Statistic Value table
+    # Statistic Value Sub-Module: Enable downloading of Statistic Value table
     output$SVDistDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
@@ -1306,8 +1323,8 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-    # Population Genetics (Distribution Subpage): If Gene Count was specified,
-    # output the statistics associated with the indicated number of genes
+    # Distribution Sub-Module: If Gene Count was specified, output the 
+    # statistics associated with the indicated number of genes
     GCDT <- eventReactive(input$GCDistTable_enter, valueExpr = {
       StatDistTable(input$type,
                     input$gcTB,
@@ -1331,7 +1348,7 @@ source("functions/CaveCrawler_functions.R")
     )
     output$GCdist_wrnings <- renderText(GCDT()[[1]])
 
-    # Gene Count SubPage: Enable downloading of Gene Count table
+    # Gene Count Sub-Module: Enable downloading of Gene Count table
     output$GCDistDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
@@ -1341,9 +1358,8 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-
-    # Population Genetics (Stat-By-Chr Subpage): If population, statistic, and
-    # GO term have been entered, output a table of associated genes
+    # Stat-By-Chr Sub-Module: If population, statistic, and GO term have been 
+    # entered, output a table of associated genes
     SBCT <- eventReactive(input$GO_search, valueExpr = {
       if((length(input$sbc_statist) == 0) & (length(input$sbc_pops) != 0)){
         "Please choose at least one statistic of interest"
@@ -1365,9 +1381,8 @@ source("functions/CaveCrawler_functions.R")
     }
     )
 
-    # Population Genetics (Stat-By-Chr Subpage): If visualize was pressed and
-    # input table is NOT full of NAs, output a plot of the appropriate statistic x
-    # scaffold pair
+    # Stat-By-Chr Sub-Module: If visualize was pressed and input table is NOT 
+    # full of NAs, output a plot of the appropriate statistic x scaffold pair
     SBCP <- eventReactive(input$SBCP_enter, valueExpr = {
       if(sum(is.na(SBCT()[[2]])) != 9){
         SBC_plots <- StatByChrGraph(SBCT()[[2]], stat_vec = input$sbc_statist)
@@ -1427,7 +1442,7 @@ source("functions/CaveCrawler_functions.R")
     output$SBC_wrnings <- renderText(SBCT()[[1]])
     output$SBC_plot <- renderPlot(SBCP())
 
-    # Statistic-by-Chromosome SubPage: Enable downloading of SBC table
+    # Statistic-by-Chromosome Sub-Module: Enable downloading of SBC table
     output$SBCDL <- downloadHandler(
       filename = function() {
         paste("CaveCrawler-Outliers-", Sys.Date(), ".csv", sep="")
@@ -1437,9 +1452,9 @@ source("functions/CaveCrawler_functions.R")
       }
     )
 
-
-    # GO Term Info: If GO ID or phrase was inputted, output class, lower-level
-    # GO IDs, and GO terms associated with all relevant GO IDs
+########################### GO Term Info Outputs ############################### 
+    # If GO ID or phrase was inputted, output class, lower-level GO IDs, and GO 
+    # terms associated with all relevant GO IDs
     GOInfoOutWarnings <- eventReactive(input$GO_info_search, valueExpr = {
       if(input$GO_info_search == ""){
         "Warnings will populate here once GO ID or phrase is inputted."
@@ -1479,64 +1494,19 @@ source("functions/CaveCrawler_functions.R")
       }
     )
     
-    QTLoutput <- eventReactive(input$QTLsub_mod, valueExpr = {
-      if((input$QTLsub_mod == 'MR') & ((input$MR_term) != "")
-         & ((input$MR_position) != "")){
-        QTL(chr_table, position_table, QTL_table,
-            GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
-            MR.bool = T, MR.search_term = input$MR_term,
-            MR.bp = as.numeric(input$MR_position),
-            TM.bool = F, TM.QT = NA
-        )
-      } else if((input$QTLsub_mod == 'GR') & (length(input$GR_chr) > 0) &
-                ((input$GR_start) != "") & (input$GR_end != "")){
-        QTL(chr_table, position_table, QTL_table,
-            GR.bool = T, GR.chr = as.numeric(input$GR_chr),
-            GR.start = as.numeric(input$GR_start),
-            GR.end = as.numeric(input$GR_end),
-            MR.bool = F, MR.search_term = NA, MR.bp = NA,
-            TM.bool = F, TM.QT = NA
-        )
-      } else if((input$QTLsub_mod == 'TM') & (length(input$Trait_search) > 0)){
-        QTL(chr_table, position_table, QTL_table,
-            GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA,
-            MR.bool = F, MR.search_term = NA, MR.bp = NA,
-            TM.bool = T, TM.QT = input$Trait_search
-        )
-      } else {
-        vector(mode = "list",length = 0)
-      }
-    })
-    
-    
-    # Check whether 
+################################# QTL Outputs ################################## 
+    # Check which action button was entered and run relevant code
     observeEvent(input$MR_enter, {
-      output$QTL_Marker_table <- renderTable({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[1]]
-        }else{
-          data.frame()
-        }
-      })
-      output$QTL_Gene_table <- renderTable({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[2]]
-        }else{
-          data.frame()
-        }
-      })
-      output$QTLplot <- renderChromoMap({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[3]]
-        }
-      })
-      output$QTLwrnings <- renderText({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[4]]
-        }else{
-          c()
-        }
-      })
+      # Run QTL function with the inputs previously set based upon the activated
+      # sub-module
+      QTLoutput <- QTL(chr_table, position_table, QTL_table, 
+                       MR.bool = T, MR.search_term = input$MR_term, 
+                       MR.bp = as.numeric(input$MR_position))
+      # Fill corresponding objects with the appropriate outputs
+      output$QTL_Marker_table <- renderTable({QTLoutput[[1]]})
+      output$QTL_Gene_table <- renderTable({QTLoutput[[2]]})
+      output$QTLplot <- renderChromoMap({QTLoutput[[3]]})
+      output$QTLwrnings <- renderText({QTLoutput[[4]]})
       # Create an object in which to store a button for downloading the QTL marker 
       # table
       output$QTL_M_DL <- downloadHandler(
@@ -1544,7 +1514,7 @@ source("functions/CaveCrawler_functions.R")
           paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(QTLoutput()[[1]], file, row.names = F)
+          write.csv(QTLoutput[[1]], file, row.names = F)
         }
       )
       # Create an object in which to store a button for downloading the QTL gene 
@@ -1554,37 +1524,22 @@ source("functions/CaveCrawler_functions.R")
           paste("CaveCrawler-QTL-Genes-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(QTLoutput()[[2]], file, row.names = F)
+          write.csv(QTLoutput[[2]], file, row.names = F)
         }
       )
     })
     observeEvent(input$GR_enter, {
-      output$QTL_Marker_table <- renderTable({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[1]]
-        }else{
-          data.frame()
-        }
-      })
-      output$QTL_Gene_table <- renderTable({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[2]]
-        }else{
-          data.frame()
-        }
-      })
-      output$QTLplot <- renderChromoMap({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[3]]
-        }
-      })
-      output$QTLwrnings <- renderText({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[4]]
-        }else{
-          c()
-        }
-      })
+      # Run QTL function with the inputs previously set based upon the activated
+      # sub-module
+      QTLoutput <- QTL(chr_table, position_table, QTL_table, 
+                       GR.bool = T, GR.chr = as.numeric(input$GR_chr), 
+                       GR.start = as.numeric(input$GR_start), 
+                       GR.end = as.numeric(input$GR_end))
+      # Send outputs of function call to appropriate tables
+      output$QTL_Marker_table <- renderTable({QTLoutput[[1]]})
+      output$QTL_Gene_table <- renderTable({QTLoutput[[2]]})
+      output$QTLplot <- renderChromoMap({QTLoutput[[3]]})
+      output$QTLwrnings <- renderText({QTLoutput[[4]]})
       # Create an object in which to store a button for downloading the QTL marker 
       # table
       output$QTL_M_DL <- downloadHandler(
@@ -1592,7 +1547,7 @@ source("functions/CaveCrawler_functions.R")
           paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(QTLoutput()[[1]], file, row.names = F)
+          write.csv(QTLoutput[[1]], file, row.names = F)
         }
       )
       # Create an object in which to store a button for downloading the QTL gene 
@@ -1602,25 +1557,17 @@ source("functions/CaveCrawler_functions.R")
           paste("CaveCrawler-QTL-Genes-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(QTLoutput()[[2]], file, row.names = F)
+          write.csv(QTLoutput[[2]], file, row.names = F)
         }
       )
     })
     observeEvent(input$TM_enter, {
-      output$QTL_Marker_table <- renderTable({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[1]]
-        }else{
-          data.frame()
-        }
-      })
-      output$QTLwrnings <- renderText({
-        if(length(QTLoutput()) != 0){
-          QTLoutput()[[4]]
-        }else{
-          c()
-        }
-      })
+      # Run QTL function with the inputs previously set based upon the activated
+      # sub-module
+      QTLoutput <- QTL(chr_table, position_table, QTL_table, 
+                       TM.bool = T, TM.QT = input$Trait_search)
+      output$QTL_Marker_table <- renderTable({QTLoutput[[1]]})
+      output$QTLwrnings <- renderText({QTLoutput[[4]]})
       # Create an object in which to store a button for downloading the QTL marker 
       # table
       output$QTL_M_DL <- downloadHandler(
@@ -1628,32 +1575,10 @@ source("functions/CaveCrawler_functions.R")
           paste("CaveCrawler-QTL-Markers-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(QTLoutput()[[1]], file, row.names = F)
+          write.csv(QTLoutput[[1]], file, row.names = F)
         }
       )
     })
-    
-    output$TM_checkboxes <- renderUI({
-      #populate checkboxes with all traits in trait column
-      traits <- QTL_table$Quantitative_Trait
-      #remove duplicates
-      traits <- traits[!duplicated(traits) &!grepl('NA', traits) &!is.na(traits)]
-      
-      checkboxGroupInput(
-        inputId = "Trait_search",
-        label = "Select trait(s)",
-        choices = traits
-      )
-      
-    })
-    
-    # Text summary and table for community resources page
-    #output$community_summary <- renderText("The table below describes molecular tools, genetic resources, stock populations, etc. available from different labs in the Mexican tetra research community, as well as contact info for each lab")
-    #Community_Data <- read.csv("data/CommunityData.csv")
-    # Replace periods with spaces
-    #colnames(Community_Data) <- gsub(pattern = ".", replacement = " ", 
-    #                                 x = colnames(Community_Data), fixed = T)
-    #output$community_table <- renderTable(Community_Data, align = 'c')
     }
 
 

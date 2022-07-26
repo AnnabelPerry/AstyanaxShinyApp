@@ -1638,9 +1638,9 @@ MinMax <- function(mm_pops, mm_stat, in_table){
 #             associated with a given trait.
 #   TM.QT = Character. The quantitative trait of interest
 QTL <- function(chr_table, position_table, QTL_table, 
-                GR.bool, GR.chr, GR.start, GR.end, 
-                MR.bool, MR.search_term, MR.bp, 
-                TM.bool, TM.QT){
+                GR.bool = F, GR.chr = NA, GR.start = NA, GR.end = NA, 
+                MR.bool = F, MR.search_term = NA, MR.bp = NA, 
+                TM.bool = F, TM.QT = NA){
   # Vector into which warnings will be appended
   QTL.wrnings <- c("Notes: ")
   # Dataframe for QTL marker(s) matching the user's search parameters
@@ -1796,7 +1796,6 @@ QTL <- function(chr_table, position_table, QTL_table,
       plot_annot <- rbind(plot_annot, temp_df)
     }
     
-    #TODO Describe this code in GitHub issues
     # If the dataframe containing markers to be plotted is NOT empty, plot the
     # markers
     if(nrow(plot_annot) > 1){
